@@ -113,6 +113,64 @@ def test_not_reachable_on_a_non_loopback_interface(tmp_path: Path, monkeypatch: 
         t.join(timeout=10)
 
 
+def test_serve_end_to_end(tmp_path: Path) -> None:
+    """`python -m baleen serve --no-browser`: prints the launch URL, exchanges the token, serves the
+    app, and exits cleanly after Quit → /stopped (UI-G4)."""
+    import http.client
+    import os
+    import re
+    import subprocess
+    import sys
+
+    sock = bind_loopback(_free_port())
+    port = sock.getsockname()[1]
+    sock.close()
+    env = {**os.environ, "BALEEN_HOME": str(tmp_path / "home"), "PYTHONIOENCODING": "utf-8"}
+    env.pop("BALEEN_PORT", None)
+    proc = subprocess.Popen([sys.executable, "-m", "baleen", "serve", "--no-browser", "--port", str(port)],
+                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=env, text=True,
+                            encoding="utf-8")
+    try:
+        url = None
+        for _ in range(20):
+            line = proc.stdout.readline()
+            m = re.search(r"(http://127\.0\.0\.1:(\d+)/auth\?t=[\w-]{43,})", line)
+            if m:
+                url = m.group(1)
+                break
+        assert url and int(re.search(r":(\d+)/", url).group(1)) == port
+
+        def request(method: str, path: str, cookie: str = "", origin: bool = False) -> http.client.HTTPResponse:
+            for _ in range(50):
+                try:
+                    c = http.client.HTTPConnection("127.0.0.1", port, timeout=60)
+                    headers = {"Cookie": cookie} if cookie else {}
+                    if origin:
+                        headers["Origin"] = f"http://127.0.0.1:{port}"
+                    c.request(method, path, headers=headers)
+                    return c.getresponse()
+                except ConnectionRefusedError:
+                    time.sleep(0.1)
+            raise AssertionError("server never answered")
+
+        assert request("GET", "/convert").status == 403
+        auth = request("GET", url.split(str(port), 1)[1])
+        assert auth.status == 303
+        cookie = auth.getheader("Set-Cookie").split(";", 1)[0]
+        page = request("GET", "/convert", cookie)
+        assert page.status == 200 and b"Start converting" in page.read()
+        assert request("POST", "/api/quit", cookie).status == 403  # no Origin: refused (SEC-5)
+        quit_ = request("POST", "/api/quit", cookie, origin=True)
+        assert quit_.status == 204 and quit_.getheader("HX-Redirect") == "/stopped"
+        stopped = request("GET", "/stopped", cookie)
+        assert stopped.status == 200 and b"Baleen has stopped" in stopped.read()
+        assert proc.wait(timeout=20) == 0
+    finally:
+        if proc.poll() is None:
+            proc.kill()
+            proc.wait(timeout=10)
+
+
 def test_quit_without_a_job_exits_after_stopped_is_served(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     ctx = harness.build_ctx(tmp_path, 8773, monkeypatch)
     exited = threading.Event()

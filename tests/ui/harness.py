@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from baleen import scheduler
+from baleen import osutil, scheduler
 from baleen.home import Home
 from baleen.runner import Engine
 from baleen.scan import scan
@@ -101,6 +101,9 @@ class Harness:
         raise TimeoutError("job still running")
 
 
+REVEALED: list[str] = []
+
+
 class FakePicker:
     """Stands in for the native folder dialog (which cannot be automated, §12.9)."""
 
@@ -121,6 +124,8 @@ def build_ctx(tmp: Path, port: int, mp: Any, *, missing: set[str] | None = None,
     fake_routes.install(mp)
     FakePicker.path, FakePicker.delay, FakePicker.calls = None, 0.0, 0
     mp.setattr(pickers, "pick_folder", FakePicker.pick_folder)
+    REVEALED.clear()
+    mp.setattr(osutil, "reveal", lambda path, **kw: REVEALED.append(path) or True)  # never open Explorer
     machine = Machine(cores, ram, network)
     mp.setattr(scheduler.Machine, "detect", classmethod(lambda cls, paths=(): machine))
     home = Home(tmp / "home")
@@ -251,6 +256,12 @@ def make_batch(root: Path, n: int = 24, hold_from: int = 10) -> None:
     """The prototype's cancelled run: 'test batch' with 24 BMP scans; scans from hold_from wait."""
     for i in range(1, n + 1):
         write(root, f"scan_{i:02d}.bmp", (b"HOLD" if i >= hold_from else b"") + b"bmp")
+
+
+def make_jpegs(root: Path, n: int = 24, hold_from: int = 10) -> None:
+    """JPEGs for Check runs (checked in place, so they are processed); from hold_from they wait."""
+    for i in range(1, n + 1):
+        write(root, f"IMG_{i:04d}.JPG", (b"HOLD" if i >= hold_from else b"") + b"jpeg")
 
 
 def ui_shots_dir() -> Path | None:

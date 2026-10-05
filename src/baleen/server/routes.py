@@ -319,6 +319,8 @@ def _custom_defaults(ctx: ServerContext, changes: dict[str, Any]) -> None:
         changes["processor_cores"] = min(machine.cores, max(1, int(changes["processor_cores"])))
     if "memory_gb" in changes:
         changes["memory_gb"] = min(max(1, machine.ram_gb - 2), max(1, int(changes["memory_gb"])))
+    if "transfer_count" in changes:
+        changes["transfer_count"] = min(16, max(1, int(changes["transfer_count"])))
 
 
 async def api_settings(request: Request) -> Response:
@@ -327,8 +329,18 @@ async def api_settings(request: Request) -> Response:
     form = await form_dict(request)
     ui = form.pop("ui", "")
     reset = form.pop("reset", "")
+    step = form.pop("step", "")
     form.pop("wf", None)
     changes: dict[str, Any] = {}
+    if step:
+        # Steppers send relative steps ("processor_cores:1"), so rapid presses all count (UI-S2).
+        key, _, delta = step.partition(":")
+        if key not in ("processor_cores", "transfer_count"):
+            return Response("Unknown step.", status_code=400, media_type="text/plain")
+        try:
+            changes[key] = int(ctx.store.app()[key]) + int(delta)
+        except ValueError:
+            return Response("Bad step.", status_code=400, media_type="text/plain")
     for k, v in form.items():
         try:
             find_field(k)
@@ -364,6 +376,9 @@ async def api_settings(request: Request) -> Response:
         if wf.preview:
             parts.append(render_str(ctx, "_preview.html", oob=True, **sc))
         return HTMLResponse("".join(parts))
+    if ui == "plan":  # the memory slider: save, then refresh only the summary (the slider keeps focus)
+        machine = ctx.machine(views.all_folder_paths(ctx))
+        return render(ctx, "_plan.html", plan=views.plan_view(ctx.store.app(), machine))
     if ui == "resource":
         headers = trigger(toast="Resource use reset to defaults") if reset == "resources" else None
         return render(ctx, "_resource.html", headers=headers, res=views.resource_view(ctx),

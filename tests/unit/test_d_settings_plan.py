@@ -117,6 +117,27 @@ def test_resource_controls_save_and_switching_to_custom_starts_from_the_current_
     assert re.search(r'id="res-defaults"\s+disabled', r.text)
 
 
+def test_steppers_send_relative_steps_and_the_slider_refreshes_only_the_plan(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    ctx = harness.build_ctx(tmp_path, PORT, monkeypatch)
+    c = harness.client(ctx)
+    ctx.store.update({"processor_use": "custom", "processor_cores": 4, "transfer_slots": "custom",
+                      "transfer_count": 1})
+    for _ in range(3):  # quick presses all count
+        c.post("/api/settings", data={"ui": "resource", "step": "processor_cores:1"})
+    assert ctx.store.app()["processor_cores"] == 7
+    for _ in range(3):
+        c.post("/api/settings", data={"ui": "resource", "step": "processor_cores:1"})
+    assert ctx.store.app()["processor_cores"] == 8  # clamped to the 8 cores
+    c.post("/api/settings", data={"ui": "resource", "step": "transfer_count:-1"})
+    assert ctx.store.app()["transfer_count"] == 1  # at least 1
+    assert c.post("/api/settings", data={"step": "memory_gb:1"}).status_code == 400
+    assert c.post("/api/settings", data={"step": "processor_cores:x"}).status_code == 400
+    r = c.post("/api/settings", data={"ui": "plan", "memory_limit": "custom", "memory_gb": "6"})
+    assert r.text.startswith('<div class="plan" id="plan"') and "resource-card" not in r.text
+    assert ctx.store.app()["memory_gb"] == 6
+
+
 def test_engine_reads_changes_live(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Changes save immediately (§11): the settings file is written at once."""
     ctx = harness.build_ctx(tmp_path, PORT, monkeypatch)

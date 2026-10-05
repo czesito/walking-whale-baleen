@@ -91,6 +91,14 @@ def until(page: Any, js: str, timeout: float = 10.0) -> None:
         time.sleep(0.05)
 
 
+def wait_for(predicate: Any, timeout: float = 10.0) -> None:
+    deadline = time.monotonic() + timeout
+    while not predicate():
+        if time.monotonic() > deadline:
+            raise TimeoutError("condition not met")
+        time.sleep(0.05)
+
+
 def settle(page: Any, ms: int = 250) -> None:
     page.wait_for_timeout(ms)
 
@@ -164,30 +172,37 @@ def test_w16_settings(w: World) -> None:
 
 def test_w23_settings_custom(w: World) -> None:
     page = w.page
+    app = w.h.ctx.store.app
     page.click("#res-processor_use-custom")
+    wait_for(lambda: app()["processor_use"] == "custom")
     page.wait_for_selector("#res-processor_cores-up")
     page.click("#res-processor_cores-up")
-    until(page, "document.querySelector('.meter-lbl').textContent === 'Uses 5 of 8 cores'")
-    page.click("#res-processor_cores-up")
+    page.click("#res-processor_cores-up")  # quick presses both count
+    wait_for(lambda: app()["processor_cores"] == 6)
     until(page, "document.querySelector('.meter-lbl').textContent === 'Uses 6 of 8 cores'")
     page.click("#res-memory_limit-custom")
+    wait_for(lambda: app()["memory_limit"] == "custom")
     page.wait_for_selector("#res-memory")
-    page.fill("#res-memory", "6")
-    page.dispatch_event("#res-memory", "change")
+    page.focus("#res-memory")  # the slider moves ±1 GB with the arrow keys (design §06)
+    page.keyboard.press("ArrowRight")
+    page.keyboard.press("ArrowRight")
+    wait_for(lambda: app()["memory_gb"] == 6)
+    assert page.evaluate("document.activeElement.id") == "res-memory"
     until(page, "document.getElementById('res-memory-lbl').textContent === '6 GB'")
     page.click("#res-transfer_slots-custom")
+    wait_for(lambda: app()["transfer_slots"] == "custom")
     page.wait_for_selector("#res-transfer_count-down")
-    for expected in (3, 2):
+    for n in (3, 2):
         page.click("#res-transfer_count-down")
-        until(page, f"document.querySelectorAll('.stepper output')[1].textContent === '{expected}'")
-    settle(page)
+        wait_for(lambda n=n: app()["transfer_count"] == n)
+    until(page, "document.getElementById('plan').textContent.includes('Up to 6 GB')")
+    until(page, "document.getElementById('plan').textContent.includes('2 file transfers')")
     text = page.locator("#plan").inner_text()
-    assert "6 file tasks at once" in text and "3 document converters" in text and "2 file transfers" in text
-    assert "Up to 6 GB" in text
+    assert "6 file tasks at once" in text and "3 document converters" in text
     shot(w, "W-23-settings-custom", "settings-custom")
     page.click("#res-defaults")
+    wait_for(lambda: app()["processor_use"] == "balanced" and app()["memory_limit"] == "auto")
     until(page, "document.querySelector('.meter-lbl').textContent === 'Uses 4 of 8 cores'")
-    assert w.h.ctx.store.app()["processor_use"] == "balanced"
 
 
 def test_w17_about(w: World) -> None:
@@ -233,6 +248,7 @@ def test_w03_preview_ready(w: World) -> None:
     settle(page)
     stats = page.locator(".stats").inner_text()
     assert "1,670" in stats
+    until(page, "document.getElementById('live').textContent.startsWith('Preview ready: 1,670 files')")
     assert page.get_by_text("Renamed to avoid clashes").is_visible()
     bar = page.locator("#actionbar .status").inner_text()
     assert re.match(r"1,670 files · [\d,]+ to convert · preview up to date", bar)
@@ -338,6 +354,19 @@ def test_w08_completed(w: World) -> None:
     assert page.title() in ("✓ Done · Convert · Baleen", "Run · Baleen")
     page.locator("#scroll").evaluate("el => el.scrollTop = 0")
     shot(w, "W-08-run-done", "run-done")
+    # Actions (UI-R3): Open output folder, Download report, more (copy run ID, reveal report).
+    page.click("#run-open-output")
+    page.wait_for_selector("#toast.show")
+    assert page.locator("#toast").inner_text().startswith("Opened in ")
+    assert harness.REVEALED[-1] == str(w.out)
+    page.click("#run-more")
+    assert page.locator("#run-menu").is_visible()
+    assert page.evaluate("document.activeElement.id") == "menu-copy-id"
+    page.keyboard.press("ArrowDown")
+    assert page.evaluate("document.activeElement.id") == "menu-reveal-report"
+    page.keyboard.press("Escape")
+    assert not page.locator("#run-menu").is_visible()
+    assert page.evaluate("document.activeElement.id") == "run-more"
 
 
 def test_w08b_filtered(w: World) -> None:

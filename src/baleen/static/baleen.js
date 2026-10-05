@@ -89,9 +89,10 @@
   var lastFocus = null;
   function overlayOpen() { var o = $("overlay"); return !!(o && o.classList.contains("open")); }
   function focusables(root) {
+    /* a[href], not [href]: the icons' <use href> must not count as stops. */
     return Array.prototype.filter.call(
-      root.querySelectorAll("button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])"),
-      function (el) { return !el.disabled && el.offsetParent !== null; });
+      root.querySelectorAll("a[href], button, input, select, textarea, [tabindex]:not([tabindex='-1'])"),
+      function (el) { return el instanceof HTMLElement && !el.disabled && el.offsetParent !== null; });
   }
   function openModal(opener) {
     var m = $("modal");
@@ -290,6 +291,32 @@
     }
     checkJob();
   }
+  /* Keep keyboard focus when a swap replaces the focused element: htmx restores it by id when it
+     can; otherwise focus the same id if it came back, else the swapped region, else the marked
+     fallback (the results headline). */
+  var focusMemo = null;
+  var FOCUSABLE = "a[href], button, input, select, textarea, [tabindex]";
+  function rememberFocus(e) {
+    var a = document.activeElement;
+    focusMemo = (a && a !== body) ? { id: a.id || "", target: e.detail && e.detail.target } : null;
+  }
+  function restoreFocus() {
+    if (!focusMemo) return;
+    var m = focusMemo;
+    focusMemo = null;
+    var a = document.activeElement;
+    if (a && a !== body && document.contains(a)) return;
+    var el = m.id ? $(m.id) : null;
+    if (!el || el.disabled || el.offsetParent === null) {
+      el = null;
+      if (m.target && m.target.id && $(m.target.id)) el = $(m.target.id);
+      if (!el) el = document.querySelector("[data-focus-fallback]");
+    }
+    if (!el) return;
+    if (!el.matches(FOCUSABLE)) el.setAttribute("tabindex", "-1");
+    el.focus({ preventScroll: true });
+  }
+
   var refreshTimer = 0;
   function scheduleRefresh() {
     window.clearTimeout(refreshTimer);
@@ -436,9 +463,11 @@
 
   window.addEventListener("resize", function () { if (store("baleen.rail") === null) applyRail(); });
 
+  body.addEventListener("htmx:beforeSwap", rememberFocus);
   body.addEventListener("htmx:afterSettle", function (e) {
     if (e.detail && e.detail.target && e.detail.target.id === "inspector") openInspector();
     refresh();
+    restoreFocus();
   });
   body.addEventListener("htmx:oobAfterSwap", scheduleRefresh);
   body.addEventListener("htmx:afterRequest", function (e) {
@@ -453,18 +482,19 @@
     if (status === 0 || status >= 500) failed(isPoll(e.detail.elt));
   });
 
-  /* Server-sent events (HX-Trigger response headers). */
+  /* Server-sent events (HX-Trigger response headers). htmx hands an object value over as the event
+     detail itself, and wraps a plain value as detail.value. */
   body.addEventListener("baleen:toast", function (e) { toast(e.detail && e.detail.value); });
   body.addEventListener("baleen:modal-open", function () { openModal(document.activeElement); });
   body.addEventListener("baleen:modal-close", function () { closeModal(); });
   body.addEventListener("baleen:poll-now", function () { pollNow(); });
   body.addEventListener("baleen:set-value", function (e) {
-    var v = e.detail && e.detail.value;
-    var input = v ? $(v.id) : null;
+    var v = e.detail || {};
+    var input = v.id ? $(v.id) : null;
     if (input) input.value = v.value;
   });
   body.addEventListener("baleen:prefs", function (e) {
-    var v = (e.detail && e.detail.value) || {};
+    var v = e.detail || {};
     body.setAttribute("data-notify", v.notify ? "true" : "false");
     body.setAttribute("data-progress-title", v.title ? "true" : "false");
     updateTitle();
