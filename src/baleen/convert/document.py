@@ -434,7 +434,7 @@ class DocumentRoute(Route):
         try:
             sn = sniff_ref(src)
         except OSError as e:
-            return Probe(Category.DOCUMENT, ".pdf", Action.CONVERT, GENERIC_FORMAT.get(ext, ""), method=method,
+            return Probe(Category.DOCUMENT, ".pdf", Action.CONVERT, GENERIC_FORMAT.get(ext, ""),
                          reasons=["SOURCE_UNREADABLE"], message=f"Can't read the source: {e.strerror or e}",
                          route=self.key, final=True)
         pr = Probe(Category.DOCUMENT, ".pdf", Action.CONVERT, sn.source_format, method=method, route=self.key,
@@ -442,10 +442,10 @@ class DocumentRoute(Route):
         if ctx.mode != Mode.CONVERT:
             return pr
         if sn.empty:
-            pr.reasons = ["SOURCE_UNREADABLE"]
+            pr.reasons, pr.method = ["SOURCE_UNREADABLE"], ""
             pr.message = "The file is empty (0 bytes)."
         elif sn.encryption == ENC_PASSWORD:
-            pr.reasons = ["PASSWORD_PROTECTED"]
+            pr.reasons, pr.method = ["PASSWORD_PROTECTED"], ""
             pr.message = "The document is encrypted and needs a password to open."
         return pr
 

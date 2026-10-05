@@ -701,25 +701,25 @@ class EmailRoute(Route):
         try:
             msg = parse(_read_ref(src))
         except OSError as e:
-            pr.reasons, pr.final = ["SOURCE_UNREADABLE"], True
+            pr.reasons, pr.final, pr.method = ["SOURCE_UNREADABLE"], True, ""
             pr.message = f"Can't read the source: {e.strerror or e}"
             return pr
         except Unparseable as e:
-            pr.reasons, pr.final = ["CONVERSION_ERROR"], True
+            pr.reasons, pr.final, pr.method = ["CONVERSION_ERROR"], True, ""
             pr.message = f"This isn't an e-mail Baleen can read: {e}"
             return pr
         pr.source_format = source_format(msg)
         try:
             an = analyse(msg)
         except Exception as e:
-            pr.reasons, pr.final = ["CONVERSION_ERROR"], True
+            pr.reasons, pr.final, pr.method = ["CONVERSION_ERROR"], True, ""
             pr.message = f"Couldn't read the e-mail's structure: {e.__class__.__name__}: {e}"
             return pr
         n = len(an.attachments)
         pol = ctx.workflow.get("eml_attachments", "extract")
         pr.data = {"attachments": n}
         if n and pol == "block":
-            pr.reasons = ["EML_ATTACHMENTS_BLOCKED"]
+            pr.reasons, pr.method = ["EML_ATTACHMENTS_BLOCKED"], ""
             pr.message = (f"This e-mail has {n} attachment{'s' if n != 1 else ''}; "
                           "E-mail attachments is set to Block, so nothing was written.")
             return pr
