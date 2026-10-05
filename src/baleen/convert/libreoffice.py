@@ -32,8 +32,10 @@ instead of prompting.
 from __future__ import annotations
 
 import contextlib
+import html
 import itertools
 import os
+import re
 import shutil
 import sys
 import threading
@@ -194,38 +196,59 @@ def _settings_ok(xcu: Path) -> bool:
     return all(have.get((p, n)) == v for p, n, v in PROFILE_SETTINGS)
 
 
+XCU_HEADER = ('<?xml version="1.0" encoding="UTF-8"?>\n'
+              f'<oor:items xmlns:oor="{_OOR}" xmlns:xs="{_XS}" xmlns:xsi="{_XSI}">\n')
+XCU_FOOTER = "</oor:items>\n"
+_ITEM_LINE = re.compile(r'^<item oor:path="([^"]*)"><prop oor:name="([^"]*)"[^>]*>(?:(?!<prop ).)*</prop></item>\s*$')
+
+
+def _attr(s: str) -> str:
+    return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
+
+
+def _our_lines() -> list[str]:
+    return [f'<item oor:path="{_attr(p)}"><prop oor:name="{_attr(n)}" oor:op="fuse"><value>{_attr(v)}</value>'
+            "</prop></item>" for p, n, v in PROFILE_SETTINGS]
+
+
 def write_settings(profile: Path) -> None:
-    """Merge PROFILE_SETTINGS into the profile's registrymodifications.xcu (atomic write)."""
+    """Merge PROFILE_SETTINGS into the profile's registrymodifications.xcu (atomic write).
+
+    The file is edited as text in LibreOffice's own layout (one <item> per line): our items
+    replace any earlier ones and go last. It is never re-serialised by an XML library, because
+    LibreOffice rejects the whole file when a namespace it uses only inside attribute values
+    (oor:type="xs:string") loses its declaration, and then silently runs without our settings.
+    """
     xcu = _xcu_path(profile)
     if _settings_ok(xcu):
         return
-    ET.register_namespace("oor", _OOR)
-    ET.register_namespace("xs", _XS)
-    ET.register_namespace("xsi", _XSI)
     ours = {(p, n) for p, n, _ in PROFILE_SETTINGS}
-    root: ET.Element | None = None
     try:
-        root = ET.parse(long_path(xcu)).getroot()  # noqa: S314
-    except (OSError, ET.ParseError):
-        root = None
-    if root is None or root.tag != f"{{{_OOR}}}items":
-        root = ET.Element(f"{{{_OOR}}}items")
-    for item in list(root):
-        path = item.get(f"{{{_OOR}}}path") or ""
-        for prop in list(item):
-            if (path, prop.get(f"{{{_OOR}}}name") or "") in ours:
-                item.remove(prop)
-        if len(item) == 0:
-            root.remove(item)
-    for p, n, v in PROFILE_SETTINGS:
-        item = ET.SubElement(root, "item", {f"{{{_OOR}}}path": p})
-        prop = ET.SubElement(item, "prop", {f"{{{_OOR}}}name": n, f"{{{_OOR}}}op": "fuse"})
-        ET.SubElement(prop, "value").text = v
+        with open(long_path(xcu), encoding="utf-8") as f:
+            text = f.read()
+    except (OSError, UnicodeDecodeError):
+        text = ""
+    lines = text.splitlines()
+    close = max((i for i, ln in enumerate(lines) if ln.strip() == "</oor:items>"), default=-1)
+    candidate = ""
+    if close > 0 and any("<oor:items" in ln for ln in lines[:close]):
+        kept = []
+        for ln in lines[:close]:
+            m = _ITEM_LINE.match(ln.strip())
+            if m and (html.unescape(m.group(1)), html.unescape(m.group(2))) in ours:
+                continue
+            kept.append(ln)
+        candidate = "\n".join([*kept, *_our_lines(), *lines[close:]]) + "\n"
+        try:
+            ET.fromstring(candidate.encode("utf-8"))  # noqa: S314 - sanity check of our own edit
+        except ET.ParseError:
+            candidate = ""
+    if not candidate:
+        candidate = XCU_HEADER + "\n".join(_our_lines()) + "\n" + XCU_FOOTER
     xcu.parent.mkdir(parents=True, exist_ok=True)
     tmp = xcu.with_name(xcu.name + ".baleen-tmp")
-    data = ET.tostring(root, encoding="UTF-8", xml_declaration=True)
-    with open(long_path(tmp), "wb") as f:
-        f.write(data)
+    with open(long_path(tmp), "w", encoding="utf-8", newline="\n") as f:
+        f.write(candidate)
     os.replace(long_path(tmp), long_path(xcu))
 
 

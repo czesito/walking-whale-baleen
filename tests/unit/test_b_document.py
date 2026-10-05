@@ -262,3 +262,13 @@ def test_finish_maps_failed_excel_encryption_to_password_protected(tmp_path) -> 
         job = LoJob("in.xlsx", str(tmp_path), "calc_pdf_Export", "2b")
         D.DocumentRoute().finish(None, w, LoResult(job, False, None, "CONVERSION_ERROR", "no output"))  # type: ignore[arg-type]
         assert w.reasons == [expect] and w.done
+
+
+def test_html_content_is_routed_to_the_html_route() -> None:
+    """HTML saved as .doc/.xls goes through §6.4 sanitising (a remote <link> would otherwise be fetched)."""
+    page = b'<html><head><meta charset="utf-8"><link rel="stylesheet" href="http://x.invalid/a.css"></head>' \
+           b"<body><table><tr><td>1</td></tr></table></body></html>"
+    p = probe(page, ".xls")
+    assert p.route == "html" and "CONTENT_MISMATCH" in p.notes and p.reasons == []
+    p = probe(page, ".doc", Mode.CHECK)
+    assert p.route == "html" and "CONTENT_MISMATCH" in p.notes

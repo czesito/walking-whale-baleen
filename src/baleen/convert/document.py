@@ -437,6 +437,20 @@ class DocumentRoute(Route):
             return Probe(Category.DOCUMENT, ".pdf", Action.CONVERT, GENERIC_FORMAT.get(ext, ""),
                          reasons=["SOURCE_UNREADABLE"], message=f"Can't read the source: {e.strerror or e}",
                          route=self.key, final=True)
+        if sn.source_format == "HTML":
+            # An HTML page saved with a document extension (web-app "Excel" exports, Word "web
+            # pages"). LibreOffice would import it as is and fetch remote stylesheets, which no
+            # profile setting blocks (measured, R-05). Route it by content to the HTML route, which
+            # applies §6.4 (charset, sanitising, local images), and note the mismatch (§6.1 practice).
+            from .base import get_route
+            from .formats import MissingRoute
+
+            html_route = get_route("html")
+            if not isinstance(html_route, MissingRoute):
+                hp = html_route.probe(ctx, src)
+                if "CONTENT_MISMATCH" not in hp.notes:
+                    hp.notes = [*hp.notes, "CONTENT_MISMATCH"]
+                return hp
         pr = Probe(Category.DOCUMENT, ".pdf", Action.CONVERT, sn.source_format, method=method, route=self.key,
                    data={"infilter": sn.infilter, "encryption": sn.encryption})
         if ctx.mode != Mode.CONVERT:

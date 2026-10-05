@@ -214,7 +214,13 @@ def test_write_settings_merges_and_repairs(tmp_path: Path) -> None:
                    '<value>colibre</value></prop></item>\n'
                    '<item oor:path="/org.openoffice.Office.Common/Security/Scripting"><prop '
                    'oor:name="BlockUntrustedRefererLinks" oor:op="fuse"><value>false</value></prop></item>\n'
+                   '<item oor:path="/org.openoffice.Office.Views/Windows"><node oor:name="SplitWindow0" '
+                   'oor:op="replace"><prop oor:name="Visible" oor:op="fuse"><value xsi:nil="true"/></prop>'
+                   '<node oor:name="UserData">'
+                   '<prop oor:name="UserItem" oor:op="fuse" oor:type="xs:string"><value>V1,2,0</value></prop></node>'
+                   "</node></item>\n"
                    "</oor:items>\n", encoding="utf-8")
+    lines_before = xcu.read_text(encoding="utf-8").splitlines()
     assert not lo._settings_ok(xcu)
     lo.write_settings(prof)
     assert lo._settings_ok(xcu)
@@ -222,9 +228,28 @@ def test_write_settings_merges_and_repairs(tmp_path: Path) -> None:
     text = ET.tostring(root, encoding="unicode")
     assert "colibre" in text, "other settings are kept"
     assert text.count("BlockUntrustedRefererLinks") == 1
+    # LibreOffice's own lines are kept byte for byte, and the xs/xsi declarations survive: values
+    # such as oor:type="xs:string" need them, or LibreOffice ignores the whole file.
+    after = xcu.read_text(encoding="utf-8")
+    assert after.startswith('<?xml version="1.0" encoding="UTF-8"?>') and 'xmlns:xs="' in after
+    for ln in lines_before:
+        if "BlockUntrustedRefererLinks" not in ln:
+            assert ln in after.splitlines()
     before = xcu.read_bytes()
     lo.write_settings(prof)
     assert xcu.read_bytes() == before, "idempotent"
+
+
+def test_write_settings_fresh_and_unreadable(tmp_path: Path) -> None:
+    for i, content in enumerate((None, "not xml at all", '<?xml version="1.0"?><oor:items xmlns:oor="x">')):
+        prof = tmp_path / f"p{i}"
+        if content is not None:
+            (prof / "user").mkdir(parents=True)
+            (prof / "user" / "registrymodifications.xcu").write_text(content, encoding="utf-8")
+        lo.write_settings(prof)
+        text = (prof / "user" / "registrymodifications.xcu").read_text(encoding="utf-8")
+        assert text.startswith(lo.XCU_HEADER) and text.endswith(lo.XCU_FOOTER)
+        assert lo._settings_ok(prof / "user" / "registrymodifications.xcu")
 
 
 def test_profile_pool_lock_across_pools(tmp_path: Path) -> None:
