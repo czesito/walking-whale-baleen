@@ -1,0 +1,9 @@
+{# Notice (design §06): info · ok · warn · alert, for page-level states only. The body comes
+   from a call block; `actions` is ready-made markup. #}
+{% from "partials/icon.html" import icon %}
+{% macro notice(kind, title=None, icon_name=None, actions=None, id=None, extra_class='') -%}
+<div class="notice {{ kind }}{% if extra_class %} {{ extra_class }}{% endif %}"{% if id %} id="{{ id }}"{% endif %}>
+{{- icon(icon_name or {'info': 'info', 'ok': 'st-ok', 'warn': 'st-review', 'alert': 'st-failed'}[kind]) -}}
+<div class="n-body">{% if title %}<div class="n-title">{{ title }}</div>{% endif %}{{ caller() if caller else '' }}</div>
+{%- if actions %}<div class="n-actions">{{ actions }}</div>{% endif %}</div>
+{%- endmacro %}

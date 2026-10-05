@@ -1,0 +1,6 @@
+{# When a run finishes (UI-S1, §11): desktop notification (opt-in, permission asked on enable)
+   and progress in the browser tab (UI-G2). #}
+<section class="card" id="prefs-card"><div class="card-head"><span class="card-title">When a run finishes</span></div>
+<div class="kvrow"><div><div class="label">Show a desktop notification</div><div class="help">Your browser asks for permission the first time.</div></div><button type="button" class="switch" role="switch" id="pref-notify" aria-label="Show a desktop notification" aria-checked="{{ 'true' if prefs.notify_on_finish else 'false' }}" data-pref="notify" hx-post="/api/settings" hx-vals='{{ {"ui": "prefs", "notify_on_finish": ("false" if prefs.notify_on_finish else "true")}|tojson }}' hx-target="#prefs-card" hx-swap="outerHTML"></button></div>
+<div class="kvrow"><div><div class="label">Show progress in the browser tab</div><div class="help">For example “48% · Convert · Baleen”.</div></div><button type="button" class="switch" role="switch" id="pref-title" aria-label="Show progress in the browser tab" aria-checked="{{ 'true' if prefs.progress_in_title else 'false' }}" data-pref="title" hx-post="/api/settings" hx-vals='{{ {"ui": "prefs", "progress_in_title": ("false" if prefs.progress_in_title else "true")}|tojson }}' hx-target="#prefs-card" hx-swap="outerHTML"></button></div>
+</section>

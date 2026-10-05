@@ -1,0 +1,17 @@
+{# Progress (UI-R2): "812 of 1,670 files", percentage, bar and elapsed time; In progress (n). #}
+{% from "partials/icon.html" import icon %}
+{% from "partials/path_cell.html" import path_cell %}
+<div id="live-progress" class="live"{% if oob %} hx-swap-oob="true"{% endif %} data-state="{{ live.state }}" data-pct="{{ live.pct }}" data-done="{{ live.done }}" data-total="{{ live.total }}">
+{% if live.state == 'preparing' %}
+<div class="live-now">{{ icon('spinner', 'spin') }}<span>{{ live.prepare_note }} · {{ num(live.scanned) }} files so far</span></div>
+<div class="progress indet" role="progressbar" aria-label="Run progress"><i></i></div>
+{% else %}
+<div class="live-top"><span class="live-big num">{{ num(live.done) }} <small>of {{ num(live.total) }} files</small></span><span class="live-pct">{{ live.pct }}%</span><span class="live-el">{{ icon('clock', 'sm') }}Elapsed {{ live.elapsed }}</span></div>
+<div class="progress" id="live-bar" role="progressbar" aria-label="Run progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ live.pct }}"><i id="live-bar-fill" class="{{ pct_class(live.pct) }}"></i></div>
+{% if live.cancel_requested %}<div class="live-now">{{ icon('spinner', 'spin') }}<span>Stopping after {{ num(live.in_flight) }} file{{ '' if live.in_flight == 1 else 's' }} in progress…</span></div>
+{% elif live.state == 'finishing' %}<div class="live-now">{{ icon('spinner', 'spin') }}<span>Writing the report…</span></div>{% endif %}
+{% if live.in_progress %}<div><div class="kicker kick-inprog">In progress ({{ num(live.in_progress_count) }})</div><ul class="inprog">
+{%- for x in live.in_progress %}<li>{{ icon('cat-' ~ x.category) }}{{ path_cell(x.path) }}<span class="code">{{ x.action }}</span></li>{% endfor -%}
+</ul></div>{% endif %}
+{% endif %}
+</div>

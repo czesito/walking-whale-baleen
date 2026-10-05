@@ -8,11 +8,12 @@ archival record; a missing journal is rebuilt from the CSV.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import sqlite3
 import threading
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
 from datetime import UTC, datetime
 from typing import Any
 
@@ -94,10 +95,17 @@ class Journal:
             self._conn = conn
         return self._conn
 
-    def _read(self) -> sqlite3.Connection:
+    @contextlib.contextmanager
+    def _read(self) -> Iterator[sqlite3.Connection]:
+        """A short-lived reader, closed on exit. `with sqlite3.connect()` alone never closes, and a
+        connection sits in a reference cycle (its statement cache), so it would keep the journal
+        open (locked on Windows) until the next garbage collection."""
         conn = sqlite3.connect(self.path, timeout=30)
         conn.row_factory = sqlite3.Row
-        return conn
+        try:
+            yield conn
+        finally:
+            conn.close()
 
     def close(self) -> None:
         with self._lock:

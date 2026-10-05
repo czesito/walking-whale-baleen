@@ -1,0 +1,6 @@
+{# Latest (UI-R2): the last 6 finished items stand in for the table while the run is going. #}
+{% from "partials/badge.html" import badge %}
+{% from "partials/path_cell.html" import path_cell %}
+<ul class="activity" id="latest-list"{% if oob %} hx-swap-oob="true"{% endif %}>
+{%- for r in latest %}<li>{{ badge(status_key(r.status)) }}{{ path_cell(r.source_path) }}<span class="faint act">{{ r.action }}</span></li>{% endfor -%}
+</ul>

@@ -1,0 +1,9 @@
+{# Status pill (UI-R1): Running / Completed / Completed · n to look at / Cancelled / Stopped. #}
+{% from "partials/badge.html" import badge %}
+<span id="run-pill" class="pill-wrap"{% if oob %} hx-swap-oob="true"{% endif %}>
+{%- if run.live %}{{ badge('running', lg=True) }}
+{%- elif run.state == 'cancelled' %}{{ badge('skipped', lg=True, label='Cancelled') }}
+{%- elif run.state == 'stopped' %}{{ badge('failed', lg=True, label='Stopped') }}
+{%- elif run.issues %}{{ badge('review', lg=True, label='Completed · ' ~ num(run.issues) ~ ' to look at') }}
+{%- else %}{{ badge('ok', lg=True, label='Completed') }}{% endif -%}
+</span>

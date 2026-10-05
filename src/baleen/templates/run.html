@@ -1,0 +1,15 @@
+{# Run page (UI-R1…R8, D-03): one page per run, live progress first, then the results. The
+   progress poll swaps in the results when the run reaches a final state. #}
+{% extends "base.html" %}
+{% from "partials/icon.html" import icon %}
+{% block page %}
+<div class="crumb"><a href="/runs">Runs</a>{{ icon('chev-r', 'xs') }}<span class="mono">{{ run.id }}</span></div>
+<div class="page-head"><div class="ph-main"><div class="kicker">Run · {{ run.name }}</div><h1 class="page-title">{{ run.name }} run {% include "_run_pill.html" %}</h1><div class="rule"></div>
+{% include "_run_meta.html" %}</div>
+{% include "_run_actions.html" %}</div>
+<div id="run-body">{% if run.live %}{% include "_live.html" %}{% else %}{% include "_results.html" %}{% endif %}</div>
+{% endblock %}
+{% block templates %}
+<template id="tpl-cancel"><h2 id="mTitle">Cancel this run?</h2><p>Baleen starts nothing new and finishes the files in progress, then stops. Everything finished so far stays saved and verified. Start the same run again later to finish; completed files are skipped.</p>
+<div class="m-foot"><button type="button" class="btn secondary" id="cancel-keep" data-act="closemodal" data-autofocus>Keep running</button><button type="button" class="btn primary" id="cancel-confirm" hx-post="/api/job/cancel" hx-vals='{{ {"run": run.id}|tojson }}' hx-swap="none">Cancel run</button></div></template>
+{% endblock %}

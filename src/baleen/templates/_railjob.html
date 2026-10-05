@@ -1,0 +1,8 @@
+{# Running-job card (UI-G2, D-16): workflow and percentage on every page, linking to the run.
+   Polled every 2 s through GET /job while a job runs (not on that run's own page, whose progress
+   poll updates it). data-* feed the tab title and the finish notification in baleen.js. #}
+{% from "partials/icon.html" import icon %}
+<div id="railjob"{% if rj.poll %} hx-get="/job" hx-trigger="baleen:poll" hx-swap="outerHTML" data-poll="2000" hx-request='{"timeout":8000}'{% endif %}{% if oob %} hx-swap-oob="true"{% endif %}
+ data-state="{{ rj.state }}" data-run="{{ rj.id }}" data-pct="{{ rj.pct }}" data-wf="{{ rj.wf_name }}" data-url="{{ rj.url }}" data-finish="{{ rj.finish_text }}">
+{%- if rj.running %}<a class="rail-job" href="{{ rj.url }}" aria-label="View running job"><div class="row"><svg class="ic sm spin" aria-hidden="true"><use href="#i-spinner"/></svg><span class="txt">{{ rj.label }}</span><span class="pct">{{ rj.pct }}%</span></div><div class="progress"><i class="{{ pct_class(rj.pct) }}"></i></div></a>{% endif -%}
+</div>

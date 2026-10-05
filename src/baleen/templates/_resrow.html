@@ -1,0 +1,7 @@
+{# Processor use on the run page (UI-R2, D-23): Gentle / Balanced / Maximum or the current Custom
+   value, the resolved budgets in words, and a link to Resource settings. A change saves at once
+   and applies to new tasks; a toast confirms. #}
+<div class="res-row" id="res-row"{% if oob %} hx-swap-oob="true"{% endif %}><span>Processor use</span><select class="select" id="run-processor" name="processor_use" aria-label="Processor use" hx-post="/api/settings" hx-trigger="change" hx-vals='{{ {"ui": "runres:" ~ run.id}|tojson }}' hx-target="#res-row" hx-swap="outerHTML">
+{%- for v, l in (('gentle', 'Gentle'), ('balanced', 'Balanced'), ('maximum', 'Maximum')) %}<option value="{{ v }}"{% if res.choice == v %} selected{% endif %}>{{ l }}</option>{% endfor -%}
+{%- if res.choice == 'custom' %}<option value="custom" selected>Custom ({{ res.cores }})</option>{% endif -%}
+</select><span>Using <b>{{ res.B }} of {{ res.machine_cores }}</b> cores · up to <b>{{ res.M }} GB</b> memory · <b>{{ res.T }}</b> transfer{{ '' if res.T == 1 else 's' }}</span><a href="/settings" class="res-link">Resource settings</a></div>

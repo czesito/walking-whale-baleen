@@ -1,0 +1,35 @@
+{# Preview card (UI-C4, W-03, W-04): scans and plans without writing anything. While it runs, an
+   indeterminate bar and a running file count (polled); then counts, category bars, clash renames
+   and plan-time problems. Changing folders or options afterwards marks it out of date. #}
+{% from "partials/icon.html" import icon %}
+{% from "partials/notice.html" import notice %}
+{% set pv = {"wf": wf.id} %}
+<section class="card" aria-labelledby="prvT" id="preview-card"{% if oob %} hx-swap-oob="true"{% endif %}
+{%- if prv.state == 'running' %} hx-post="/api/preview" hx-trigger="baleen:poll" data-poll="600" hx-vals='{{ {"wf": wf.id, "poll": "1"}|tojson }}' hx-swap="outerHTML" hx-request='{"timeout":8000}'{% endif %}
+ data-preview="{{ prv.state }}"{% if prv.announce %} data-announce="{{ prv.announce }}"{% endif %}>
+<div class="card-head"><span class="step">{{ steps.preview }}</span><span class="card-title" id="prvT">Preview</span><span class="card-sub">Scans and plans without writing anything.</span>
+{%- if prv.state in ('done', 'stale', 'error') %}<div class="right"><button type="button" class="btn ghost sm" id="prv-refresh" hx-post="/api/preview" hx-vals='{{ pv|tojson }}' hx-include="#folders-card" hx-target="#preview-card" hx-swap="outerHTML">{{ icon('reset') }}Refresh</button></div>{% endif %}</div>
+{% if prv.state == 'none' %}
+<div class="empty empty-tight"><div class="empty-ic">{{ icon('scan') }}</div><p class="empty-gap">{{ 'See what Baleen will do before anything is written.' if prv.ready else 'Choose both folders to preview.' }}</p>
+<button type="button" class="btn secondary" id="prv-run"{% if not prv.ready %} disabled{% endif %} hx-post="/api/preview" hx-vals='{{ pv|tojson }}' hx-include="#folders-card" hx-target="#preview-card" hx-swap="outerHTML">{{ icon('scan') }}Run preview</button></div>
+{% elif prv.state == 'running' %}
+<div class="prv-run"><div class="live-now">{{ icon('spinner', 'spin') }}<span>Scanning <span class="p">{{ prv.source }}</span> · {{ num(prv.scanned) }} files so far</span></div><div class="progress indet"><i></i></div></div>
+{% elif prv.state == 'error' %}
+{% call notice('alert', prv.error) %}{% endcall %}
+{% else %}
+{% set s = prv.summary %}{% set c = s.counts %}
+{% if prv.state == 'stale' %}{% set act %}<button type="button" class="btn secondary sm" id="prv-refresh2" hx-post="/api/preview" hx-vals='{{ pv|tojson }}' hx-include="#folders-card" hx-target="#preview-card" hx-swap="outerHTML">Refresh</button>{% endset %}
+{% call notice('warn', 'Preview is out of date', actions=act) %}Folders or options changed since the last preview.{% endcall %}
+{% endif %}
+<div class="stats"><div class="stat"><div class="s-label">Files found</div><div class="s-num">{{ num(c.files) }}</div></div><div class="stat"><div class="s-label">Convert</div><div class="s-num">{{ num(c.convert) }}</div></div><div class="stat"><div class="s-label">Copy (already archival)</div><div class="s-num">{{ num(c.copy) }}</div></div>
+<div class="stat"><div class="s-label">Unsupported</div><div class="s-num">{{ num(c.unsupported) }}</div></div><div class="stat"><div class="s-label">Ignored</div><div class="s-num">{{ num(c.ignored) }}</div></div></div>
+<div class="bars">{% for cat in s.categories %}<div class="bar-row"><span class="b-label">{{ icon('cat-' ~ cat.key) }}{{ CATEGORY_LABEL.get(cat.key, cat.key) }}</span><span class="bar"><i class="{{ pct_class(cat.pct) }}"></i></span><span class="b-num">{{ num(cat.n) }}</span></div>{% endfor %}</div>
+{% if s.renames_total %}<details class="disclose"><summary>{{ icon('chev-r', 'chev') }}Renamed to avoid clashes <span class="code">{{ num(s.renames_total) }}</span></summary><ul class="maplist">
+{%- for r in s.renames %}<li><span title="{{ r.source }}">{{ r.source }}</span>{{ icon('arrow-r', 'sm') }}<span>{{ r.output }}</span></li>{% endfor -%}
+{%- if s.renames_total > s.renames|length %}<li class="more">and {{ num(s.renames_total - s.renames|length) }} more</li>{% endif %}</ul></details>{% endif %}
+{% if s.problems_total or s.unsupported_total %}<details class="disclose"><summary>{{ icon('chev-r', 'chev') }}Known before starting <span class="code">{{ prv.known_chip }}</span></summary><ul class="maplist">
+{%- for p in s.problems %}<li><span title="{{ p.source }}">{{ p.source }}</span>{{ icon('arrow-r', 'sm') }}<span>{{ reason_label(p.reasons[0]) }}</span></li>{% endfor -%}
+{%- for u in s.unsupported %}<li><span title="{{ u }}">{{ u }}</span>{{ icon('arrow-r', 'sm') }}<span>Unsupported format</span></li>{% endfor -%}
+{%- set more = s.problems_total + s.unsupported_total - s.problems|length - s.unsupported|length %}{% if more > 0 %}<li class="more">and {{ num(more) }} more</li>{% endif %}</ul></details>{% endif %}
+{% endif %}
+</section>

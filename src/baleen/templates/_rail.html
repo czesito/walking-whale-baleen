@@ -1,0 +1,25 @@
+{# Rail (UI-G1, D-01): Workflows from the registry, History, System; running-job card, Collapse
+   and Quit at the bottom. The active item has aria-current="page". #}
+{% from "partials/icon.html" import icon %}
+{% macro item(href, icn, label, is_active, extra='', id='') -%}
+<a class="rail-item{% if is_active %} active{% endif %}" href="{{ href }}" data-tip="{{ label }}"{% if id %} id="{{ id }}"{% endif %}{% if is_active %} aria-current="page"{% endif %}>{{ icon(icn) }}<span class="lbl">{{ label }}</span>{{ extra }}</a>
+{%- endmacro %}
+<div class="rail-brand" aria-label="Baleen"><span class="wordmark">Baleen</span><span class="wm-short" aria-hidden="true">B</span><span class="rail-ver">v{{ version_short }}</span></div>
+<div class="rail-group"><div class="rail-label">Workflows</div>
+{% for w in workflows %}{{ item(w.route, w.icon, w.name, active == w.id, id='rail-' ~ w.id) }}
+{% endfor %}</div>
+<div class="rail-group"><div class="rail-label">History</div>
+{% set count %}<span class="count">{{ num(runs_count) }}</span>{% endset %}
+{{ item('/runs', 'runs', 'Runs', active == 'runs', count, id='rail-runs') }}
+</div>
+<div class="rail-group"><div class="rail-label">System</div>
+{% set dot %}{% include "_tools_dot.html" %}{% endset %}
+{{ item('/tools', 'tools', 'Tools', active == 'tools', dot, id='rail-tools') }}
+{{ item('/settings', 'settings', 'Settings', active == 'settings', id='rail-settings') }}
+{{ item('/about', 'about', 'About', active == 'about', id='rail-about') }}
+</div>
+<div class="rail-foot">
+{% include "_railjob.html" %}
+<button type="button" class="rail-item" id="rail-collapse" data-act="collapse" data-tip="Collapse" aria-label="Collapse sidebar">{{ icon('collapse') }}<span class="lbl">Collapse</span></button>
+<button type="button" class="rail-item" id="rail-quit" data-act="quit" data-tip="Quit Baleen">{{ icon('quit') }}<span class="lbl">Quit Baleen</span></button>
+</div>

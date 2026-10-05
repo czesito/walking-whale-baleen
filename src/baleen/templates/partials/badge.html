@@ -1,0 +1,7 @@
+{# Status badge (design §06, D-13): icon + label in a tinted pill; lg in page titles. #}
+{% from "partials/icon.html" import icon %}
+{% macro badge(key, lg=False, label=None) -%}
+<span class="badge {{ key }}{% if lg %} lg{% endif %}">
+{%- if key == 'running' %}<svg class="ic spin" aria-hidden="true"><use href="#i-spinner"/></svg>
+{%- else %}{{ icon('st-' ~ key) }}{% endif %}{{ label or KEY_LABEL[key] }}</span>
+{%- endmacro %}

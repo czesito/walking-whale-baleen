@@ -1,0 +1,22 @@
+{# Inspector (UI-R5, W-09, D-04): What happened · What to do · Action · Source · Output · Checks;
+   Reveal source, Reveal output, Copy row. Docks at ≥ 1440 px, overlays below (baleen.js). #}
+{% from "partials/icon.html" import icon %}
+{% from "partials/badge.html" import badge %}
+<div class="insp-head" id="insp-head" data-n="{{ r.n }}"><div class="top">{{ badge(key) }}<span class="faint fs-12">{{ r.category }}</span><button type="button" class="btn ghost icon sm" id="insp-close" data-act="closeinsp" aria-label="Close details (Esc)">{{ icon('close', 'sm') }}</button></div>
+<div class="insp-name">{{ i.name }}</div><div class="insp-dir">{{ i.dir }}</div></div>
+<div class="insp-body">
+{% if i.codes %}<div class="insp-sec"><h5>What happened</h5>{% for c in i.codes %}<div class="what">{% if c.label %}<b>{{ c.label }}</b>{% endif %}<span class="code">{{ c.code }}</span></div>{% endfor %}{% if r.message %}<div class="msgbox">{{ r.message }}</div>{% endif %}</div>
+{% if i.helps %}<div class="insp-sec"><h5>What to do</h5>{% for h in i.helps %}<div class="help-box{% if not loop.first %} help-next{% endif %}">{{ h }}</div>{% endfor %}</div>{% endif %}
+{% elif r.message %}<div class="insp-sec"><h5>Note</h5><div class="msgbox">{{ r.message }}</div></div>{% endif %}
+<div class="insp-sec"><h5>Action</h5><dl class="kv"><dt>Action</dt><dd>{{ r.action }}</dd><dt>Method</dt><dd>{{ r.method or '—' }}</dd></dl></div>
+<div class="insp-sec"><h5>Source</h5><dl class="kv"><dt>Path</dt><dd class="mono fs-12">{{ r.source_path }}</dd><dt>Size</dt><dd class="num">{{ size(r.source_size) }}</dd><dt>Modified</dt><dd>{{ local_stamp(r.source_mtime) }}</dd>
+<dt>SHA-256</dt><dd>{% if r.source_sha256 %}<span class="hash"><span>{{ r.source_sha256 }}</span><button type="button" class="btn ghost icon sm hash-copy" data-copy="{{ r.source_sha256 }}" data-toast="Hash copied" aria-label="Copy SHA-256">{{ icon('copy', 'xs') }}</button></span>{% else %}—{% endif %}</dd></dl></div>
+<div class="insp-sec"><h5>Output</h5>{% if r.output_path %}<dl class="kv"><dt>Path</dt><dd class="mono fs-12">{{ r.output_path }}</dd><dt>Size</dt><dd class="num">{{ size(r.output_size) }}</dd>
+<dt>SHA-256</dt><dd>{% if r.output_sha256 %}<span class="hash"><span>{{ r.output_sha256 }}</span><button type="button" class="btn ghost icon sm hash-copy" data-copy="{{ r.output_sha256 }}" data-toast="Hash copied" aria-label="Copy SHA-256">{{ icon('copy', 'xs') }}</button></span>{% else %}—{% endif %}</dd></dl>
+{%- else %}<p class="faint none-p">No output was written{{ ' (check only).' if r.action == 'check' else '.' }}</p>{% endif %}</div>
+<div class="insp-sec"><h5>Checks</h5>{% if i.checks %}<ul class="checks">{% for c in i.checks %}<li>{{ icon(c.icon, c.cls) }}<span class="cid">{{ c.id }}</span><span>{{ c.label }}{% if c.detail %} · <span class="faint">{{ c.detail }}</span>{% endif %}</span></li>{% endfor %}</ul>
+{%- else %}<p class="faint none-p">No checks ran for this file.</p>{% endif %}</div>
+</div>
+<div class="insp-foot">{% if i.can_reveal_source %}<button type="button" class="btn secondary sm" id="insp-reveal-src" hx-post="/api/open" hx-vals='{{ {"run": run.id, "n": r.n, "what": "source"}|tojson }}' hx-swap="none">{{ icon('external') }}Reveal source</button>{% endif %}
+{%- if r.output_path %}<button type="button" class="btn secondary sm" id="insp-reveal-out" hx-post="/api/open" hx-vals='{{ {"run": run.id, "n": r.n, "what": "output"}|tojson }}' hx-swap="none">{{ icon('external') }}Reveal output</button>{% endif -%}
+<button type="button" class="btn ghost sm" id="insp-copy-row" data-copy="{{ i.row_text }}" data-toast="Row copied">{{ icon('copy') }}Copy row</button></div>

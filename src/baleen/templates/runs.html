@@ -1,0 +1,9 @@
+{# Runs (UI-H1…H3, W-13, W-14): every run of every workflow, newest first, 100 kept. #}
+{% extends "base.html" %}
+{% from "partials/empty_state.html" import empty_state %}
+{% block page %}
+<div class="page-head"><div class="ph-main"><div class="kicker">History</div><h1 class="page-title">Runs</h1><div class="rule"></div>
+<p class="page-desc">Every run keeps its report. Convert reports live in the output folder; Check reports live in Baleen's data folder.</p></div></div>
+{% if not any_runs %}<section class="card">{{ empty_state('runs', 'No runs yet', 'Runs appear here when you start Convert or Check, and stay until you delete their reports.', workflows[0].route, 'Start with ' ~ workflows[0].name) }}</section>
+{% else %}{% include "_runs_table.html" %}{% endif %}
+{% endblock %}
