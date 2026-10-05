@@ -29,7 +29,10 @@
             }
           ],
           "archive": "tar.gz",
-          "install": {"rule": "python-install-only", "strip_prefix": "python/"}
+          "install": {
+            "rule": "python-install-only",
+            "strip_prefix": "python/"
+          }
         },
         "mac-arm64": {
           "version": "3.12.15",
@@ -44,7 +47,10 @@
             }
           ],
           "archive": "tar.gz",
-          "install": {"rule": "python-install-only", "strip_prefix": "python/"}
+          "install": {
+            "rule": "python-install-only",
+            "strip_prefix": "python/"
+          }
         },
         "mac-x64": {
           "version": "3.12.15",
@@ -59,28 +65,82 @@
             }
           ],
           "archive": "tar.gz",
-          "install": {"rule": "python-install-only", "strip_prefix": "python/"}
+          "install": {
+            "rule": "python-install-only",
+            "strip_prefix": "python/"
+          }
         }
       },
       "sources": [
-        {"what": "python-build-standalone build recipes", "url": "https://github.com/astral-sh/python-build-standalone/tree/20261003"},
-        {"what": "CPython 3.12.15", "url": "https://www.python.org/ftp/python/3.12.15/Python-3.12.15.tar.xz"}
+        {
+          "what": "python-build-standalone build recipes",
+          "url": "https://github.com/astral-sh/python-build-standalone/tree/20261003"
+        },
+        {
+          "what": "CPython 3.12.15",
+          "url": "https://www.python.org/ftp/python/3.12.15/Python-3.12.15.tar.xz"
+        }
       ]
     },
-
     "ffmpeg": {
-      "name": "FFmpeg + FFprobe (static GPL build with libx264)",
+      "name": "FFmpeg + FFprobe (built by Baleen from FFmpeg and x264 sources)",
       "dest": "ffmpeg",
-      "license": "GPL-3.0-or-later",
-      "license_note": "These builds are configured with --enable-gpl --enable-version3, so the ffmpeg and ffprobe programs are licensed under the GNU GPL version 3 or later (`ffmpeg -L` prints the same).",
+      "license": "GPL-2.0-or-later",
+      "license_note": "Built by Baleen's CI (scripts/build_ffmpeg.sh, .github/workflows/ffmpeg.yml) from the source archives below, with FFmpeg's own decoders, encoders and (de)muxers plus libx264 only. Configured with --enable-gpl and without --enable-version3 or --enable-nonfree, so ffmpeg and ffprobe are licensed under the GNU GPL version 2 or later.",
       "homepage": "https://ffmpeg.org/",
       "selection": [
-        "Licence: both builds are GPL-3.0-or-later (--enable-version3), not GPL-2.0-or-later as spec §4 assumed. A GPL-2.0-or-later binary would need another builder or Baleen's own minimal build.",
-        "win-x64: Gyan.dev 'essentials' release build 9.0.2. Built from the exact FFmpeg tag n9.0.2 (commit 946fcce07b), permanent version-tagged URL on GitHub (GyanD/codexffmpeg tag 9.0.2), vendor SHA-256 on gyan.dev, and the x264 revision is stated in the bundled README.txt (x264 v0.165.3223) and in the encoder SEI (core 165 r3223 0480cb0).",
-        "BtbN FFmpeg-Builds was rejected: its win64-gpl zips are rolling autobuilds of release branches plus extra commits (e.g. n9.0.2-22-g46d8f462ee), their autobuild releases are pruned, and the URL names change daily.",
-        "The essentials build was chosen over the full build: about half the size and fewer statically linked libraries, which shrinks the GPL source set (§15, R-08) while keeping libx264 and AAC.",
-        "mac-arm64 / mac-x64: martin-riedl.de 9.0.2 release builds. Permanent timestamped URLs, vendor .sha256 per file, versions.txt per build listing every library. x264 is listed only as 0.165.x there, so build_bundle.py reads the exact revision from the encoder SEI and records it in VERSIONS.json."
+        "Release bundles use only the self-built FFmpeg (build_bundle.py --ffmpeg-from <ffmpeg.yml artifact>). Decision on R-08: a release must not ship GPL binaries whose corresponding source Baleen cannot provide.",
+        "The third-party prebuilt binaries under 'platforms' (Gyan.dev for Windows, martin-riedl.de for macOS) are DEV ONLY, NOT FOR RELEASE: they are GPL-3.0-or-later and link libraries whose exact sources are not published (for example Gyan's x265 commit is not in the upstream repository). build_bundle.py uses them only for --runtime-only or with --allow-dev-ffmpeg.",
+        "x264: master at r3223 (commit 0480cb05, the head of master and the revision Gyan's 9.0.2 build uses). zlib (win-x64 only, static): needed for compressed QuickTime headers, zlib-compressed Matroska tracks and the PNG, TSCC, ZMBV and Flash Screen Video decoders; macOS uses the system zlib."
       ],
+      "build": {
+        "script": "scripts/build_ffmpeg.sh",
+        "workflow": ".github/workflows/ffmpeg.yml",
+        "sources": {
+          "ffmpeg": {
+            "what": "FFmpeg 9.0.2 release tarball (tag n9.0.2, commit 946fcce07b6dcd0331c8cc609192aeff5e1924f8)",
+            "version": "9.0.2",
+            "license": "LGPL-2.1-or-later; GPL-2.0-or-later as configured (--enable-gpl)",
+            "file": "ffmpeg-9.0.2.tar.xz",
+            "url": "https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz",
+            "sha256": "8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e",
+            "checksum_source": "pinned-at-review",
+            "signature_url": "https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz.asc",
+            "signing_key": "FCF986EA15E6E293A5644F10B4322F04D67658D8",
+            "note": "ffmpeg.org publishes GPG signatures, not SHA-256; ffmpeg.yml verifies the signature against the pinned key."
+          },
+          "x264": {
+            "what": "x264 r3223 (commit 0480cb05fa188d37ae87e8f4fd8f1aea3711f7ee), archive of the official repository",
+            "version": "0.165.3223",
+            "license": "GPL-2.0-or-later",
+            "commit": "0480cb05fa188d37ae87e8f4fd8f1aea3711f7ee",
+            "file": "x264-0480cb05fa188d37ae87e8f4fd8f1aea3711f7ee.tar",
+            "git": [
+              "https://code.videolan.org/videolan/x264.git",
+              "https://github.com/mirror/x264.git"
+            ],
+            "sha256": "5686546d663e7520bd05cd47a31d615d0dc707c089cfcb5924a1bcfd3aea7be5",
+            "checksum_source": "pinned-at-review",
+            "note": "Made with: archive --format=tar --prefix=x264-<commit>/ <commit>, core.autocrlf=false. code.videolan.org serves its generated archives only to browsers."
+          },
+          "zlib": {
+            "what": "zlib 1.3.2 release tarball (linked statically into the Windows build)",
+            "version": "1.3.2",
+            "license": "Zlib",
+            "file": "zlib-1.3.2.tar.xz",
+            "url": "https://github.com/madler/zlib/releases/download/v1.3.2/zlib-1.3.2.tar.xz",
+            "mirrors": [
+              "https://zlib.net/zlib-1.3.2.tar.xz"
+            ],
+            "sha256": "d7a0654783a4da529d1bb793b7ad9c3318020af77667bcae35f95d0e42a792f3",
+            "checksum_source": "vendor",
+            "checksum_url": "https://zlib.net/",
+            "platforms": [
+              "win-x64"
+            ]
+          }
+        }
+      },
       "platforms": {
         "win-x64": {
           "version": "9.0.2",
@@ -89,33 +149,29 @@
             {
               "file": "ffmpeg-9.0.2-essentials_build.zip",
               "url": "https://github.com/GyanD/codexffmpeg/releases/download/9.0.2/ffmpeg-9.0.2-essentials_build.zip",
-              "mirrors": ["https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-9.0.2-essentials_build.zip"],
+              "mirrors": [
+                "https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-9.0.2-essentials_build.zip"
+              ],
               "sha256": "60f467265b1e312373dbcd92200c2618a74850f98d3d078e94296bb3fa2047ba",
               "checksum_source": "vendor",
               "checksum_url": "https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-9.0.2-essentials_build.zip.sha256"
             }
           ],
           "archive": "zip",
-          "install": {"rule": "copy-binaries", "binaries": ["ffmpeg.exe", "ffprobe.exe"]},
-          "x264": {"core": 165, "revision": 3223, "commit": "0480cb05fa188d37ae87e8f4fd8f1aea3711f7ee"},
-          "gpl_sources": [
-            {
-              "what": "FFmpeg 9.0.2 (tag n9.0.2, commit 946fcce07b6dcd0331c8cc609192aeff5e1924f8)",
-              "file": "ffmpeg-9.0.2.tar.xz",
-              "url": "https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz",
-              "sha256": "8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e",
-              "checksum_source": "pinned-at-review",
-              "checksum_url": "https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz.asc"
-            },
-            {
-              "what": "x264 r3223 (commit 0480cb05fa188d37ae87e8f4fd8f1aea3711f7ee)",
-              "file": "x264-0480cb05fa188d37ae87e8f4fd8f1aea3711f7ee.tar.bz2",
-              "url": "https://code.videolan.org/videolan/x264/-/archive/0480cb05fa188d37ae87e8f4fd8f1aea3711f7ee/x264-0480cb05fa188d37ae87e8f4fd8f1aea3711f7ee.tar.bz2",
-              "sha256": null,
-              "checksum_source": "none"
-            }
-          ],
-          "gpl_sources_note": "The build also links other GPL/LGPL libraries statically (README.txt in the archive lists each with its version, e.g. x265, libvidstab, xvid, rubberband). See STATUS/R-08: §15 names only FFmpeg and x264."
+          "install": {
+            "rule": "copy-binaries",
+            "binaries": [
+              "ffmpeg.exe",
+              "ffprobe.exe"
+            ]
+          },
+          "x264": {
+            "core": 165,
+            "revision": 3223,
+            "commit": "0480cb05fa188d37ae87e8f4fd8f1aea3711f7ee"
+          },
+          "dev_only": true,
+          "note": "DEV ONLY, NOT FOR RELEASE: third-party prebuilt (GPL-3.0-or-later) whose full corresponding source is not available."
         },
         "mac-arm64": {
           "version": "9.0.2",
@@ -137,19 +193,22 @@
             }
           ],
           "archive": "zip",
-          "install": {"rule": "copy-binaries", "binaries": ["ffmpeg", "ffprobe"]},
+          "install": {
+            "rule": "copy-binaries",
+            "binaries": [
+              "ffmpeg",
+              "ffprobe"
+            ]
+          },
           "build_info_url": "https://ffmpeg.martin-riedl.de/download/macos/arm64/1789931890_9.0.2/versions.txt",
-          "x264": {"core": 165, "revision": null, "commit": null, "note": "versions.txt says 0.165.x; build_bundle.py records the exact revision from the encoder SEI"},
-          "gpl_sources": [
-            {
-              "what": "FFmpeg 9.0.2",
-              "file": "ffmpeg-9.0.2.tar.xz",
-              "url": "https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz",
-              "sha256": "8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e",
-              "checksum_source": "pinned-at-review",
-              "checksum_url": "https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz.asc"
-            }
-          ]
+          "x264": {
+            "core": 165,
+            "revision": null,
+            "commit": null,
+            "note": "versions.txt says 0.165.x; build_bundle.py records the exact revision from the encoder SEI"
+          },
+          "dev_only": true,
+          "note": "DEV ONLY, NOT FOR RELEASE: third-party prebuilt (GPL-3.0-or-later) whose full corresponding source is not available."
         },
         "mac-x64": {
           "version": "9.0.2",
@@ -171,27 +230,35 @@
             }
           ],
           "archive": "zip",
-          "install": {"rule": "copy-binaries", "binaries": ["ffmpeg", "ffprobe"]},
+          "install": {
+            "rule": "copy-binaries",
+            "binaries": [
+              "ffmpeg",
+              "ffprobe"
+            ]
+          },
           "build_info_url": "https://ffmpeg.martin-riedl.de/download/macos/amd64/1789931006_9.0.2/versions.txt",
-          "x264": {"core": 165, "revision": null, "commit": null, "note": "versions.txt says 0.165.x; build_bundle.py records the exact revision from the encoder SEI"},
-          "gpl_sources": [
-            {
-              "what": "FFmpeg 9.0.2",
-              "file": "ffmpeg-9.0.2.tar.xz",
-              "url": "https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz",
-              "sha256": "8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e",
-              "checksum_source": "pinned-at-review",
-              "checksum_url": "https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz.asc"
-            }
-          ]
+          "x264": {
+            "core": 165,
+            "revision": null,
+            "commit": null,
+            "note": "versions.txt says 0.165.x; build_bundle.py records the exact revision from the encoder SEI"
+          },
+          "dev_only": true,
+          "note": "DEV ONLY, NOT FOR RELEASE: third-party prebuilt (GPL-3.0-or-later) whose full corresponding source is not available."
         }
       },
       "sources": [
-        {"what": "FFmpeg release sources", "url": "https://ffmpeg.org/releases/"},
-        {"what": "x264 sources", "url": "https://code.videolan.org/videolan/x264"}
+        {
+          "what": "FFmpeg release sources",
+          "url": "https://ffmpeg.org/releases/"
+        },
+        {
+          "what": "x264 sources",
+          "url": "https://code.videolan.org/videolan/x264"
+        }
       ]
     },
-
     "libreoffice": {
       "name": "LibreOffice",
       "dest": "libreoffice",
@@ -215,7 +282,9 @@
             }
           ],
           "archive": "msi",
-          "install": {"rule": "msi-admin"}
+          "install": {
+            "rule": "msi-admin"
+          }
         },
         "mac-arm64": {
           "version": "26.8.0.3",
@@ -229,7 +298,10 @@
             }
           ],
           "archive": "dmg",
-          "install": {"rule": "dmg-ditto", "app": "LibreOffice.app"}
+          "install": {
+            "rule": "dmg-ditto",
+            "app": "LibreOffice.app"
+          }
         },
         "mac-x64": {
           "version": "26.8.0.3",
@@ -243,7 +315,10 @@
             }
           ],
           "archive": "dmg",
-          "install": {"rule": "dmg-ditto", "app": "LibreOffice.app"}
+          "install": {
+            "rule": "dmg-ditto",
+            "app": "LibreOffice.app"
+          }
         }
       },
       "sources": [
@@ -257,7 +332,6 @@
         }
       ]
     },
-
     "jre": {
       "name": "Eclipse Temurin JRE 21",
       "dest": "jre",
@@ -277,7 +351,9 @@
             }
           ],
           "archive": "zip",
-          "install": {"rule": "jre-normalise"}
+          "install": {
+            "rule": "jre-normalise"
+          }
         },
         "mac-arm64": {
           "version": "21.0.12.1+1",
@@ -291,7 +367,9 @@
             }
           ],
           "archive": "tar.gz",
-          "install": {"rule": "jre-normalise"}
+          "install": {
+            "rule": "jre-normalise"
+          }
         },
         "mac-x64": {
           "version": "21.0.12.1+1",
@@ -305,7 +383,9 @@
             }
           ],
           "archive": "tar.gz",
-          "install": {"rule": "jre-normalise"}
+          "install": {
+            "rule": "jre-normalise"
+          }
         }
       },
       "sources": [
@@ -319,7 +399,6 @@
         }
       ]
     },
-
     "verapdf": {
       "name": "veraPDF (Greenfield CLI)",
       "dest": "verapdf",
@@ -339,7 +418,10 @@
             }
           ],
           "archive": "zip",
-          "install": {"rule": "izpack-auto", "template": "scripts/verapdf-auto-install.xml"}
+          "install": {
+            "rule": "izpack-auto",
+            "template": "scripts/verapdf-auto-install.xml"
+          }
         },
         "mac-arm64": {
           "version": "1.30.2",
@@ -353,7 +435,10 @@
             }
           ],
           "archive": "zip",
-          "install": {"rule": "izpack-auto", "template": "scripts/verapdf-auto-install.xml"}
+          "install": {
+            "rule": "izpack-auto",
+            "template": "scripts/verapdf-auto-install.xml"
+          }
         },
         "mac-x64": {
           "version": "1.30.2",
@@ -367,12 +452,21 @@
             }
           ],
           "archive": "zip",
-          "install": {"rule": "izpack-auto", "template": "scripts/verapdf-auto-install.xml"}
+          "install": {
+            "rule": "izpack-auto",
+            "template": "scripts/verapdf-auto-install.xml"
+          }
         }
       },
       "sources": [
-        {"what": "veraPDF apps (Greenfield CLI) v1.30.2", "url": "https://github.com/veraPDF/veraPDF-apps/tree/v1.30.2"},
-        {"what": "veraPDF library and validation", "url": "https://github.com/veraPDF"}
+        {
+          "what": "veraPDF apps (Greenfield CLI) v1.30.2",
+          "url": "https://github.com/veraPDF/veraPDF-apps/tree/v1.30.2"
+        },
+        {
+          "what": "veraPDF library and validation",
+          "url": "https://github.com/veraPDF"
+        }
       ]
     }
   }
