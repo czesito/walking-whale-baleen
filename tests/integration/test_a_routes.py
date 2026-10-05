@@ -155,7 +155,8 @@ def recorder():  # noqa: ANN201
 
 NET_PAGE = f"""<!DOCTYPE html><html><head><meta charset="utf-8"><title>net</title>
 <link rel="stylesheet" href="http://127.0.0.1:{PORT}/style.css">
-<style>@import url("http://127.0.0.1:{PORT}/import.css"); body {{ background: url(http://127.0.0.1:{PORT}/bg.png) }}</style>
+<style>@import url("http://127.0.0.1:{PORT}/import.css");
+body {{ background: url(http://127.0.0.1:{PORT}/bg.png) }}</style>
 <script src="http://127.0.0.1:{PORT}/script.js"></script></head>
 <body background="http://127.0.0.1:{PORT}/body.png"><p>Offline page.</p>
 <img src="http://127.0.0.1:{PORT}/img.png"><img src="//127.0.0.1:{PORT}/proto.png">
