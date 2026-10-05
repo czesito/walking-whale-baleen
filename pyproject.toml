@@ -28,7 +28,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "ruff", "playwright"]
+dev = ["pytest", "ruff", "playwright", "httpx2"]  # httpx2: Starlette's TestClient (AC-12 tests)
 
 [project.scripts]
 baleen = "baleen.__main__:main"
