@@ -14,12 +14,16 @@
 - Arguments are a list (no shell); on timeout the whole process tree is killed (proc.py, SEC-8)
   -> TIMEOUT. No output or an error -> CONVERSION_ERROR.
 
-Profile hardening (P8, SEC-9, R-05). Measured on LibreOffice 26.8 (Windows): with a fresh
-default profile, headless conversion fetches remote images linked from DOCX (external image
-relationships) and from HTML <img>. `BlockUntrustedRefererLinks` stops that: links that come
-from a document outside the trusted locations (there are none) are not loaded. The profile
-also disables macros, active content (OLE/DDE), link updates, lock files, backups, the crash
-reporter and the update check, so a conversion never prompts, blocks or phones home.
+Profile hardening (P8, SEC-9, R-05). Measured on LibreOffice 26.8 (Windows, local listener):
+with a fresh default profile, headless conversion fetches remote images linked from DOCX
+(external image relationships), from Word 97 .doc (linked pictures) and from HTML (<img>,
+<link rel=stylesheet>). `BlockUntrustedRefererLinks` stops the DOCX and HTML images but not the
+.doc picture or the stylesheet; a manual proxy on a closed local port then makes every HTTP(S)
+request fail at once, so with both settings nothing was fetched. Not covered: a .doc picture
+linked to a Windows share (\\\\host\\share) is still opened over SMB (observed); see STATUS. The
+profile also disables macros, active content (OLE/DDE), link updates, OpenCL/OpenGL (DR-37), lock
+files, backups, the crash reporter and the update check, so a conversion never prompts, blocks or
+phones home.
 
 LibreOffice discards a registrymodifications.xcu written before it creates a profile, so the
 settings are written again after `--terminate_after_init`, and checked before every call. It also
@@ -53,6 +57,7 @@ BATCH_BASE_S = 60
 BATCH_PER_FILE_S = 30
 MAX_BATCH = 8  # DR-35
 INIT_TIMEOUT_S = 180
+DEAD_PROXY_PORT = 9  # "discard": nothing listens there on desktop systems, so connections fail at once
 
 _OOR = "http://openoffice.org/2001/registry"
 _XS = "http://www.w3.org/2001/XMLSchema"
@@ -62,6 +67,14 @@ _XSI = "http://www.w3.org/2001/XMLSchema-instance"
 PROFILE_SETTINGS: tuple[tuple[str, str, str], ...] = (
     # R-05 / P8: never load images or other links referenced by a document.
     ("/org.openoffice.Office.Common/Security/Scripting", "BlockUntrustedRefererLinks", "true"),
+    # ...and a network kill switch for whatever still tries (measured: a picture linked from a
+    # Word 97 .doc is fetched despite the setting above): every HTTP(S) request LibreOffice makes
+    # goes to a proxy on a closed local port and fails at once. Nothing leaves the machine.
+    ("/org.openoffice.Inet/Settings", "ooInetProxyType", "2"),
+    ("/org.openoffice.Inet/Settings", "ooInetHTTPProxyName", "127.0.0.1"),
+    ("/org.openoffice.Inet/Settings", "ooInetHTTPProxyPort", str(DEAD_PROXY_PORT)),
+    ("/org.openoffice.Inet/Settings", "ooInetHTTPSProxyName", "127.0.0.1"),
+    ("/org.openoffice.Inet/Settings", "ooInetHTTPSProxyPort", str(DEAD_PROXY_PORT)),
     # Documents are untrusted input (SEC-10): no macros, no OLE/DDE activation.
     ("/org.openoffice.Office.Common/Security/Scripting", "DisableMacrosExecution", "true"),
     ("/org.openoffice.Office.Common/Security/Scripting", "MacroSecurityLevel", "3"),
@@ -74,6 +87,11 @@ PROFILE_SETTINGS: tuple[tuple[str, str, str], ...] = (
     ("/org.openoffice.Office.Common/Misc", "UseDocumentSystemFileLocking", "false"),
     ("/org.openoffice.Office.Common/Save/Document", "CreateBackup", "false"),
     ("/org.openoffice.Office.Common/Save/Document", "AutoSave", "false"),
+    # DR-37, no GPU: LibreOffice initialises OpenCL at every start (on this machine the GPU driver
+    # then recompiled its kernels each time, about 0.7 s per start, because the sanitised
+    # environment has no writable APPDATA for its cache).
+    ("/org.openoffice.Office.Common/Misc", "UseOpenCL", "false"),
+    ("/org.openoffice.Office.Common/VCL", "DisableOpenGL", "true"),
     # Nothing that could show a dialog or use the network.
     ("/org.openoffice.Office.Common/Misc", "CrashReport", "false"),
     ("/org.openoffice.Office.Common/Misc", "ShowTipOfTheDay", "false"),

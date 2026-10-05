@@ -201,6 +201,17 @@ def test_hardened_profile_fetches_nothing_and_control_does(tmp_path: Path, liste
     for n, d in files.items():
         (items / n).write_bytes(d)
     (items / "page-4.html").write_bytes(raw_html())
+    # A Word 97 .doc with the linked picture, written by LibreOffice from the DOCX (fixture time,
+    # throw-away profile; that run may fetch, so the listener is cleared afterwards).
+    soffice = ts.path("libreoffice")
+    assert soffice
+    gen = proc.run([*lo.base_args(soffice, tmp_path / "gen-profile"), "--convert-to", "doc:MS Word 97", "--outdir",
+                    str(tmp_path / "gen"), str(items / "doc-1.docx")], timeout=180, env=ts.env())
+    assert gen.ok and (tmp_path / "gen" / "doc-1.doc").exists(), gen.err()
+    (items / "doc-6.doc").write_bytes((tmp_path / "gen" / "doc-1.doc").read_bytes())
+    files["doc-6.doc"] = b""
+    time.sleep(0.3)
+    listener.hits.clear()
     ctx = SimpleNamespace(low_priority=True)
     writer = [LoJob(str(items / n), str(items), "writer_pdf_Export", "2b") for n in files]
     html = [LoJob(str(items / "page-4.html"), str(items), "writer_pdf_Export", "2b", "HTML (StarWriter)")]
@@ -215,8 +226,10 @@ def test_hardened_profile_fetches_nothing_and_control_does(tmp_path: Path, liste
 
     # Control: a fresh profile without Baleen's settings fetches (so the listener sees attempts).
     plain = tmp_path / "plain-profile"
-    soffice = ts.path("libreoffice")
-    assert soffice
+    r0 = proc.run([*lo.base_args(soffice, plain), "--convert-to", "pdf", "--outdir", str(tmp_path / "ctl"),
+                   str(items / "doc-6.doc")], timeout=180, env=ts.env())
+    time.sleep(0.3)
+    print(f"\nR-05: unhardened .doc conversion fetched {listener.hits or 'nothing'} (rc {r0.returncode})")
     r = proc.run([*lo.base_args(soffice, plain), "--convert-to", "pdf", "--outdir", str(tmp_path / "ctl"),
                   str(items / "doc-1.docx")], timeout=180, env=ts.env())
     r2 = proc.run([*lo.base_args(soffice, plain), "--infilter=HTML (StarWriter)", "--convert-to", "pdf", "--outdir",
