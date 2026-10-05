@@ -388,6 +388,31 @@ def test_html_body_cid_and_resources() -> None:
     assert "[inline image: logo.jpg, not saved]" in listed
 
 
+def test_html_body_never_references_local_or_network_files() -> None:
+    """allow_local=False: absolute local paths, file: URLs and UNC shares never survive (P8, SEC-9)."""
+    refs = ["file:///C:/Windows/win.ini", "file://fileserver/share/a.png", "C:\\Users\\me\\secret.png",
+            "C:/Users/me/secret.png", "/etc/passwd", "\\\\fileserver\\share\\b.png", "//cdn.example.invalid/c.png",
+            "../up.png", "local.png"]
+    parts = []
+    for i, r in enumerate(refs):
+        parts += [f'<img src="{r}">', f'<img srcset="{r} 2x">', f'<td background="{r}">x</td>',
+                  f'<div style="background:url({r})">s{i}</div>', f'<link rel="stylesheet" href="{r}">',
+                  f'<video poster="{r}"></video>', f'<input type="image" src="{r}">']
+    html = f"<html><head><style>@import url('{refs[0]}'); body{{background:url('{refs[3]}')}}</style></head>" \
+           f"<body>{''.join(parts)}</body></html>"
+    styles, body = em.html_section(html, {}, saved=True)
+    doc = styles + body
+    import re
+
+    attrs = re.findall(r"""(?:src|srcset|background|poster|href|data)\s*=\s*["']([^"']*)["']""", doc, re.I)
+    urls = [u for u in re.findall(r"url\(\s*['\"]?([^'\")]*)", doc, re.I) if u.strip().lower() != "none"]
+    for value in attrs + urls:
+        assert not re.match(r"\s*(file:|[a-z]:[\\/]|/|\\\\)", value, re.I), value
+        assert value.split("/")[0] not in ("..", "local.png"), value
+    assert "[external resource not archived: file:///C:/Windows/win.ini]" in doc
+    assert "[external resource not archived: \\\\fileserver\\share\\b.png]" in doc
+
+
 def test_render_document_shape() -> None:
     msg = em.parse(bytes(rich()))
     doc = em.render(msg, saved=["mail_attachments/logo.jpg", "not saved (see the report)", "x", "y"], hide=False,

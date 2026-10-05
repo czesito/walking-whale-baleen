@@ -511,6 +511,14 @@ class _EmailHtml(HTMLParser):
             if v is not None and kl in self.RES_ATTRS and (v.strip().lower().startswith("cid:") or self._local(v)):
                 changed = True
                 continue
+            if v is not None and kl == "srcset":
+                cands = [c.strip() for c in v.split(",") if c.strip()]
+                keep = [c for c in cands if not (c.split()[0].lower().startswith("cid:") or self._local(c.split()[0]))]
+                if keep != cands:
+                    changed = True
+                    if not keep:
+                        continue
+                    v = ", ".join(keep)
             if v is not None and kl == "style":
                 nv = self._css(v)
                 changed |= nv != v
@@ -563,7 +571,9 @@ def html_section(markup: str, cid_names: dict[str, str], saved: bool) -> tuple[s
     pre = _EmailHtml(cid_names, saved)
     pre.feed(_strip_controls(markup))
     pre.close()
-    doc = sanitize_html("".join(pre.out))
+    # allow_local=False and no base_href: a message can never pull files from this computer
+    # (file:, C:\, /, \\host) into its PDF (P8, SEC-9).
+    doc = sanitize_html("".join(pre.out), allow_local=False)
     m = re.search(r"<body[^>]*>", doc, re.I)
     head = doc[:m.start()] if m else ""
     styles = "".join(re.findall(r"<style[^>]*>.*?</style\s*>", head, re.I | re.S))
