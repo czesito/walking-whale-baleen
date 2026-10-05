@@ -62,13 +62,35 @@ def test_cache_file_names_are_unique_per_content():
         assert seen.setdefault(dl["file"], dl["sha256"]) == dl["sha256"], f"{dl['file']} pinned to two hashes"
 
 
-def test_ffmpeg_gpl_sources_pinned():
-    for plat, entry in PINS["components"]["ffmpeg"]["platforms"].items():
-        whats = " ".join(s["what"] for s in entry["gpl_sources"])
-        assert "FFmpeg" in whats, plat
-        assert entry["x264"]["core"]
-    win = PINS["components"]["ffmpeg"]["platforms"]["win-x64"]
-    assert re.fullmatch(r"[0-9a-f]{40}", win["x264"]["commit"])
+def test_ffmpeg_build_pins():
+    ff = PINS["components"]["ffmpeg"]
+    assert ff["license"] == "GPL-2.0-or-later"
+    srcs = ff["build"]["sources"]
+    assert {"ffmpeg", "x264"} <= set(srcs)
+    for name, s in srcs.items():
+        assert HEX64.match(s["sha256"]), name
+        assert "/" not in s["file"] and s["license"] and s["what"]
+        assert s.get("url", "").startswith("https://") or all(u.startswith("https://") for u in s["git"])
+    assert re.fullmatch(r"[0-9a-f]{40}", srcs["x264"]["commit"]) and srcs["x264"]["commit"] in srcs["x264"]["file"]
+    assert srcs.get("zlib", {}).get("platforms", ["win-x64"]) == ["win-x64"]
+    # third-party prebuilt binaries stay, but only for development
+    assert all(e.get("dev_only") for e in ff["platforms"].values())
+
+
+@pytest.mark.parametrize("plat", ["win-x64", "mac-arm64", "mac-x64"])
+def test_build_sources_per_platform(plat):
+    ctx = bb.Ctx(platform=plat, version="0", cache=REPO, runtime=REPO, work=REPO, pins=PINS)
+    names = set(bb.build_sources(ctx))
+    assert names == ({"ffmpeg", "x264", "zlib"} if plat == "win-x64" else {"ffmpeg", "x264"})
+
+
+def test_build_script_configuration():
+    script = (REPO / "scripts" / "build_ffmpeg.sh").read_text(encoding="utf-8")
+    for flag in ("--enable-gpl", "--enable-libx264", "--enable-static", "--disable-shared", "--disable-network",
+                 "--disable-doc", "--disable-ffplay", "--disable-autodetect"):
+        assert flag in script
+    configure = script.split("FF_CONFIGURE=(", 1)[1].split(")", 1)[0]
+    assert "--enable-version3" not in configure and "nonfree" not in configure
 
 
 def test_fetch_verifies_and_caches(tmp_path):
@@ -122,22 +144,14 @@ def test_ansi_path_guard_rejects_unencodable(tmp_path):
     bb.check_ansi_path("--dest", tmp_path / "plain folder")
 
 
-FFLIBS = json.loads((REPO / "scripts" / "ffmpeg-libraries.json").read_text(encoding="utf-8"))
+def test_check_ffmpeg_parses_listings():
+    import importlib
 
-
-@pytest.mark.parametrize("plat", ["win-x64", "mac-arm64", "mac-x64"])
-def test_ffmpeg_library_list_covers_copyleft(plat):
-    libs = bb.ffmpeg_libraries(plat)
-    assert libs["libraries"][0]["name"] == "x264" or any(lib["name"] == "x264" for lib in libs["libraries"])
-    for lib in libs["libraries"]:
-        assert lib["license"] and lib["upstream"].startswith("https://"), lib["name"]
-        # copyleft unless one of the OR alternatives is permissive (FreeType: FTL OR GPL-2.0-or-later)
-        if all(re.search(r"\b(L?GPL|MPL)-", alt) for alt in lib["license"].split(" OR ")):
-            assert "fetch" in lib or "not_covered" in lib, f"{plat}: copyleft {lib['name']} needs fetch or not_covered"
-        if "fetch" in lib:
-            rule = lib["fetch"]
-            assert ("url" in rule) != ("git" in rule) and rule["file"]
-            assert "/" not in rule["file"]
+    sys.path.insert(0, str(REPO / "scripts"))
+    check = importlib.import_module("check_ffmpeg")
+    listing = ("Decoders:\n V..... = Video\n ------\n V....D h264  H.264\n A....D aac   AAC\n"
+               " D  mov,mp4,m4a  QuickTime / MOV\n")
+    assert {"h264", "aac", "mov", "mp4", "m4a"} <= check.names(listing)
 
 
 def test_launchers_and_readme():
@@ -157,11 +171,6 @@ def test_launchers_and_readme():
 def test_text_bytes_line_endings():
     assert bb.text_bytes("a\r\nb\nc", True) == b"a\r\nb\r\nc"
     assert bb.text_bytes("a\r\nb\nc", False) == b"a\nb\nc"
-
-
-def test_resolve_x264_placeholder():
-    assert bb.resolve_x264("x264-@x264.tar.gz", {"commit": "0480cb05fa18"}) == "x264-0480cb05.tar.gz"
-    assert bb.resolve_x264("x264-@x264.tar.gz", {"commit_short": "abc1234"}) == "x264-abc1234.tar.gz"
 
 
 def test_dist_notice_includes_licence_files(tmp_path):
