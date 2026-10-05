@@ -198,6 +198,26 @@ def test_make_zip_layout_and_sums(tmp_path):
     assert (tmp_path / "SHA256SUMS").read_text(encoding="utf-8") == f"{digest}  {zip_path.name}\n"
 
 
+def test_compare_expected(tmp_path):
+    report = {
+        "photos/photo.jpg": {"status": "OK", "reason": ""},
+        "texts/notes.txt": {"status": "NEEDS_REVIEW", "reason": "B;A"},
+        "other/Thumbs.db": {"status": "IGNORED", "reason": "SYSTEM_FILE"},
+    }
+    csv_path = tmp_path / "smoke-expected.csv"
+    csv_path.write_text("# comment\nsource_path,status,reason\nphotos/photo.jpg,OK,\ntexts/notes.txt,NEEDS_REVIEW,A;B\n"
+                        "other/Thumbs.db,IGNORED,SYSTEM_FILE\n", encoding="utf-8")
+    assert bb.compare_expected(report, csv_path) == []
+    csv_path.write_text("source_path,status,reason\nphotos/photo.jpg,FAILED,X\nmissing.txt,OK,\n"
+                        "texts/notes.txt,NEEDS_REVIEW,A\n", encoding="utf-8")
+    problems = bb.compare_expected(report, csv_path)
+    assert any("photos/photo.jpg: status OK, expected FAILED" in p for p in problems)
+    assert any("photos/photo.jpg: reason" in p for p in problems)
+    assert any("missing.txt" in p for p in problems)
+    assert any("texts/notes.txt: reason" in p for p in problems)
+    assert any("other/Thumbs.db: in the report but not in" in p for p in problems)
+
+
 def test_tree_state_ignores_data(tmp_path):
     (tmp_path / "data").mkdir()
     (tmp_path / "data" / "x").write_text("1", encoding="utf-8")

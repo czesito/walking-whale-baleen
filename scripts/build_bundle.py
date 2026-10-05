@@ -1,8 +1,9 @@
 """Build Baleen's portable bundle, or just its runtime/ folder — spec §14.6.
 
     python scripts/build_bundle.py --platform win-x64|mac-arm64|mac-x64 [--version X.Y.Z] [--cache DIR]
-                                   [--dist DIR] [--clean] [--skip-smoke]
+                                   [--dist DIR] [--clean] [--skip-smoke] [--smoke-expected CSV]
     python scripts/build_bundle.py --platform win-x64 --runtime-only --dest DIR [--cache DIR] [--work DIR]
+    python scripts/build_bundle.py --smoke-only BUNDLE_FOLDER [--smoke-expected CSV] [--work DIR]
 
 Every download is pinned in scripts/runtimes.json. It is fetched into the cache folder and its
 SHA-256 is checked before use; a mismatch aborts the build. Installation never touches the system:
@@ -994,8 +995,9 @@ def _norm_source(path: str, src: Path) -> str:
     return p[2:] if p.startswith("./") else p
 
 
-def smoke_test(bundle: Path, work: Path) -> dict[str, Any]:
-    """Doctor (all five tools bundled), then convert the smoke fixtures from the bundle folder."""
+def smoke_test(bundle: Path, work: Path, expected: Path | None = SMOKE_EXPECTED) -> dict[str, Any]:
+    """Doctor (all five tools bundled), then convert the smoke fixtures from the bundle folder.
+    With an expected-statuses CSV (when the file exists) every row must match it exactly."""
     log(f"== smoke test in {bundle}")
     py = bundle_python(bundle)
     if not py.is_file():
@@ -1044,19 +1046,11 @@ def smoke_test(bundle: Path, work: Path) -> dict[str, Any]:
     for path, r in by_source.items():
         if re.search(r"TOOL_MISSING|VALIDATOR_MISSING", r["reason"] or ""):
             problems.append(f"{path}: {r['status']} {r['reason']} (a bundled tool was not used)")
-    if SMOKE_EXPECTED.is_file():
-        with open(SMOKE_EXPECTED, encoding="utf-8-sig", newline="") as f:
-            expected = [r for r in csv.DictReader(line for line in f if not line.startswith("#"))]
-        for e in expected:
-            r = by_source.get(e["source_path"])
-            if r is None:
-                problems.append(f"expected row missing: {e['source_path']}")
-                continue
-            if r["status"] != e["status"]:
-                problems.append(f"{e['source_path']}: status {r['status']}, expected {e['status']}")
-            if "reason" in e and set(filter(None, (r["reason"] or "").split(";"))) != set(
-                    filter(None, (e["reason"] or "").split(";"))):
-                problems.append(f"{e['source_path']}: reason {r['reason']!r}, expected {e['reason']!r}")
+    if expected is not None and expected.is_file():
+        log(f"   comparing with {expected}")
+        problems += compare_expected(by_source, expected)
+    elif expected is not None:
+        log(f"   {expected} not found: checking only that every file has a row and no tool was missing")
 
     after = tree_state(bundle)
     changed = sorted(p for p in set(before) | set(after) if before.get(p) != after.get(p))
@@ -1069,7 +1063,37 @@ def smoke_test(bundle: Path, work: Path) -> dict[str, Any]:
         counts[r["status"]] = counts.get(r["status"], 0) + 1
     log(f"   smoke test passed: {len(rows)} rows {counts}")
     return {"rows": len(rows), "counts": counts, "convert_exit": conv.returncode,
-            "expected_csv": SMOKE_EXPECTED.is_file()}
+            "expected_csv": bool(expected and expected.is_file())}
+
+
+def _reasons(text: str | None) -> set[str]:
+    return {r.strip() for r in (text or "").split(";") if r.strip()}
+
+
+def compare_expected(by_source: dict[str, dict[str, str]], expected: Path) -> list[str]:
+    """Compare report rows with an expected-statuses CSV.
+
+    The file has a header row with at least source_path and status, optionally reason ('#' lines are
+    comments). source_path is relative to the smoke source folder with '/' separators; reason holds
+    ';'-separated codes and is compared order-insensitively. Every report row must be listed, and every
+    listed row must exist."""
+    with open(expected, encoding="utf-8-sig", newline="") as f:
+        rows = list(csv.DictReader(line for line in f if line.strip() and not line.lstrip().startswith("#")))
+    problems: list[str] = []
+    listed = set()
+    for e in rows:
+        path = (e.get("source_path") or "").strip().replace("\\", "/")
+        listed.add(path)
+        r = by_source.get(path)
+        if r is None:
+            problems.append(f"expected row missing from the report: {path}")
+            continue
+        if r["status"] != (e.get("status") or "").strip():
+            problems.append(f"{path}: status {r['status']}, expected {e.get('status')}")
+        if "reason" in e and _reasons(r.get("reason")) != _reasons(e.get("reason")):
+            problems.append(f"{path}: reason {r.get('reason')!r}, expected {e.get('reason')!r}")
+    problems += [f"{p}: in the report but not in {expected.name}" for p in sorted(set(by_source) - listed)]
+    return problems
 
 
 # --------------------------------------------------------------------------- zip
@@ -1130,6 +1154,9 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--clean", action="store_true", help="replace an existing bundle folder and zip in --dist")
     p.add_argument("--skip-smoke", action="store_true", help="do not run the smoke test (development only)")
     p.add_argument("--smoke-only", type=Path, metavar="BUNDLE", help="run the smoke test on an existing bundle folder")
+    p.add_argument("--smoke-expected", type=Path, default=SMOKE_EXPECTED, metavar="CSV",
+                   help="expected source_path/status/reason of the smoke run; skipped when the file does not exist "
+                        "(default: tests/fixtures/smoke-expected.csv)")
     ns = p.parse_args(argv)
 
     started = time.monotonic()
@@ -1137,7 +1164,7 @@ def main(argv: list[str] | None = None) -> int:
         if ns.smoke_only:
             work = (ns.work or REPO / "build" / "smoke-work").resolve()
             prepare_work(work)
-            smoke_test(ns.smoke_only.resolve(), work)
+            smoke_test(ns.smoke_only.resolve(), work, ns.smoke_expected.resolve())
             if not ns.keep_work:
                 shutil.rmtree(work, ignore_errors=True)
             log(f"\nSmoke test passed in {time.monotonic() - started:.0f} s")
@@ -1172,7 +1199,7 @@ def main(argv: list[str] | None = None) -> int:
             length, longest = longest_path(bundle)
             log(f"   longest path inside the zip: {length} characters ({longest})")
             if not ns.skip_smoke:
-                smoke_test(bundle, work)
+                smoke_test(bundle, work, ns.smoke_expected.resolve())
             make_zip(bundle, zip_path)
         if not ns.keep_work:
             shutil.rmtree(work, ignore_errors=True)
