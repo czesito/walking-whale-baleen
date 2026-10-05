@@ -48,7 +48,10 @@ class FixtureTools:
         home = Home(work / "fixture-home")
         home.ensure()
         ts = Toolset(home)
-        return cls(ts.path("libreoffice"), ts.path("ffmpeg"), ts.path("ffprobe"), ts.env(), work / "lo-profile")
+        # Fixture inputs may need encoders Baleen itself never uses (e.g. LAME for the MP3 fixture);
+        # BALEEN_FIXTURE_FFMPEG selects a full FFmpeg for generating them only.
+        ffmpeg = os.environ.get("BALEEN_FIXTURE_FFMPEG") or ts.path("ffmpeg")
+        return cls(ts.path("libreoffice"), ffmpeg, ts.path("ffprobe"), ts.env(), work / "lo-profile")
 
     def need(self, *names: str) -> None:
         for n in names:
