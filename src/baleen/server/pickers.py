@@ -15,7 +15,9 @@ construction and output parsing; the dialogs themselves are on the manual checkl
 from __future__ import annotations
 
 import base64
+import ntpath
 import os
+import posixpath
 import shutil
 import sys
 import threading
@@ -83,9 +85,14 @@ class PickResult:
     error: str = ""
 
 
+def _isabs(kind: str, p: str) -> bool:
+    """Absolute for the dialog's own platform (tests build every platform's command anywhere)."""
+    return ntpath.isabs(p) if kind == "windows" else posixpath.isabs(p)
+
+
 def powershell_path(env: Mapping[str, str] = os.environ) -> str:
     root = env.get("SystemRoot") or env.get("SYSTEMROOT") or r"C:\Windows"
-    return os.path.join(root, "System32", "WindowsPowerShell", "v1.0", "powershell.exe")
+    return ntpath.join(root, "System32", "WindowsPowerShell", "v1.0", "powershell.exe")
 
 
 def detect(platform: str = sys.platform, env: Mapping[str, str] = os.environ,
@@ -108,7 +115,7 @@ def detect(platform: str = sys.platform, env: Mapping[str, str] = os.environ,
 def build_command(kind: str, initial: str | None, *, env: Mapping[str, str] = os.environ,
                   which: Callable[[str], str | None] = shutil.which,
                   tmp_dir: str | None = None) -> PickerCommand:
-    start = initial if initial and os.path.isabs(initial) else None
+    start = initial if initial and _isabs(kind, initial) else None
     if kind == "windows":
         encoded = base64.b64encode(PS_SCRIPT.encode("utf-16-le")).decode("ascii")
         child_env = dict(env)
@@ -151,7 +158,7 @@ def parse_output(kind: str, returncode: int | None, stdout: bytes, stderr: bytes
     text = stdout.decode("utf-8", "replace").lstrip("\ufeff").strip("\r\n")
     if kind == "windows":
         if returncode == 0 and text.startswith("OK:"):
-            return _absolute(text[3:])
+            return _absolute(kind, text[3:])
         if returncode == 0 and text.startswith("CANCEL"):
             return PickResult(None, True)
         return PickResult(None, False, _err(stderr) or "The folder dialog could not be opened.")
@@ -160,7 +167,7 @@ def parse_output(kind: str, returncode: int | None, stdout: bytes, stderr: bytes
             p = text.strip()
             if len(p) > 1:
                 p = p.rstrip("/")
-            return _absolute(p)
+            return _absolute(kind, p)
         err = _err(stderr)
         if "-128" in err or (returncode == 1 and not err):
             return PickResult(None, True)
@@ -168,7 +175,7 @@ def parse_output(kind: str, returncode: int | None, stdout: bytes, stderr: bytes
     if kind in ("zenity", "kdialog"):
         if returncode == 0 and text.strip():
             p = text.strip()
-            return _absolute(p.rstrip("/") if len(p) > 1 else p)
+            return _absolute(kind, p.rstrip("/") if len(p) > 1 else p)
         if returncode == 1:
             return PickResult(None, True)
         return PickResult(None, False, _err(stderr) or "The folder dialog could not be opened.")
@@ -179,9 +186,9 @@ def _err(stderr: bytes) -> str:
     return stderr.decode("utf-8", "replace").strip()[:300]
 
 
-def _absolute(p: str) -> PickResult:
+def _absolute(kind: str, p: str) -> PickResult:
     p = p.strip()
-    if not p or not os.path.isabs(p):
+    if not p or not _isabs(kind, p):
         return PickResult(None, False, "The folder dialog returned a path Baleen can't use.")
     return PickResult(p, False)
 
