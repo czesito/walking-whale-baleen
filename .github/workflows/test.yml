@@ -1,3 +1,5 @@
+# Spec §14.7: lint and unit tests everywhere; integration tests against real tools on Linux,
+# then the integration suite again with networking disabled (AC-10).
 name: test
 
 on:
@@ -8,23 +10,103 @@ on:
 permissions:
   contents: read
 
+env:
+  PYTHONIOENCODING: utf-8
+
 jobs:
-  unit:
-    name: unit (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+  linux:
+    name: lint, unit and integration (ubuntu-latest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
+
       - name: Python 3.12 venv with locked dev dependencies
         run: |
           uv venv --python 3.12 .venv
           uv pip install --python .venv --require-hashes -r requirements-dev.lock
           uv pip install --python .venv --no-deps -e .
+
+      - name: External tools (LibreOffice, FFmpeg, Java from apt; pinned veraPDF)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libreoffice-writer libreoffice-calc libreoffice-impress \
+            ffmpeg default-jre-headless fonts-liberation fonts-dejavu-core fonts-noto-cjk
+          .venv/bin/python scripts/ci_install_verapdf.py --dest "$RUNNER_TEMP/verapdf" --cache "$RUNNER_TEMP/cache"
+          echo "BALEEN_VERAPDF=$RUNNER_TEMP/verapdf/verapdf" >> "$GITHUB_ENV"
+
+      - name: Doctor
+        run: .venv/bin/python -m baleen doctor
+
       - name: Lint
-        run: uv run --no-sync --python .venv ruff check src tests
+        run: .venv/bin/ruff check src tests scripts
+
+      - name: Unit tests
+        run: .venv/bin/python -m pytest tests/unit -q
+
+      - name: Integration tests
+        env:
+          BALEEN_REQUIRE_TOOLS: "1"
+        run: .venv/bin/python -m pytest tests/integration -q
+
+      - name: Integration tests offline (AC-10)
+        env:
+          BALEEN_REQUIRE_TOOLS: "1"
+        run: |
+          # Run the suite in a fresh network namespace whose only routes lead to a dummy interface.
+          # Every packet that is not loopback, and every DNS query, is rejected and counted; any count
+          # fails the job, so an outbound attempt cannot hide behind a test that tolerates errors.
+          cat > "$RUNNER_TEMP/offline.sh" <<'EOF'
+          set -uo pipefail
+          ip link set lo up
+          ip link add egress0 type dummy
+          ip addr add 192.0.2.1/24 dev egress0
+          ip link set egress0 up
+          ip route add default via 192.0.2.254 dev egress0
+          ip -6 addr add 2001:db8::1/64 dev egress0 nodad 2>/dev/null || true
+          ip -6 route add default via 2001:db8::fe dev egress0 2>/dev/null || true
+          for ipt in iptables ip6tables; do
+            $ipt -A OUTPUT -o lo -p udp --dport 53 -j REJECT
+            $ipt -A OUTPUT -o lo -p tcp --dport 53 -j REJECT
+            $ipt -A OUTPUT ! -o lo -j REJECT
+          done
+          sudo -u "$RUN_AS" --preserve-env=PATH,HOME,BALEEN_REQUIRE_TOOLS,BALEEN_VERAPDF,PYTHONIOENCODING \
+            .venv/bin/python -m pytest tests/integration -q -p no:cacheprovider
+          rc=$?
+          attempts=0
+          for ipt in iptables ip6tables; do
+            $ipt -L OUTPUT -v -n -x
+            n=$($ipt -L OUTPUT -v -n -x | awk '/REJECT/ {s += $1} END {print s + 0}')
+            attempts=$((attempts + n))
+          done
+          echo "outbound attempts: $attempts"
+          if [ "$attempts" -ne 0 ]; then
+            echo "::error::AC-10: $attempts outbound packet(s) during the offline integration run"
+            exit 1
+          fi
+          exit $rc
+          EOF
+          sudo RUN_AS="$(id -un)" PATH="$PATH" HOME="$HOME" BALEEN_REQUIRE_TOOLS=1 \
+            BALEEN_VERAPDF="$BALEEN_VERAPDF" PYTHONIOENCODING=utf-8 \
+            unshare --net bash "$RUNNER_TEMP/offline.sh"
+
+  unit:
+    name: unit (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
+      - name: Python 3.12 venv with locked dev dependencies
+        run: |
+          uv venv --python 3.12 .venv
+          uv pip install --python .venv --require-hashes -r requirements-dev.lock
+          uv pip install --python .venv --no-deps -e .
       - name: Unit tests
         run: uv run --no-sync --python .venv python -m pytest tests/unit -q
