@@ -46,7 +46,8 @@ def _cli(args: list[str], home: Path, timeout: float = 900) -> subprocess.Comple
 
 def _rtf(i: int) -> bytes:
     body = " ".join(["Synthetic paragraph for crash testing."] * 40)
-    return (r"{\rtf1\ansi\deff0{\fonttbl{\f0 Arial;}}\f0\fs22 Document %d. " % i + body + r"\par}").encode()
+    head = r"{\rtf1\ansi\deff0{\fonttbl{\f0 Arial;}}\f0\fs22 "
+    return (head + f"Document {i}. " + body + r"\par}").encode()
 
 
 def _make_docs(src: Path, n: int) -> None:
