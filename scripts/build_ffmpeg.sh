@@ -165,7 +165,6 @@ log "x264 $(pin x264 commit)"
   ./configure --prefix="$PREFIX" --enable-static --disable-cli --disable-opencl "${X264_TARGET[@]}"
   make -j"$JOBS"
   make install-lib-static )
-X264_VERSION=$(sed -n 's/^#define X264_VERSION "\(.*\)"/\1/p' "$PREFIX/include/x264_config.h")
 X264_POINTVER=$(sed -n 's/^#define X264_POINTVER "\(.*\)"/\1/p' "$PREFIX/include/x264_config.h")
 
 # --------------------------------------------------------------------------- FFmpeg
@@ -217,7 +216,7 @@ done
 {
     echo "Baleen FFmpeg build for $TARGET"
     echo
-    echo "FFmpeg $FF_VERSION, x264 $X264_POINTVER$X264_VERSION (commit $(pin x264 commit))"
+    echo "FFmpeg $FF_VERSION, x264 $X264_POINTVER (commit $(pin x264 commit))"
     for_target zlib && echo "zlib $(pin zlib version) (static)"
     echo
     echo "x264 configure:"
@@ -242,7 +241,7 @@ done
     fi
 } > "$OUT/config.txt"
 
-"$PY" - "$OUT" "$TARGET" "$FF_VERSION" "$(pin x264 commit)" "$X264_POINTVER$X264_VERSION" "$FF_CONFIGURATION" \
+"$PY" - "$OUT" "$TARGET" "$FF_VERSION" "$(pin x264 commit)" "$X264_POINTVER" "$FF_CONFIGURATION" \
       "$("$CC" --version 2>&1 | head -1)" "$EXE" <<'EOF'
 import datetime, hashlib, json, os, sys
 from pathlib import Path
