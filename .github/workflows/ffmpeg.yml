@@ -1,0 +1,107 @@
+# Baleen's own FFmpeg (spec §15, R-08): FFmpeg + libx264 only, GPL-2.0-or-later, built from the source
+# archives pinned in scripts/runtimes.json by scripts/build_ffmpeg.sh. One artifact per platform holds
+# ffmpeg, ffprobe, config.txt, BUILDINFO.json and sources/ (the exact source archives). bundle.yml calls
+# this workflow and builds the bundles from these artifacts. No releases or tags are made here.
+name: ffmpeg
+
+on:
+  workflow_call:
+  workflow_dispatch:
+  # workflow_dispatch only works once this file is on the default branch; until then (and for later
+  # changes to the build) pushes to the ffmpeg-build branch run it.
+  push:
+    branches: [ffmpeg-build]
+    paths:
+      - scripts/build_ffmpeg.sh
+      - scripts/check_ffmpeg.py
+      - scripts/runtimes.json
+      - .github/workflows/ffmpeg.yml
+
+permissions:
+  contents: read
+
+env:
+  PYTHONIOENCODING: utf-8
+
+jobs:
+  win-x64:
+    name: build win-x64 (mingw-w64 cross-compile on Linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends gcc-mingw-w64-x86-64 binutils-mingw-w64-x86-64 \
+            nasm pkg-config make
+          x86_64-w64-mingw32-gcc --version | head -1
+
+      - name: Check the FFmpeg tarball signature against the pinned key and SHA-256
+        run: |
+          pin() { python3 -c 'import json, sys; print(json.load(open("scripts/runtimes.json"))["components"]["ffmpeg"]["build"]["sources"]["ffmpeg"][sys.argv[1]])' "$1"; }
+          url=$(pin url); key=$(pin signing_key); sha=$(pin sha256)
+          export GNUPGHOME="$RUNNER_TEMP/gnupg"
+          mkdir -m 700 "$GNUPGHOME"
+          curl -fsSL -o "$RUNNER_TEMP/ffmpeg.tar.xz" "$url"
+          curl -fsSL -o "$RUNNER_TEMP/ffmpeg.tar.xz.asc" "$(pin signature_url)"
+          curl -fsSL -o "$RUNNER_TEMP/ffmpeg-devel.asc" https://ffmpeg.org/ffmpeg-devel.asc
+          gpg --batch --quiet --import "$RUNNER_TEMP/ffmpeg-devel.asc"
+          gpg --batch --status-fd 1 --verify "$RUNNER_TEMP/ffmpeg.tar.xz.asc" "$RUNNER_TEMP/ffmpeg.tar.xz" | tee "$RUNNER_TEMP/gpg.status"
+          grep -q "VALIDSIG $key" "$RUNNER_TEMP/gpg.status"
+          echo "$sha  $RUNNER_TEMP/ffmpeg.tar.xz" | sha256sum -c -
+
+      - name: Build
+        run: bash scripts/build_ffmpeg.sh --target win-x64 --out dist/ffmpeg-win-x64 --cache "$RUNNER_TEMP/cache"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ffmpeg-win-x64
+          path: dist/ffmpeg-win-x64/
+          if-no-files-found: error
+          retention-days: 90
+
+  win-x64-check:
+    name: check win-x64 on Windows
+    needs: win-x64
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: ffmpeg-win-x64
+          path: ffmpeg-win-x64
+      - name: Licence, decoder coverage and a test encode
+        run: python scripts/check_ffmpeg.py ffmpeg-win-x64
+      - name: Build configuration
+        shell: bash
+        run: |
+          ffmpeg-win-x64/ffmpeg.exe -hide_banner -L | head -6
+          ffmpeg-win-x64/ffmpeg.exe -hide_banner -buildconf
+
+  mac-arm64:
+    name: build mac-arm64 (native)
+    runs-on: macos-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Toolchain
+        run: |
+          command -v pkg-config >/dev/null || brew install pkgconf
+          clang --version | head -1
+
+      - name: Build
+        run: bash scripts/build_ffmpeg.sh --target mac-arm64 --out dist/ffmpeg-mac-arm64 --cache "$RUNNER_TEMP/cache"
+
+      - name: Licence, decoder coverage and a test encode
+        run: python3 scripts/check_ffmpeg.py dist/ffmpeg-mac-arm64
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ffmpeg-mac-arm64
+          path: dist/ffmpeg-mac-arm64/
+          if-no-files-found: error
+          retention-days: 90

@@ -45,7 +45,6 @@ from xml.sax.saxutils import escape as xml_escape
 
 REPO = Path(__file__).resolve().parents[1]
 RUNTIMES_JSON = REPO / "scripts" / "runtimes.json"
-FFMPEG_LIBRARIES_JSON = REPO / "scripts" / "ffmpeg-libraries.json"
 LICENSE_TEXTS = REPO / "scripts" / "licenses"
 REQUIREMENTS_LOCK = REPO / "requirements.lock"
 BUILD_REQUIREMENTS_LOCK = REPO / "scripts" / "build-requirements.lock"
@@ -80,6 +79,7 @@ class Ctx:
     work: Path
     pins: dict[str, Any]
     records: dict[str, Any] = field(default_factory=dict)
+    ffmpeg_from: Path | None = None  # ffmpeg.yml artifact (folder or zip); None = dev-only prebuilt
 
     @property
     def is_windows(self) -> bool:
@@ -352,28 +352,80 @@ def build_baleen_wheel(ctx: Ctx, py: Path, env: dict[str, str]) -> Path:
     return wheels[0]
 
 
+def build_sources(ctx: Ctx) -> dict[str, dict[str, Any]]:
+    """The pinned FFmpeg build sources that apply to this platform (runtimes.json ffmpeg.build)."""
+    srcs = ctx.pins["components"]["ffmpeg"]["build"]["sources"]
+    return {k: v for k, v in srcs.items() if not v.get("platforms") or ctx.platform in v["platforms"]}
+
+
+def find_ffmpeg_artifact(path: Path, work: Path) -> Path:
+    """Folder of an ffmpeg.yml artifact (BUILDINFO.json, binaries, sources/), from a folder or a zip."""
+    if path.is_file() and path.suffix.lower() == ".zip":
+        staging = work / "ffmpeg-artifact"
+        rmtree_force(staging)
+        extract(path, staging)
+        path = staging
+    hits = sorted(path.rglob("BUILDINFO.json"), key=lambda p: len(p.parts)) if path.is_dir() else []
+    if not hits:
+        raise BuildError(f"{path} is not an FFmpeg build artifact (no BUILDINFO.json)")
+    return hits[0].parent
+
+
+def _install_ffmpeg_artifact(ctx: Ctx, dest: Path, names: list[str]) -> dict[str, Any]:
+    """Baleen's own build (scripts/build_ffmpeg.sh via ffmpeg.yml): check that it was built from the
+    pinned sources for this platform, then copy the programs and the build records."""
+    root = find_ffmpeg_artifact(ctx.ffmpeg_from, ctx.work)
+    info = json.loads((root / "BUILDINFO.json").read_text(encoding="utf-8"))
+    if info.get("target") != ctx.platform:
+        raise BuildError(f"FFmpeg artifact is for {info.get('target')}, not {ctx.platform}")
+    expected = {s["file"]: s["sha256"] for s in build_sources(ctx).values()}
+    if set(info.get("sources", {})) != set(expected):
+        raise BuildError(f"FFmpeg artifact sources {sorted(info.get('sources', {}))} differ from the pins {sorted(expected)}")
+    for file, sha in expected.items():
+        p = root / "sources" / file
+        if not p.is_file() or sha256_file(p) != sha or info["sources"][file] != sha:
+            raise BuildError(f"FFmpeg artifact source {file} is missing or does not match the pinned SHA-256")
+    for name in names:
+        p = root / name
+        if not p.is_file() or sha256_file(p) != info["binaries"].get(name):
+            raise BuildError(f"FFmpeg artifact binary {name} is missing or does not match BUILDINFO.json")
+        shutil.copy2(p, dest / name)
+        (dest / name).chmod(0o755)
+    for record in ("BUILDINFO.json", "config.txt"):
+        if (root / record).is_file():
+            shutil.copy2(root / record, dest / record)
+    return {"source": "baleen-build", "release_ok": True, "artifact": str(root), "buildinfo": info}
+
+
 def install_ffmpeg(ctx: Ctx, entry: dict[str, Any], files: list[Path]) -> dict[str, Any]:
     dest = ctx.runtime / "ffmpeg"
     dest.mkdir(parents=True)
-    wanted = list(entry["install"]["binaries"])
-    for i, archive in enumerate(files):
-        staging = ctx.work / f"ffmpeg-x{i}"
-        extract(archive, staging)
-        for name in list(wanted):
-            hits = [p for p in staging.rglob(name) if p.is_file()]
-            if hits:
-                shutil.copy2(hits[0], dest / name)
-                (dest / name).chmod(0o755)
-                wanted.remove(name)
-    if wanted:
-        raise BuildError(f"ffmpeg archives lack {wanted}")
+    names = [f"ffmpeg{ctx.exe}", f"ffprobe{ctx.exe}"]
+    if ctx.ffmpeg_from is not None:
+        source = _install_ffmpeg_artifact(ctx, dest, names)
+        pin = {"commit": build_sources(ctx)["x264"]["commit"]}
+    else:
+        wanted = list(entry["install"]["binaries"])
+        for i, archive in enumerate(files):
+            staging = ctx.work / f"ffmpeg-x{i}"
+            extract(archive, staging)
+            for name in list(wanted):
+                hits = [p for p in staging.rglob(name) if p.is_file()]
+                if hits:
+                    shutil.copy2(hits[0], dest / name)
+                    (dest / name).chmod(0o755)
+                    wanted.remove(name)
+        if wanted:
+            raise BuildError(f"ffmpeg archives lack {wanted}")
+        pin = entry.get("x264") or {}
+        source = {"source": "dev-prebuilt", "release_ok": False}
+        log("  warning  third-party FFmpeg build: DEV ONLY, NOT FOR RELEASE (use --ffmpeg-from for a release)")
 
-    ffmpeg = dest / f"ffmpeg{ctx.exe}"
-    ffprobe = dest / f"ffprobe{ctx.exe}"
+    ffmpeg, ffprobe = dest / names[0], dest / names[1]
     env = ctx.child_env()
     ver = run([ffmpeg, "-hide_banner", "-version"], env=env, capture=True).stdout
     probe_ver = run([ffprobe, "-hide_banner", "-version"], env=env, capture=True).stdout
-    lic_text = run([ffmpeg, "-hide_banner", "-L"], env=env, capture=True).stdout
+    lic_text = " ".join(run([ffmpeg, "-hide_banner", "-L"], env=env, capture=True).stdout.split())
     if "nonfree" in lic_text.lower():
         raise BuildError("this FFmpeg build contains nonfree parts and may not be redistributed")
     if "version 3 of the License" in lic_text:
@@ -385,6 +437,8 @@ def install_ffmpeg(ctx: Ctx, entry: dict[str, Any], files: list[Path]) -> dict[s
     config = next((ln.split(":", 1)[1].strip() for ln in ver.splitlines() if ln.startswith("configuration:")), "")
     if "--enable-libx264" not in config:
         raise BuildError("FFmpeg build lacks --enable-libx264")
+    if source["release_ok"] and (license_effective != "GPL-2.0-or-later" or "--enable-version3" in config):
+        raise BuildError(f"Baleen's FFmpeg build must be GPL-2.0-or-later; this one is {license_effective}")
 
     # x264 revision from the encoder's SEI message (§15 needs the exact x264 sources).
     sample = ctx.tmp / "x264-probe.h264"
@@ -396,14 +450,22 @@ def install_ffmpeg(ctx: Ctx, entry: dict[str, Any], files: list[Path]) -> dict[s
     x264 = {"core": int(m.group(1)), "revision": int(m.group(2)) if m.group(2) else None,
             "commit_short": m.group(3).decode() if m.group(3) else None,
             "sei": m.group(0).decode()}
-    pin = entry.get("x264") or {}
     if pin.get("revision") and x264["revision"] != pin["revision"]:
         raise BuildError(f"x264 revision {x264['revision']} differs from the pinned r{pin['revision']}")
     if pin.get("commit") and x264["commit_short"] and not pin["commit"].startswith(x264["commit_short"]):
         raise BuildError(f"x264 commit {x264['commit_short']} differs from the pinned {pin['commit']}")
     if pin.get("commit"):
         x264["commit"] = pin["commit"]
+
+    if source["release_ok"]:
+        # Decoder coverage of the §6 matrix, encoders, muxers and a test encode (scripts/check_ffmpeg.py).
+        sys.path.insert(0, str(REPO / "scripts"))
+        import check_ffmpeg
+
+        if check_ffmpeg.main([str(dest), str(ctx.tmp)]) != 0:
+            raise BuildError("the FFmpeg build fails scripts/check_ffmpeg.py")
     return {
+        **source,
         "ffmpeg": rel(ctx, ffmpeg),
         "ffprobe": rel(ctx, ffprobe),
         "version_line": ver.splitlines()[0],
@@ -680,7 +742,17 @@ def build_runtime(ctx: Ctx) -> dict[str, Any]:
     plan: list[tuple[str, dict[str, Any], dict[str, Any]]] = []
     for key in COMPONENTS:
         comp = ctx.pins["components"][key]
-        entry = comp["platforms"].get(ctx.platform)
+        if key == "ffmpeg" and ctx.ffmpeg_from is not None:
+            # Built by Baleen from pinned sources: nothing to download here.
+            srcs = build_sources(ctx)
+            entry = {"version": srcs["ffmpeg"]["version"],
+                     "build": f"Baleen build: FFmpeg {srcs['ffmpeg']['version']} + x264 {srcs['x264']['commit'][:8]}"
+                              + (f" + zlib {srcs['zlib']['version']}" if "zlib" in srcs else ""),
+                     "downloads": [],
+                     "gpl_sources": [{"what": s["what"], "file": s["file"], "url": s.get("url") or s["git"][0],
+                                      "sha256": s["sha256"]} for s in srcs.values()]}
+        else:
+            entry = comp["platforms"].get(ctx.platform)
         if entry is None:
             raise BuildError(f"runtimes.json has no {ctx.platform} entry for {key}")
         plan.append((key, comp, entry))
@@ -719,6 +791,8 @@ def build_runtime(ctx: Ctx) -> dict[str, Any]:
         "built_at": dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "build_host": {"os": platform.platform(), "python": platform.python_version()},
         "runtimes_json_sha256": sha256_file(RUNTIMES_JSON),
+        # False when a dev-only third-party FFmpeg is inside: such a runtime must not be released.
+        "release_ok": bool(components["ffmpeg"]["installed"].get("release_ok")),
         "components": components,
     }
     out = ctx.runtime / "VERSIONS.json"
@@ -774,18 +848,6 @@ def _wrap(text: str, indent: str = "") -> str:
                          break_long_words=False)
 
 
-def ffmpeg_libraries(target: str) -> dict[str, Any]:
-    builds = json.loads(FFMPEG_LIBRARIES_JSON.read_text(encoding="utf-8"))["builds"]
-    build = builds[target]
-    return builds[build["same_as"]] if "same_as" in build else build
-
-
-def resolve_x264(text: str, x264: dict[str, Any]) -> str:
-    """Fill the '@x264' placeholder of the macOS entries with the revision found at build time."""
-    rev = x264.get("commit") or x264.get("commit_short") or "unknown"
-    return text.replace("@x264", rev[:8])
-
-
 class NoticeWriter:
     def __init__(self, out: Path, crlf: bool) -> None:
         self.out = out
@@ -810,9 +872,12 @@ def _component_header(title: str, comp: dict[str, Any], pin: dict[str, Any]) -> 
              f"Installed in:  runtime/{comp['dest']}"]
     if pin.get("license_note"):
         lines += ["", _wrap(pin["license_note"])]
-    lines += ["", "Downloaded from (SHA-256 checked when the bundle was built):"]
-    for dl in comp["downloads"]:
-        lines += [f"  {dl['url']}", f"    sha256 {dl['sha256']}"]
+    if comp["downloads"]:
+        lines += ["", "Downloaded from (SHA-256 checked when the bundle was built):"]
+        for dl in comp["downloads"]:
+            lines += [f"  {dl['url']}", f"    sha256 {dl['sha256']}"]
+    else:
+        lines += ["", "Built from source by the Baleen project (see below)."]
     lines += ["", "Source code:"]
     for s in comp["sources"]:
         lines.append(f"  {s['what']}:")
@@ -932,39 +997,46 @@ def _dist_notice(ctx: Ctx, dist: Path) -> tuple[str, str] | None:
 
 def _ffmpeg_notice(ctx: Ctx, comp: dict[str, Any], pin: dict[str, Any]) -> str:
     inst = comp["installed"]
-    libs = ffmpeg_libraries(ctx.platform)
     x264 = inst["x264"]
+    if inst.get("source") != "baleen-build":
+        pin = {k: v for k, v in pin.items() if k != "license_note"}  # the note describes Baleen's own build
     text = _component_header("FFmpeg and FFprobe", comp, pin)
     build = [
-        f"Build:           {libs['builder']}",
         f"Version string:  {inst['version_line']}",
         f"Licence of this build (from ffmpeg -L): {inst['license_effective']}",
         f"x264:            {x264['sei']}" + (f" (commit {x264['commit']})" if x264.get("commit") else ""),
         "",
-        "Configuration:",
+        "Configuration (ffmpeg -buildconf):",
         _wrap(inst["configuration"], "  "),
     ]
-    text += _section("Build", "\n".join(build))
-    lines = [_wrap("The ffmpeg and ffprobe programs in runtime/ffmpeg are statically linked with the libraries "
-                   f"below. Versions are as recorded by the builder ({libs['versions_from']}). For each "
-                   "copyleft library (GPL, LGPL, MPL) the exact source archive is attached to the GitHub "
-                   f"Release of this bundle ({RELEASES_URL}) next to the FFmpeg source; where that is not "
-                   "possible the entry says why. Permissive libraries are listed with their upstream "
-                   "project, where their licence texts can be found."), ""]
-    for lib in libs["libraries"]:
-        lines.append(f"{lib['name']} {resolve_x264(lib['version'], x264)}  [{lib['license']}]")
-        lines.append(f"    upstream: {lib['upstream']}")
-        if "fetch" in lib:
-            lines.append(f"    source:   attached to the release as {resolve_x264(lib['fetch']['file'], x264)}")
-        elif "not_covered" in lib:
-            lines.append("    source:   NOT COVERED. " + lib["not_covered"])
-        else:
-            lines.append("    source:   permissive licence; see upstream")
-    if libs.get("unversioned"):
-        lines += ["", _wrap(libs["unversioned_note"]), ""]
-        for lib in libs["unversioned"]:
-            lines.append(f"{lib['name']}  [{lib['license']}]  (version not published by the builder)")
-    text += _section("Statically linked libraries", "\n".join(lines))
+    if inst.get("source") == "baleen-build":
+        srcs = build_sources(ctx)
+        intro = _wrap(
+            "These ffmpeg and ffprobe programs were built by the Baleen project's continuous integration with "
+            "scripts/build_ffmpeg.sh, from exactly the source archives listed below and nothing else: FFmpeg "
+            "with its own decoders, encoders and (de)muxers, plus the x264 H.264 encoder"
+            + (", and zlib linked statically" if "zlib" in srcs else "")
+            + ". They are configured with --enable-gpl and without --enable-version3 or --enable-nonfree, so "
+            "they are licensed under the GNU General Public License, version 2 or (at your option) any later "
+            "version. x264 is licensed under the GNU GPL version 2 or later"
+            + ("; zlib under the zlib licence, printed at the end" if "zlib" in srcs else "") + ".")
+        text += _section("How this build was made", intro + "\n\n" + "\n".join(build))
+        lines = [_wrap("The complete corresponding source code is these archives, together with "
+                       "scripts/build_ffmpeg.sh and scripts/runtimes.json of the Baleen repository at the "
+                       "version of this bundle. The same files are attached to the GitHub Release of this "
+                       f"bundle ({RELEASES_URL}); runtime/ffmpeg/config.txt and BUILDINFO.json record the build."), ""]
+        for s in srcs.values():
+            lines += [f"{s['file']}", f"    {s['what']}  [{s['license']}]",
+                      f"    from   {s.get('url') or ' or '.join(s['git'])}", f"    sha256 {s['sha256']}"]
+        text += _section("Source code", "\n".join(lines))
+        text += _section("GNU General Public License, version 2", _read(LICENSE_TEXTS / "GPL-2.0.txt"))
+        if "zlib" in srcs:
+            text += _section("zlib licence", _read(LICENSE_TEXTS / "Zlib.txt"))
+        return text
+    warning = _wrap("DEVELOPMENT BUILD, NOT FOR RELEASE. This bundle contains a third-party prebuilt FFmpeg that "
+                    "links libraries whose exact source code is not published, so it must not be distributed. "
+                    "Release bundles use the FFmpeg that Baleen builds from source (build_bundle.py --ffmpeg-from).")
+    text += _section("Build", warning + "\n\n" + "\n".join(build))
     spdx = "GPL-3.0" if "GPL-3.0" in inst["license_effective"] else "GPL-2.0"
     text += _section(f"GNU General Public License ({spdx})", _read(LICENSE_TEXTS / f"{spdx}.txt"))
     return text
@@ -986,8 +1058,8 @@ def _notices_index(ctx: Ctx, record: dict[str, Any], written: list[str]) -> str:
         lines += [f"    {Path(p).stem}" for p in pkgs]
     if (ctx.runtime.parent / "THIRD_PARTY_NOTICES" / "assets").is_dir():
         lines += ["", "Files under assets/ cover the web assets of Baleen's own pages (for example htmx)."]
-    lines += ["", _wrap("GPL source code: the exact source archives for the bundled FFmpeg build (FFmpeg, x264 and "
-                        f"the other copyleft libraries listed in ffmpeg.txt) are attached to the GitHub Release: {RELEASES_URL}."),
+    lines += ["", _wrap("GPL source code: the source archives the bundled FFmpeg was built from (listed in "
+                        f"ffmpeg.txt) are attached to the GitHub Release of this bundle: {RELEASES_URL}."),
               "", _wrap("runtime/VERSIONS.json records the exact version and SHA-256 of every download used to "
                         "build this bundle.")]
     return "\n".join(lines) + "\n"
@@ -1200,6 +1272,10 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--smoke-expected", type=Path, default=SMOKE_EXPECTED, metavar="CSV",
                    help="expected source_path/status/reason of the smoke run; skipped when the file does not exist "
                         "(default: tests/fixtures/smoke-expected.csv)")
+    p.add_argument("--ffmpeg-from", type=Path, metavar="DIR|ZIP",
+                   help="use Baleen's own FFmpeg build: an ffmpeg.yml artifact (folder or zip) for this platform")
+    p.add_argument("--allow-dev-ffmpeg", action="store_true",
+                   help="full bundle with the third-party prebuilt FFmpeg (DEV ONLY, NOT FOR RELEASE)")
     ns = p.parse_args(argv)
 
     started = time.monotonic()
@@ -1233,8 +1309,13 @@ def main(argv: list[str] | None = None) -> int:
             zip_path.unlink(missing_ok=True)
         prepare_work(work)
         pins = json.loads(RUNTIMES_JSON.read_text(encoding="utf-8"))
+        if not ns.runtime_only and ns.ffmpeg_from is None and not ns.allow_dev_ffmpeg:
+            raise BuildError("a bundle needs Baleen's own FFmpeg build: pass --ffmpeg-from <ffmpeg.yml artifact> "
+                             "(or --allow-dev-ffmpeg for a development bundle that must not be released)")
+        if ns.ffmpeg_from is not None and not ns.ffmpeg_from.exists():
+            raise BuildError(f"--ffmpeg-from {ns.ffmpeg_from} does not exist")
         ctx = Ctx(platform=ns.platform, version=version, cache=ns.cache.resolve(), runtime=runtime,
-                  work=work, pins=pins)
+                  work=work, pins=pins, ffmpeg_from=ns.ffmpeg_from.resolve() if ns.ffmpeg_from else None)
         log(f"Baleen {version} for {ns.platform}\n  runtime {runtime}\n  cache   {ctx.cache}\n  work    {work}")
         record = build_runtime(ctx)
         if not ns.runtime_only:

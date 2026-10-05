@@ -14,8 +14,13 @@ env:
   PYTHONIOENCODING: utf-8
 
 jobs:
+  ffmpeg:
+    name: FFmpeg built from source
+    uses: ./.github/workflows/ffmpeg.yml
+
   bundle:
     name: bundle (${{ matrix.platform }})
+    needs: ffmpeg
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     strategy:
@@ -45,10 +50,16 @@ jobs:
           path: .scratch/cache
           key: runtimes-${{ matrix.platform }}-${{ hashFiles('scripts/runtimes.json', 'requirements.lock', 'scripts/build-requirements.lock') }}
 
+      - name: Baleen's FFmpeg build for this platform
+        uses: actions/download-artifact@v8
+        with:
+          name: ffmpeg-${{ matrix.platform }}
+          path: ffmpeg-artifact
+
       - name: Build bundle (includes the smoke test)
         run: |
           "$HOST_PY" scripts/build_bundle.py --platform "${{ matrix.platform }}" --cache .scratch/cache \
-            --work "$RUNNER_TEMP/bundle-work"
+            --work "$RUNNER_TEMP/bundle-work" --ffmpeg-from ffmpeg-artifact
 
       - name: Extract the zip into a fresh folder with spaces
         run: |
@@ -77,10 +88,9 @@ jobs:
           $snap snap "$out/after.json"
           $snap diff "$out/before.json" "$out/after.json" --baseline "$out/control-2.diff.json" --fail
 
-      - name: GPL sources (§15)
+      - name: GPL sources (§15) from the FFmpeg build artifact
         run: |
-          "$HOST_PY" scripts/fetch_gpl_sources.py --platform "${{ matrix.platform }}" \
-            --versions "dist/Baleen-$VERSION-${{ matrix.platform }}/runtime/VERSIONS.json" \
+          "$HOST_PY" scripts/fetch_gpl_sources.py --platform "${{ matrix.platform }}" --ffmpeg-from ffmpeg-artifact \
             --out dist/gpl-sources --cache .scratch/cache --work "$RUNNER_TEMP/gpl-work"
 
       - uses: actions/upload-artifact@v7
