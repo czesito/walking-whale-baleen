@@ -1,0 +1,17 @@
+Picked up JAVA_TOOL_OPTIONS: -Djava.io.tmpdir=C:\Temp -XX:-UsePerfData
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Synthetic sample: noise before the XML, a default namespace, CJK / space / POSIX names. -->
+<report xmlns="urn:example:verapdf-sample">
+  <jobs>
+    <job>
+      <item size="100"><name>/Volumes/Archive Share/訪談 紀錄.PDF</name></item>
+      <validationReport jobEndStatus="normal" profileName="PDF/A-1b validation profile" isCompliant="true"></validationReport>
+    </job>
+    <job>
+      <item size="100"><name>D:\scans\report  final.pdf</name></item>
+      <validationReport profileName="PDF/A-1b validation profile" isCompliant="false">
+        <details failedRules="1"><rule clause="6.7.3" status="failed"><description>XMP mismatch</description></rule></details>
+      </validationReport>
+    </job>
+  </jobs>
+</report>

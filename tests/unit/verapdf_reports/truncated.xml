@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<report>
+  <jobs>
+    <job>
+      <item size="29656"><name>C:\work\verapdf-7\0001.pdf</name></item>
+      <validationReport jobEndStatus="normal" profileName="PDF/A-3b validation profile" isCompliant="true"></validationReport>
+    </job>
+    <job>
+      <item size="987"><name>C:\work\verapdf-7\0002.pdf</name></item>
+      <validationReport jobEndStatus="normal" profileName="PDF/A-3b validation profile" isCompliant="false">
+        <details passedRules="142" failedRules="2
