@@ -1,0 +1,1862 @@
+<!DOCTYPE html>
+<html lang="en" data-brand="Walking Whale" data-document="spec">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Baleen — Specification v1.2</title>
+<meta name="description" content="Baleen by Walking Whale: functional and technical specification for a portable, offline tool that converts legacy archive files into archival formats and verifies every output.">
+<link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAFFElEQVR42u2Wb2ydZRnGf9fzvOecnfZ0pRmjFrr+cxmh48OSjhS6zamMfZiKBlP2gQRYEP8tcSFEp1+oVRMjUT9oNNGAATNNdFOEhGTRka1bO6dYiBobXFA4h+nYBszunPW057zPc/thPVutc7BoCCa7kifvm/d9/ly57vu+7geu4Ar+j6H58XYfujH5D0QEw/7cp8bzf4p/3bS59/3tzX23XHPpNRuTN1PpLUg44mDUACt0DFytbNNnga1gWRN54Z+vu/TeZEZVl2PgTHF8b0vXhqGmuSW/P3HiV2cvkN8dLpeAgxFgNAIq9LznczK+IOmkhfQrwGm8/5ZLcj2hVj2Cs8cU9Sk57YwW93iSFZH0Pqslj1eOj712OQo0YhoBlvZs2BzFdmfOY+wizP1OLrM0SD3Igot0mtPDZuFRoSzGGwbXgr2OdK83VgbZ+yqZlqd5cW8NsEsRUGNCU/fQGofbIqnTjJKwJoNbBWvlkiyAWcBi/KWkvBl/cfCyif4Y7RHn9GEz7ZdsB1AvF8dvXXzGYgICrK1vU2sIs1sM+pGWATdgDMr5vFkEiwYWDKYlt8z5LBYDMdYPE9kpp0MYdyN2xmgPyOl2YEryq7F0V7k4cWQ+ryJAspBIoXvwhno6+3GJXtBqYCUIZIAhCfmcYn12ApEn2qlgc5MOtxlYHmLycuLS1MRZmWqStoAZZifl3D3BxS+dq4zR8wm5sKZNLhNitCdlrtlhr9ZSf8JyqcvWYnv0fq1EVwz2LomfCm3DuS0K4atR8aDEdper1QgOM00DTQZ/lXGX5J+LaXjS+czP851zW6vH+FtD8QYBAyi/NH4UOLo4K2eh1Nw7WHI0/Ywwd9A7m0otyQs7ZY4BiZkYeAJLbkR2UjCLLOuNaFIZ4pBgHLN9GahWL5Q2/t+TcNjDagfDgmsc5BP625Il9cJ+l+QGLU0fMedHfWbJZgtzd1WKh7+dbe1cRWI/dJEfGe7zwJ1Iz4FWgL0G6jDHsxh3myOtTe96luFhz9SUXcQyp+zcGDMG8gnHJ+uF/PVf85n8R0OtfL9zyRqX5LaGdHZ7pTjx46buoTVOyQecuWlgxuCok30ItEcwBBwz1C6ZQH/0uKfmpkv/YGqqYTaXsNHJyXqha8N9Lsk9mNaqO5wyNyrJfibWqvdUiuPfpb8/6+W/6ZIlnyQEKxfHH/JiuRG3y+wm4ABiOdjZKP4k2VojDM27o7tYCBbY7+Oh0L3+I3J6mFj7opx/L/J3hFD/YOWViScAV8hf/6DP5O8PtZmPlV85vKe1a0PvmdL4odrK9unaC795Jtva5QXXIbU6U95gphzjdzhzLJ5T+eIKOBi1pSvW3SbjAcx+IZfZCrKo6qqzpfF9bJzviGJnrFe/XylNPFroXv9Y9H5b84p1tzE5WYdhVUodR+ZT/FWJP0haSqifd9nFZcjCikidnUrwPzHIK9oPzhQPPn8+NGNjaXPvYLsify8XOz7d0r3+ywanyi8deOhCy96dXtVzS3dQZrnSMB7RNq/6Jzg+ObPQiHR57Xh3PG+jnTfnC17dleKvX2jpWb+fqK+XS4eebszOd958nfd+B7jTIvYa7M1m6vveePG3lfk97M0ICEYEBxyMxYWyLZ7X0r1uxODdEfuGF1WCViEGEadlqhnKZfPhe6//+XB5cS/4LzHSyCG19Q20tvVtam3r29Ra6Nh4deN/y7U3LXsHXB+H/dtxf9RbeL+CK3jn4Z9ZLS2Q21XzOwAAAABJRU5ErkJggg==">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ww-bg:#FBFAF6; --ww-surface:#FFFFFF; --ww-wash:#F7F4EE;
+  --ww-abyss:#0D1F3C; --ww-tidal:#2E5F7A; --ww-surface-blue:#A8C5D6;
+  --ww-bone:#C8B99A; --ww-biolum:#6DBFA0; --ww-sediment:#E8E0D0;
+  --ww-border:rgba(200,185,154,0.55); --ww-border-soft:rgba(200,185,154,0.30);
+  --ww-shadow:0 12px 40px rgba(13,31,60,0.07); --ww-shadow-sm:0 4px 16px rgba(13,31,60,0.05);
+  --font-display:"Cormorant Garamond", Georgia, serif;
+  --font-body:"Source Serif 4", Georgia, "Noto Serif TC", serif;
+  --font-ui:"Inter", system-ui, -apple-system, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+  --font-mono:"IBM Plex Mono", ui-monospace, "Noto Sans TC", monospace;
+  --transition:0.22s cubic-bezier(0.4,0,0.2,1);
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:76px}
+body{
+  margin:0;color:var(--ww-abyss);font-family:var(--font-body);font-size:17px;line-height:1.65;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  background:
+    radial-gradient(ellipse 70% 50% at 95% 5%, rgba(168,197,214,.10), transparent),
+    radial-gradient(ellipse 50% 40% at 5% 90%, rgba(200,185,154,.09), transparent),
+    var(--ww-bg);
+  background-attachment:fixed;
+}
+a{color:var(--ww-tidal);text-decoration-color:var(--ww-border);text-underline-offset:3px}
+a:hover{text-decoration-color:var(--ww-tidal)}
+
+/* ---------- topbar ---------- */
+.topbar{position:fixed;top:0;left:0;right:0;z-index:100;height:52px;background:rgba(251,250,246,0.93);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid var(--ww-border-soft);
+  display:flex;align-items:center;padding:0 20px;gap:14px}
+.topbar .logo{height:26px;width:auto;display:block}
+.tb-divider{width:1px;height:22px;background:var(--ww-border);flex:none}
+.tb-title{font-family:var(--font-mono);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ww-tidal);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.tb-pill{margin-left:auto;flex:none}
+#menuBtn{display:none;flex:none;width:36px;height:36px;border:1px solid var(--ww-border-soft);border-radius:10px;background:var(--ww-surface);
+  cursor:pointer;align-items:center;justify-content:center;flex-direction:column;gap:4px;padding:0;transition:background var(--transition)}
+#menuBtn span{display:block;width:16px;height:1.5px;background:var(--ww-abyss);transition:transform var(--transition),opacity var(--transition)}
+#menuBtn.open span:nth-child(1){transform:translateY(5.5px) rotate(45deg)}
+#menuBtn.open span:nth-child(2){opacity:0}
+#menuBtn.open span:nth-child(3){transform:translateY(-5.5px) rotate(-45deg)}
+#menuBtn:focus-visible,.sidenav a:focus-visible,a:focus-visible{outline:2px solid var(--ww-biolum);outline-offset:2px}
+.progress-bar{position:fixed;top:52px;left:0;right:0;height:2px;z-index:101;pointer-events:none}
+#progress-fill{height:100%;width:0;background:var(--ww-biolum);transition:width .1s linear}
+
+/* ---------- side navigation ---------- */
+.sidenav{position:fixed;top:52px;left:0;bottom:0;width:252px;background:rgba(251,250,246,0.97);border-right:1px solid var(--ww-border-soft);
+  overflow-y:auto;padding:20px 0 40px;z-index:90;transform:translateX(-100%);transition:transform var(--transition)}
+.sidenav.open{transform:translateX(0);box-shadow:var(--ww-shadow)}
+.nav-label{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ww-bone);padding:14px 22px 6px}
+.sidenav a{display:flex;gap:8px;padding:6px 20px 6px 20px;font-family:var(--font-ui);font-size:.83rem;line-height:1.35;color:var(--ww-abyss);
+  text-decoration:none;border-left:2px solid transparent;transition:color .15s,background .15s,border-color .15s}
+.sidenav a .n{font-family:var(--font-mono);font-size:.7rem;color:var(--ww-bone);min-width:1.9em;padding-top:1px}
+.sidenav a:hover{background:var(--ww-wash)}
+.sidenav a.active{border-left-color:var(--ww-biolum);color:var(--ww-tidal);background:rgba(109,191,160,.08)}
+.nav-overlay{position:fixed;inset:52px 0 0 0;background:rgba(13,31,60,.22);opacity:0;pointer-events:none;transition:opacity var(--transition);z-index:80}
+.nav-overlay.show{opacity:1;pointer-events:auto}
+@media (min-width:900px){.sidenav{transform:translateX(0)}.nav-overlay{display:none}}
+@media (max-width:899px){#menuBtn{display:flex}}
+@media (max-width:599px){.topbar .tb-pill{display:none}.topbar{gap:10px;padding:0 14px}}
+
+/* ---------- main column ---------- */
+.main{min-width:0;padding:52px 20px 80px;margin-left:0;transition:margin-left var(--transition)}
+@media (min-width:900px){.main{margin-left:252px;padding:52px 36px 80px}}
+@media (min-width:1200px){.main{padding:52px 64px 80px;max-width:calc(252px + 940px)}}
+
+/* ---------- type ---------- */
+h1{font-family:var(--font-display);font-size:clamp(2.6rem,9vw,5.2rem);font-weight:500;line-height:.93;letter-spacing:-0.03em;margin:0}
+h2{font-family:var(--font-display);font-size:clamp(1.75rem,5vw,2.8rem);font-weight:500;letter-spacing:-0.025em;line-height:1.0;margin:0}
+h3{font-family:var(--font-display);font-size:1.5rem;font-weight:600;letter-spacing:-0.015em;line-height:1.15;margin:34px 0 8px}
+h4{font-family:var(--font-ui);font-size:.75rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ww-tidal);margin:26px 0 8px}
+p{margin:12px 0;max-width:74ch}
+ul,ol{max-width:74ch;padding-left:1.25em}
+li{margin:.3em 0}
+strong{font-weight:600}
+.section-kicker{font-family:var(--font-mono);font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ww-bone);margin-bottom:8px}
+.rule-accent{width:38px;height:5px;background:var(--ww-bone);border-radius:3px;margin:16px 0 0}
+.lead{font-size:1.12rem;color:var(--ww-tidal)}
+.muted{color:var(--ww-tidal)}
+.small{font-size:.9rem}
+
+/* ---------- hero ---------- */
+.hero{padding:76px 0 18px;animation:fadeRise .65s ease both}
+.hero .by{font-family:var(--font-ui);font-size:.85rem;font-weight:500;color:var(--ww-tidal);margin-top:14px;letter-spacing:.01em}
+.hero-sub{font-family:var(--font-body);font-size:clamp(1.12rem,2.4vw,1.38rem);line-height:1.45;max-width:38ch;margin:22px 0 0;color:var(--ww-abyss)}
+.meta-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:24px}
+
+/* ---------- chips & ids ---------- */
+.chip{display:inline-block;font-family:var(--font-mono);font-size:.65rem;letter-spacing:.06em;border:1px solid var(--ww-border);border-radius:20px;
+  padding:4px 11px;color:var(--ww-abyss);background:var(--ww-surface);white-space:nowrap}
+.chip.accent{background:var(--ww-abyss);color:var(--ww-bg);border-color:var(--ww-abyss)}
+.chip.green{background:rgba(109,191,160,.14);border-color:rgba(109,191,160,.55)}
+.chip.blue{background:rgba(46,95,122,.08);border-color:rgba(46,95,122,.35);color:var(--ww-tidal)}
+.chip.warm{background:var(--ww-sediment);border-color:var(--ww-bone)}
+.id{font-family:var(--font-mono);font-size:.7rem;letter-spacing:.03em;color:var(--ww-tidal);background:rgba(168,197,214,.24);border-radius:6px;padding:2px 7px;white-space:nowrap}
+.st{display:inline-block;font-family:var(--font-mono);font-size:.64rem;letter-spacing:.05em;border-radius:20px;padding:2px 9px;border:1px solid var(--ww-border);white-space:nowrap;background:var(--ww-surface)}
+.st.ok{background:rgba(109,191,160,.16);border-color:rgba(109,191,160,.6)}
+.st.review{background:var(--ww-sediment);border-color:var(--ww-bone)}
+.st.failed{background:var(--ww-abyss);border-color:var(--ww-abyss);color:var(--ww-bg)}
+.st.unsupported{background:rgba(168,197,214,.3);border-color:var(--ww-surface-blue)}
+.st.ignored,.st.skipped{color:var(--ww-tidal)}
+
+/* ---------- blocks ---------- */
+.tldr-box{background:var(--ww-abyss);color:var(--ww-bg);border-radius:20px;padding:26px 26px 22px;margin:30px 0 8px;box-shadow:var(--ww-shadow);animation:fadeRise .65s .12s ease both}
+.tldr-label{font-family:var(--font-mono);color:var(--ww-biolum);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px}
+.tldr-box ul{margin:0;padding-left:1.1em;color:rgba(251,250,246,0.88);max-width:none}
+.tldr-box li{margin:.45em 0}
+.tldr-box strong{color:var(--ww-bg)}
+.card{background:var(--ww-surface);border:1px solid var(--ww-border-soft);border-radius:20px;padding:22px;box-shadow:var(--ww-shadow-sm)}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));margin:18px 0}
+.grid .card{padding:18px 20px;transition:transform var(--transition),box-shadow var(--transition)}
+.grid .card:hover{transform:translateY(-2px);box-shadow:var(--ww-shadow)}
+.card .card-title{font-family:var(--font-ui);font-weight:600;font-size:.95rem;margin:6px 0 4px}
+.card p{font-size:.95rem;margin:4px 0}
+.callout{border-left:3px solid var(--ww-tidal);background:var(--ww-surface);border-radius:0 14px 14px 0;padding:14px 18px;margin:18px 0;
+  font-family:var(--font-ui);font-size:.9rem;line-height:1.55;box-shadow:var(--ww-shadow-sm);max-width:80ch}
+.callout.warm{border-left-color:var(--ww-bone);background:var(--ww-wash);box-shadow:none}
+.callout .label{display:block;font-family:var(--font-mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ww-tidal);margin-bottom:4px}
+.callout p{margin:4px 0}
+
+/* tables */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--ww-border-soft);border-radius:16px;background:var(--ww-surface);box-shadow:var(--ww-shadow-sm);margin:18px 0;-webkit-overflow-scrolling:touch}
+table.tbl{width:100%;border-collapse:collapse;font-family:var(--font-ui);font-size:.84rem;line-height:1.5}
+.tbl th{font-family:var(--font-mono);font-weight:500;font-size:.62rem;letter-spacing:.09em;text-transform:uppercase;color:var(--ww-tidal);text-align:left;
+  padding:12px 14px;background:var(--ww-wash);border-bottom:1px solid var(--ww-border);white-space:nowrap}
+.tbl td{padding:10px 14px;border-bottom:1px solid var(--ww-border-soft);vertical-align:top}
+.tbl tr:last-child td{border-bottom:0}
+.tbl td:first-child{white-space:nowrap}
+.tbl.wrap-first td:first-child{white-space:normal;min-width:150px}
+.tbl.min td{min-width:110px}
+
+code{font-family:var(--font-mono);font-size:.82em;background:var(--ww-wash);border:1px solid var(--ww-border-soft);border-radius:6px;padding:1px 5px;overflow-wrap:anywhere}
+pre.code{font-family:var(--font-mono);font-size:.78rem;line-height:1.6;background:var(--ww-abyss);color:var(--ww-bg);border-radius:16px;padding:18px 20px;
+  overflow-x:auto;margin:18px 0;box-shadow:var(--ww-shadow-sm)}
+pre.code .c{color:var(--ww-surface-blue)}
+pre.code .k{color:var(--ww-biolum)}
+
+/* pipeline diagram */
+.pipeline{list-style:none;padding:0;margin:22px 0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;max-width:none;counter-reset:step}
+.pipeline li{position:relative;margin:0;background:var(--ww-surface);border:1px solid var(--ww-border-soft);border-radius:16px;padding:14px 12px 12px;
+  box-shadow:var(--ww-shadow-sm);counter-increment:step}
+.pipeline li::before{content:"0" counter(step);display:block;font-family:var(--font-mono);font-size:.6rem;letter-spacing:.1em;color:var(--ww-bone)}
+.pipeline li b{display:block;font-family:var(--font-ui);font-size:.9rem;font-weight:600;margin:2px 0 4px}
+.pipeline li span{display:block;font-family:var(--font-ui);font-size:.74rem;line-height:1.4;color:var(--ww-tidal)}
+.pipeline li:not(:last-child)::after{content:"";position:absolute;right:-8px;top:50%;width:6px;height:6px;border-top:1.5px solid var(--ww-bone);border-right:1.5px solid var(--ww-bone);transform:translateY(-50%) rotate(45deg)}
+.pipeline li.key{border-color:rgba(109,191,160,.6)}
+@media (max-width:1100px){.pipeline{grid-template-columns:repeat(4,minmax(0,1fr))}.pipeline li::after{display:none}}
+@media (max-width:600px){.pipeline{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* architecture */
+.arch{display:grid;gap:10px;margin:22px 0}
+.arch-row{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.arch-box{background:var(--ww-surface);border:1px solid var(--ww-border-soft);border-radius:14px;padding:12px 14px;box-shadow:var(--ww-shadow-sm)}
+.arch-box.dark{background:var(--ww-abyss);color:var(--ww-bg);border-color:var(--ww-abyss)}
+.arch-box.dark .t{color:var(--ww-biolum)}
+.arch-box .t{font-family:var(--font-mono);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ww-bone)}
+.arch-box b{display:block;font-family:var(--font-ui);font-size:.92rem;font-weight:600;margin:2px 0}
+.arch-box span{display:block;font-family:var(--font-ui);font-size:.76rem;line-height:1.4;opacity:.85}
+.arch-link{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.08em;color:var(--ww-bone);text-align:center;text-transform:uppercase}
+
+/* decision records */
+.dr{background:var(--ww-surface);border:1px solid var(--ww-border-soft);border-radius:16px;padding:16px 20px;margin:12px 0;box-shadow:var(--ww-shadow-sm)}
+.dr-head{display:flex;flex-wrap:wrap;gap:10px;align-items:baseline}
+.dr-title{font-family:var(--font-ui);font-weight:600;font-size:1rem}
+.dr dl{display:grid;grid-template-columns:96px 1fr;gap:6px 14px;margin:10px 0 0;font-family:var(--font-ui);font-size:.86rem;line-height:1.5}
+.dr dt{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ww-bone);padding-top:3px}
+.dr dd{margin:0}
+@media (max-width:600px){.dr dl{grid-template-columns:1fr}.dr dt{padding-top:6px}}
+
+/* sections */
+section.doc-section{padding-top:64px}
+.reveal-ready .doc-section{opacity:0;transform:translateY(14px);transition:opacity .65s ease,transform .65s ease}
+.reveal-ready .doc-section.in{opacity:1;transform:none}
+
+.doc-footer{margin-top:64px;padding:20px 0;border-top:1px solid var(--ww-border);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.doc-footer span{font-family:var(--font-mono);font-size:.65rem;color:var(--ww-bone)}
+
+@keyframes fadeRise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:0.01ms !important;transition-duration:0.01ms !important}
+  html{scroll-behavior:auto}
+  .reveal-ready .doc-section{opacity:1;transform:none}
+}
+@media print{
+  .topbar,.sidenav,.progress-bar,.nav-overlay,#menuBtn{display:none !important}
+  .main{margin:0;padding:0}
+  body{background:#fff;font-size:11pt}
+  .reveal-ready .doc-section{opacity:1;transform:none}
+  section.doc-section{padding-top:24px}
+  pre.code{white-space:pre-wrap}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <button id="menuBtn" aria-label="Open navigation" aria-expanded="false" aria-controls="sidenav"><span></span><span></span><span></span></button>
+  <img class="logo" src="data:image/png;base64,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" alt="Walking Whale">
+  <div class="tb-divider" aria-hidden="true"></div>
+  <div class="tb-title">Baleen · Specification v1.2</div>
+  <span class="chip accent tb-pill">SPEC · APPROVED</span>
+</header>
+<div class="progress-bar" aria-hidden="true"><div id="progress-fill"></div></div>
+
+<nav class="sidenav" id="sidenav" aria-label="Sections">
+  <div class="nav-label">Overview</div>
+  <a href="#overview"><span class="n">00</span>Summary &amp; document control</a>
+  <a href="#background"><span class="n">01</span>Background &amp; goals</a>
+  <a href="#users"><span class="n">02</span>Users &amp; environment</a>
+  <a href="#principles"><span class="n">03</span>Principles</a>
+  <div class="nav-label">How it works</div>
+  <a href="#architecture"><span class="n">04</span>Architecture</a>
+  <a href="#pipeline"><span class="n">05</span>Processing pipeline</a>
+  <a href="#formats"><span class="n">06</span>Format matrix &amp; conversion</a>
+  <a href="#naming"><span class="n">07</span>Output layout &amp; naming</a>
+  <a href="#verification"><span class="n">08</span>Verification</a>
+  <a href="#statuses"><span class="n">09</span>Statuses &amp; reason codes</a>
+  <a href="#report"><span class="n">10</span>Report &amp; run record</a>
+  <a href="#settings"><span class="n">11</span>Settings</a>
+  <a href="#ui"><span class="n">12</span>User interface</a>
+  <a href="#security"><span class="n">13</span>Local server &amp; security</a>
+  <div class="nav-label">Shipping</div>
+  <a href="#packaging"><span class="n">14</span>Packaging, install, uninstall</a>
+  <a href="#licensing"><span class="n">15</span>Licensing &amp; naming</a>
+  <a href="#testing"><span class="n">16</span>Testing &amp; acceptance</a>
+  <div class="nav-label">Decisions</div>
+  <a href="#decisions"><span class="n">17</span>Decision records</a>
+  <a href="#risks"><span class="n">18</span>Risks to validate</a>
+  <a href="#delivery"><span class="n">19</span>Delivery plan</a>
+  <a href="#appendix"><span class="n">A</span>Appendices</a>
+</nav>
+<div class="nav-overlay" id="navOverlay"></div>
+
+<main class="main" id="main">
+
+<!-- ===================================================== 00 -->
+<section id="overview">
+  <div class="hero">
+    <div class="section-kicker">Open-source tool · Specification v1.2 · <span style="white-space:nowrap">2026-10-05</span></div>
+    <h1>Baleen</h1>
+    <div class="by">by Walking Whale</div>
+    <p class="hero-sub">Turn legacy archive files into archival formats, and prove that every one of them is sound.</p>
+    <div class="meta-row">
+      <span class="chip green">Approved for implementation</span>
+      <span class="chip">Apache-2.0</span>
+      <span class="chip">macOS + Windows</span>
+      <span class="chip">Offline · portable</span>
+      <span class="chip blue">walking-whale-baleen</span>
+    </div>
+    <div class="rule-accent"></div>
+  </div>
+
+  <div class="tldr-box">
+    <div class="tldr-label">TL;DR</div>
+    <ul>
+      <li>Baleen walks a folder tree and converts every non-archival file into one of five archival formats: <strong>JPEG, TIFF, PDF/A, MP4, M4A</strong>.</li>
+      <li>Every output, and every file that was already archival, is <strong>verified</strong> (full decode, PDF/A validation, full media decode) and recorded with <strong>SHA-256</strong> in a CSV report.</li>
+      <li>The <strong>source folder is never modified</strong>. Output goes to a separate folder that mirrors the source structure.</li>
+      <li>Runs from a <strong>portable folder</strong> on a clean Mac or Windows machine: double-click to start, delete the folder to uninstall. No installer, no network.</li>
+      <li>Files are processed <strong>in parallel across the processor cores</strong>, within limits the user sets in Settings (Gentle / Balanced / Maximum).</li>
+      <li>A <strong>left rail</strong> with workflows (<strong>Convert</strong>, <strong>Check</strong>), <strong>Runs</strong> history and system pages. Every run gets one page that shows live progress, then the results.</li>
+    </ul>
+  </div>
+
+  <h4>Document control</h4>
+  <div class="tbl-wrap"><table class="tbl">
+    <tbody>
+      <tr><td>Product</td><td>Baleen (by Walking Whale). Repository <code>walking-whale-baleen</code></td></tr>
+      <tr><td>Document</td><td>Functional &amp; technical specification, v1.2, 2026-10-05</td></tr>
+      <tr><td>Revisions</td><td>
+        <p><strong>v1.2:</strong> production performance.</p>
+        <ul>
+          <li>Parallel lanes within user-adjustable resource budgets (§5.5), replacing sequential processing.</li>
+          <li>Local work folder, then atomic publish (§5.4).</li>
+          <li>Run journal and results index (§10.4).</li>
+          <li>LibreOffice and veraPDF batching.</li>
+          <li>Settings › Resource use (UI-S2); run-page processor control (UI-R2).</li>
+          <li>No GPU in v1 (NG8).</li>
+          <li>DR-32 to DR-37 added; DR-19 superseded.</li>
+        </ul>
+        <p><strong>v1.1:</strong> aligned with the approved design doc.</p>
+        <ul>
+          <li>§12 rewritten: workflows + runs + system shell, run page, inspector, workflow registry. All v1.0 §12 IDs are retired; v1.1 numbers §12 afresh (v1.0 was never implemented).</li>
+          <li>§11 app preferences added.</li>
+          <li>§10.3 run index raised to 100.</li>
+          <li>Appendix B endpoints updated.</li>
+          <li>DR-27 to DR-31 added.</li>
+        </ul>
+        <p><strong>v1.0:</strong> first approved version.</p>
+      </td></tr>
+      <tr><td>Status</td><td>Approved. All decisions closed (§17). Changes require a new decision record.</td></tr>
+      <tr><td>Owner</td><td>Walking Whale Co., Ltd., Taipei</td></tr>
+      <tr><td>Companion</td><td><code>docs/baleen-design.html</code>, the approved UI/UX design doc (IA, tokens, components, wireframes W-01 to W-22, clickable prototype, copy). This spec defines behaviour; the design doc defines appearance.</td></tr>
+      <tr><td>Audience</td><td>Implementers (including AI coding agents), maintainers, reviewers</td></tr>
+      <tr><td>Conventions</td><td><strong>MUST / SHOULD / MAY</strong> as in RFC 2119. IDs (<span class="id">P1</span> <span class="id">V-PDFA</span> <span class="id">UI-C4</span> <span class="id">SEC-5</span> <span class="id">AC-07</span> <span class="id">DR-09</span>) are stable. Cite them in code comments, tests and commit messages.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ===================================================== 01 -->
+<section class="doc-section" id="background">
+  <div class="section-kicker">01 · Background &amp; goals</div>
+  <h2>Why Baleen exists</h2>
+  <div class="rule-accent"></div>
+  <p>Small archives and collections inherit born-digital material from the 2000s: camera clips in AVI and MPG, Word <code>.doc</code> files, e-mails saved as <code>.eml</code>, BMP scans, WMA recordings. Long-term preservation and access need a small set of open, well-supported formats, plus <em>evidence</em> that each file is intact. Staff usually have a laptop and a NAS share, no IT support, and no time to learn command-line tools.</p>
+  <p>Baleen was first scoped for an art archive digitising event documentation from 2000–2005: about 1,700 files and 1 GB, of which 63 needed conversion (Appendix&nbsp;D). It is built generic and released as open source.</p>
+  <p>Baleen whales filter whatever the sea brings and keep what sustains them. This tool does the same with a folder.</p>
+
+  <h3>Goals</h3>
+  <div class="tbl-wrap"><table class="tbl wrap-first">
+    <thead><tr><th>ID</th><th>Goal</th></tr></thead>
+    <tbody>
+      <tr><td><span class="id">G1</span></td><td>Convert every non-archival file in a folder tree into a defined archival format (§6).</td></tr>
+      <tr><td><span class="id">G2</span></td><td>Verify every output, and every already-archival source, with objective checks (§8).</td></tr>
+      <tr><td><span class="id">G3</span></td><td>Never modify the source tree.</td></tr>
+      <tr><td><span class="id">G4</span></td><td>Run on a clean Mac or Windows machine with nothing installed; uninstall by deleting one folder.</td></tr>
+      <tr><td><span class="id">G5</span></td><td>Produce a report with fixity (SHA-256) and provenance (settings, tool versions) for every file.</td></tr>
+      <tr><td><span class="id">G6</span></td><td>Work fully offline; no file or metadata leaves the machine.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Non-goals (v1)</h3>
+  <div class="tbl-wrap"><table class="tbl wrap-first">
+    <thead><tr><th>ID</th><th>Out of scope</th></tr></thead>
+    <tbody>
+      <tr><td><span class="id">NG1</span></td><td>Renaming files to identifier schemes, cataloguing, metadata entry.</td></tr>
+      <tr><td><span class="id">NG2</span></td><td>Converting PDFs that are not PDF/A. They are reported, not converted (DR-07).</td></tr>
+      <tr><td><span class="id">NG3</span></td><td>OCR, deduplication, image enhancement, deinterlacing, transcription.</td></tr>
+      <tr><td><span class="id">NG4</span></td><td>Formats not in §6 (e.g. Outlook <code>.msg</code>, HEIC, camera RAW, PSD, ZIP). Reported as <span class="st unsupported">UNSUPPORTED</span>.</td></tr>
+      <tr><td><span class="id">NG5</span></td><td>Multi-user, server or cloud deployment; parallel processing; auto-update; installers; code signing.</td></tr>
+      <tr><td><span class="id">NG6</span></td><td>Linux bundles. Linux runs from source.</td></tr>
+      <tr><td><span class="id">NG7</span></td><td>Localization. English only (DR-21).</td></tr>
+      <tr><td><span class="id">NG8</span></td><td>GPU acceleration (DR-37).</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ===================================================== 02 -->
+<section class="doc-section" id="users">
+  <div class="section-kicker">02 · Users &amp; environment</div>
+  <h2>Who runs it, and where</h2>
+  <div class="rule-accent"></div>
+  <div class="tbl-wrap"><table class="tbl wrap-first">
+    <tbody>
+      <tr><td>Primary user</td><td>Archivist or project staff. Non-technical; comfortable with Finder/Explorer and a browser.</td></tr>
+      <tr><td>Maintainer</td><td>Walking Whale; outside contributors via GitHub.</td></tr>
+      <tr><td>Operating systems</td><td>macOS 14+ on Apple silicon; Windows 10 22H2 / Windows 11 on x64. macOS on Intel is an optional build (DR-24).</td></tr>
+      <tr><td>Browsers</td><td>Current desktop Safari, Chrome, Edge, Firefox. Any of them works, because all file I/O happens in the local server.</td></tr>
+      <tr><td>File locations</td><td>Local disk, external drive, or SMB share (mounted volume on macOS; UNC path or mapped drive on Windows).</td></tr>
+      <tr><td>Scale</td><td>Reference workload: 1,700 files / 1 GB. Design target: up to 20,000 files or 50 GB per run; single files up to 4 GB. Uses multiple processor cores, within user-set limits (§5.5).</td></tr>
+      <tr><td>Network</td><td>None required or used at runtime.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ===================================================== 03 -->
+<section class="doc-section" id="principles">
+  <div class="section-kicker">03 · Principles</div>
+  <h2>Non-negotiables</h2>
+  <div class="rule-accent"></div>
+  <p>Every requirement below derives from these. When behaviour is unclear, the principle wins.</p>
+  <div class="grid">
+    <div class="card"><span class="id">P1</span><div class="card-title">Source is read-only</div><p>Baleen MUST NOT create, modify, rename or delete anything under the source root, including lock or temp files.</p></div>
+    <div class="card"><span class="id">P2</span><div class="card-title">No overwrite</div><p>An existing file in the output root is never replaced.</p></div>
+    <div class="card"><span class="id">P3</span><div class="card-title">No silent guessing</div><p>When a human decision is needed (uncertain encoding, multi-frame image, name clash…), the file is flagged <span class="st review">NEEDS_REVIEW</span> with a reason code.</p></div>
+    <div class="card"><span class="id">P4</span><div class="card-title">Only checked files land</div><p>An output that fails a check is never placed. An output whose check could not run is placed but flagged (DR-09).</p></div>
+    <div class="card"><span class="id">P5</span><div class="card-title">Atomic placement</div><p>Work locally and verify, publish to the output as a <code>.part</code> file, confirm its hash, then rename into place on the same volume. A crash never leaves a partial file under a final name.</p></div>
+    <div class="card"><span class="id">P6</span><div class="card-title">Per-file isolation</div><p>One file's failure never stops the run.</p></div>
+    <div class="card"><span class="id">P7</span><div class="card-title">Deterministic</div><p>Same source tree, settings and tool versions give the same plan and the same output names.</p></div>
+    <div class="card"><span class="id">P8</span><div class="card-title">Offline &amp; private</div><p>No network access at runtime: no telemetry, no update checks, no fetching remote content referenced by documents or e-mails.</p></div>
+    <div class="card"><span class="id">P9</span><div class="card-title">Everything accounted for</div><p>Every scanned file and every extracted attachment appears exactly once in the report, whatever its status.</p></div>
+  </div>
+</section>
+
+<!-- ===================================================== 04 -->
+<section class="doc-section" id="architecture">
+  <div class="section-kicker">04 · Architecture</div>
+  <h2>A local server with a browser face</h2>
+  <div class="rule-accent"></div>
+  <p>A launcher starts a Python server bound to <code>127.0.0.1</code> and opens the default browser. The server owns all file access and runs one job at a time in a worker thread. Converters and verifiers are bundled, unmodified third-party programs invoked as subprocesses, plus Python libraries.</p>
+
+  <div class="arch" role="img" aria-label="Architecture: launcher and browser UI talk to the local server; the server runs a job runner which uses converters and verifiers and writes the report.">
+    <div class="arch-row">
+      <div class="arch-box"><div class="t">Start</div><b>Launcher</b><span>Start Baleen.command / .bat · sets environment · opens browser</span></div>
+      <div class="arch-box"><div class="t">Face</div><b>Browser UI</b><span>Jinja2 pages + htmx · Convert · Check</span></div>
+    </div>
+    <div class="arch-link">HTTP on 127.0.0.1 · session token</div>
+    <div class="arch-row">
+      <div class="arch-box dark"><div class="t">Core</div><b>Baleen server</b><span>Starlette + uvicorn · settings · native folder dialogs · security middleware</span></div>
+      <div class="arch-box dark"><div class="t">Core</div><b>Job runner</b><span>scan → plan → stage → convert → verify → publish → report · one job at a time, files in parallel lanes within user-set limits</span></div>
+    </div>
+    <div class="arch-link">subprocess · Python libraries</div>
+    <div class="arch-row">
+      <div class="arch-box"><div class="t">Convert</div><b>Converters</b><span>Pillow · LibreOffice · Python email · FFmpeg</span></div>
+      <div class="arch-box"><div class="t">Verify</div><b>Verifiers</b><span>Pillow · veraPDF on Java · pypdf · FFprobe / FFmpeg</span></div>
+      <div class="arch-box"><div class="t">Record</div><b>Report writer</b><span>CSV report · run JSON · SHA-256</span></div>
+    </div>
+  </div>
+
+  <h3>Technology stack</h3>
+  <div class="tbl-wrap"><table class="tbl">
+    <thead><tr><th>Component</th><th>Role</th><th>Pinning</th><th>License</th></tr></thead>
+    <tbody>
+      <tr><td>CPython 3.12 (python-build-standalone)</td><td>Runtime</td><td>Exact build</td><td>PSF-2.0 (+ bundled libs)</td></tr>
+      <tr><td>Starlette, uvicorn</td><td>Local HTTP server</td><td>Lock file with hashes</td><td>BSD-3-Clause</td></tr>
+      <tr><td>Jinja2, MarkupSafe</td><td>Server-rendered pages</td><td>Lock file</td><td>BSD-3-Clause</td></tr>
+      <tr><td>python-multipart</td><td>Form parsing</td><td>Lock file</td><td>Apache-2.0</td></tr>
+      <tr><td>htmx 2.x</td><td>Partial page updates, polling</td><td>Vendored file</td><td>0BSD</td></tr>
+      <tr><td>Pillow</td><td>Image decode / encode / check</td><td>Lock file</td><td>MIT-CMU</td></tr>
+      <tr><td>pypdf</td><td>PDF open, XMP read, text extraction</td><td>Lock file</td><td>BSD-3-Clause</td></tr>
+      <tr><td>sqlite3 (Python standard library)</td><td>Run journal and results index (§10.4)</td><td>With CPython</td><td>Public domain / PSF</td></tr>
+      <tr><td>LibreOffice</td><td>Documents → PDF/A</td><td>Exact release</td><td>MPL-2.0</td></tr>
+      <tr><td>FFmpeg + FFprobe (GPL build with libx264)</td><td>Audio / video convert &amp; check</td><td>Exact build</td><td>GPL-2.0-or-later</td></tr>
+      <tr><td>Eclipse Temurin JRE 21</td><td>Runs veraPDF</td><td>Exact release</td><td>GPL-2.0 with Classpath Exception</td></tr>
+      <tr><td>veraPDF (greenfield CLI)</td><td>PDF/A validation</td><td>Exact release</td><td>GPL-3.0-or-later / MPL-2.0</td></tr>
+    </tbody>
+  </table></div>
+  <p class="small muted">No other runtime dependencies. No Node.js at build or run time (DR-03).</p>
+
+  <h3>Repository layout</h3>
+<pre class="code">walking-whale-baleen/
+├── LICENSE                      <span class="c">Apache-2.0</span>
+├── NOTICE
+├── README.md
+├── docs/
+│   ├── baleen-spec.html         <span class="c">this document</span>
+│   └── baleen-design.html       <span class="c">UI/UX design</span>
+├── pyproject.toml               <span class="c">name = "walking-whale-baleen", import package "baleen"</span>
+├── requirements.lock            <span class="c">pinned + hashed (pip --require-hashes)</span>
+├── src/baleen/
+│   ├── __main__.py              <span class="c">CLI: serve | convert | check | doctor</span>
+│   ├── settings.py              <span class="c">schema, defaults, load/save, validation</span>
+│   ├── tools.py                 <span class="c">locate tools, versions, subprocess runner</span>
+│   ├── scan.py                  <span class="c">walk, ignore rules, classify</span>
+│   ├── plan.py                  <span class="c">output paths, clash rule, resume lookup</span>
+│   ├── convert/                 <span class="c">image · document · text · html · email · media</span>
+│   ├── verify.py                <span class="c">checks V-*</span>
+│   ├── runner.py                <span class="c">job lifecycle, staging, placement, cancel</span>
+│   ├── report.py                <span class="c">CSV + run JSON</span>
+│   ├── server/                  <span class="c">app · security · pickers · routes</span>
+│   ├── templates/               <span class="c">Jinja2, per design doc</span>
+│   └── static/                  <span class="c">htmx.min.js · baleen.css · brand assets</span>
+├── launchers/                   <span class="c">Start Baleen.command · Start Baleen.bat</span>
+├── scripts/
+│   ├── build_bundle.py
+│   ├── runtimes.json            <span class="c">pinned versions, URLs, SHA-256, licenses</span>
+│   └── verapdf-auto-install.xml
+├── tests/
+│   ├── fixtures/make_fixtures.py  <span class="c">generates all inputs; no real archive data</span>
+│   ├── unit/
+│   └── integration/expected.csv
+└── .github/workflows/           <span class="c">test.yml · bundle.yml</span></pre>
+</section>
+
+<!-- ===================================================== 05 -->
+<section class="doc-section" id="pipeline">
+  <div class="section-kicker">05 · Processing pipeline</div>
+  <h2>Seven steps per run</h2>
+  <div class="rule-accent"></div>
+  <ol class="pipeline">
+    <li><b>Validate</b><span>roots exist, no overlap, output writable</span></li>
+    <li><b>Scan</b><span>walk source, ignore system files</span></li>
+    <li><b>Plan</b><span>route and output name for every file</span></li>
+    <li class="key"><b>Stage</b><span>copy to the local work folder while hashing</span></li>
+    <li class="key"><b>Convert</b><span>in parallel lanes, on the local copy</span></li>
+    <li class="key"><b>Verify</b><span>checks V-* on the staged output</span></li>
+    <li><b>Publish &amp; report</b><span>.part, read-back hash, atomic rename</span></li>
+  </ol>
+
+  <h3>5.1 Validate roots</h3>
+  <ul>
+    <li>Source exists and is readable. Output is created if missing; it may already contain files.</li>
+    <li>Output MUST NOT equal the source, be inside it, or contain it. Compare resolved real paths, case-insensitively on macOS and Windows.</li>
+    <li>A lock file <code>&lt;output&gt;/_baleen/.lock</code> (PID + hostname + start time) prevents two instances writing to the same output root. A stale lock (process gone) is replaced after a warning.</li>
+  </ul>
+
+  <h3>5.2 Scan</h3>
+  <ul>
+    <li>Recursive walk. Entries are sorted by NFC-normalised, case-folded name so the order does not depend on the filesystem.</li>
+    <li>Symlinks and junctions are not followed. Symlinked files and directories are listed as <span class="st ignored">IGNORED</span> <code>SYMLINK</code>.</li>
+    <li>System files are listed as <span class="st ignored">IGNORED</span> <code>SYSTEM_FILE</code>: <code>.DS_Store</code>, <code>._*</code>, <code>Icon\r</code>, <code>Thumbs.db</code>, <code>ehthumbs.db</code>, <code>desktop.ini</code>, <code>~$*</code>, <code>.~lock.*#</code>, and the folders <code>$RECYCLE.BIN</code>, <code>.Trashes</code>, <code>.Spotlight-V100</code>, <code>.fseventsd</code>, <code>@eaDir</code>, <code>#recycle</code>, <code>.@__thumb</code>, <code>_baleen</code>, <code>.baleen-staging</code>. Their contents are not entered.</li>
+    <li>Other dotfiles are processed normally (DR-20).</li>
+    <li>For each file, record the relative path (always <code>/</code> separators), size and mtime.</li>
+  </ul>
+
+  <h3>5.3 Plan</h3>
+  <p>Classify each file by lower-cased extension (§6) and compute its output path (§7). The full plan exists before any write; <span class="id">UI-C4</span> Preview displays it.</p>
+
+  <h3>5.4 Item flow</h3>
+  <p>Each item moves through four steps. Steps of different items run at the same time in the lanes of §5.5.</p>
+  <ol>
+    <li><strong>Stage</strong> (Files lane):
+      <ul>
+        <li>Re-stat the source. If size or mtime changed since the scan → <span class="st failed">FAILED</span> <code>SOURCE_CHANGED</code>.</li>
+        <li>Check work-folder space (§5.5).</li>
+        <li>Copy the source into the local work folder, <code>&lt;work&gt;/&lt;run-id&gt;/&lt;n&gt;/input.&lt;ext&gt;</code>, computing SHA-256 in the same read pass. Converters MUST only touch this copy. This keeps LibreOffice lock files and odd path characters away from the source (P1).</li>
+        <li>If the final output path already exists, apply §7.5 and skip to Report.</li>
+      </ul></li>
+    <li><strong>Convert &amp; verify</strong> (the lane for the item's category): convert inside the work folder (or pass through, for copies), then run the §8 checks on the local result. PDF/A validation happens in the PDF/A lane, in batches.</li>
+    <li><strong>Publish</strong> (Files lane):
+      <ul>
+        <li>Copy the verified result to <code>&lt;output&gt;/.baleen-staging/&lt;run-id&gt;/&lt;n&gt;.part</code>.</li>
+        <li>Read it back to confirm its SHA-256 (V-HASH).</li>
+        <li>Re-check that the final path is free, then rename into place (same volume, atomic).</li>
+        <li>Set the output mtime to the source mtime.</li>
+      </ul></li>
+    <li><strong>Report:</strong> commit the result to the run journal (§10.4), then delete the item's work and staging files.</li>
+  </ol>
+  <ul>
+    <li><strong>Check-only items</strong> (check-only setting, or Check mode) use the same lanes but skip Stage and Publish. The source is verified in place, read-only, and hashed by streaming; nothing is written.</li>
+    <li><strong>Why work locally:</strong> decoding, LibreOffice and veraPDF run against a fast local disk, not the network. A converted file still crosses the network three times (read source, write output, read back for V-HASH), but nothing is decoded over the network.</li>
+  </ul>
+
+  <h3>5.5 Parallel lanes &amp; resource limits (DR-32)</h3>
+  <p>One job runs at a time, but its items are processed in parallel across four lanes. A dispatcher starts the next task, in plan order, whenever its lane has room and the task's needs fit inside three budgets. The user sets the budgets in Settings › Resource use (§11, UI-S2).</p>
+  <h4>Budgets</h4>
+  <div class="tbl-wrap"><table class="tbl wrap-first">
+    <thead><tr><th>Budget</th><th>Setting</th><th>Resolution (cores = logical processors reported by the OS; RAM = physical memory)</th></tr></thead>
+    <tbody>
+      <tr><td>Processor <strong>B</strong> (tokens)</td><td><code>processor_use</code></td><td>
+        <ul>
+          <li><code>gentle</code> = max(1, ⌊cores / 4⌋)</li>
+          <li><code>balanced</code> = max(2, ⌊cores / 2⌋) (default)</li>
+          <li><code>maximum</code> = max(1, cores − 1)</li>
+          <li><code>custom</code> = <code>processor_cores</code>, 1 … cores</li>
+        </ul>
+        Never more than cores. On 8 cores: 2 / 4 / 7.</td></tr>
+      <tr><td>Memory <strong>M</strong></td><td><code>memory_limit</code></td><td>
+        <ul>
+          <li><code>auto</code> = 25% of RAM, at most RAM − 4 GB, at least 1 GB (16 GB → 4 GB)</li>
+          <li><code>custom</code> = <code>memory_gb</code>, 1 … RAM − 2 GB</li>
+        </ul>
+        Covers converter processes (table below).</td></tr>
+      <tr><td>Transfers <strong>T</strong></td><td><code>transfer_slots</code></td><td>
+        <ul>
+          <li><code>auto</code> = 4 if the source or output is on a network volume, otherwise 8</li>
+          <li><code>custom</code> = <code>transfer_count</code>, 1 … 16</li>
+        </ul></td></tr>
+    </tbody>
+  </table></div>
+  <h4>Lanes</h4>
+  <div class="tbl-wrap"><table class="tbl wrap-first">
+    <thead><tr><th>Lane</th><th>Work</th><th>Max at once</th><th>Each task needs</th></tr></thead>
+    <tbody>
+      <tr><td>Files</td><td>Stage, publish, hashing, copies, image check and convert, probes (FFprobe, image headers)</td><td>B</td><td>
+        <ul>
+          <li>1 processor token</li>
+          <li>1 transfer slot while reading the source or writing the output</li>
+          <li>No memory reservation, except images over 32 MP, which reserve 2 × their decoded size</li>
+        </ul></td></tr>
+      <tr><td>Documents</td><td>LibreOffice conversions</td><td><strong>K</strong> = min(4, max(1, ⌊B / 2⌋), max(1, ⌊M / 1 GB⌋)) instances</td><td>1 token · 1 GB</td></tr>
+      <tr><td>Media</td><td>FFmpeg remux and transcode</td><td><strong>F</strong> = 1, or 2 when B ≥ 8</td><td>⌊B / F⌋ tokens (passed as <code>-threads</code>) · 512 MB</td></tr>
+      <tr><td>PDF/A</td><td>veraPDF, in batches</td><td>1 JVM</td><td>1 token · 1 GB (<code>-Xmx1g</code>)</td></tr>
+    </tbody>
+  </table></div>
+  <ul>
+    <li><strong>Accounting:</strong> at all times, tokens in use ≤ B, reserved memory ≤ M, and transfers ≤ T. A single task that needs more than a budget (e.g. a huge image) runs alone once nothing else is running.</li>
+    <li><strong>Order:</strong> within a lane, tasks start in plan order. Items may finish out of order; the report is still written in plan order (§10.1).</li>
+    <li><strong>Live changes:</strong> a changed resource setting applies at the next dispatch, including during a run. Running tasks are never interrupted. If usage is above a lowered limit, nothing new starts until it drops.</li>
+    <li><strong>LibreOffice batches:</strong>
+      <ul>
+        <li>Each Documents instance has its own profile, <code>data/lo-profile-&lt;k&gt;</code>.</li>
+        <li>An instance converts up to 8 files per <code>soffice --convert-to</code> call. Files in one call share an import filter (§6.2) and have unique staging names, so outputs map back to inputs.</li>
+        <li>Batch timeout: 60 s + 30 s per file.</li>
+        <li>If a batch fails or times out, its files are retried one per process with the 300 s per-file limit, so one bad file cannot sink its neighbours.</li>
+        <li>Measured: 12 documents took 1.37 s each with one process per file, and 0.12 s each in one call (DR-35).</li>
+      </ul></li>
+    <li><strong>veraPDF batches:</strong> PDFs waiting for validation are grouped by flavour and validated in one JVM per batch. A batch closes at 25 files, after 10 s of waiting, or immediately when nothing else is left. Results are matched per file from the batch report. If a batch run crashes, its files are revalidated one by one.</li>
+    <li><strong>FFmpeg threads:</strong> every FFmpeg call gets an explicit <code>-threads</code> equal to the tokens it holds, so encodes never exceed the processor budget.</li>
+    <li><strong>Work-folder space:</strong> before staging an item, the work folder needs at least 2 × the item's size + 1 GB free. Otherwise wait for running items to finish. If nothing is running and space is still short → <span class="st failed">FAILED</span> <code>NO_WORK_SPACE</code>.</li>
+    <li><strong>Lower priority</strong> (<code>low_priority</code>, default on): Baleen's worker threads and every process it starts run below normal priority. The user's other apps go first, and idle cores are still used fully.
+      <ul>
+        <li>macOS: per-thread QoS <em>utility</em> via <code>pthread_set_qos_class_self_np</code>; child processes start at <code>nice</code> +10.</li>
+        <li>Windows: <code>THREAD_PRIORITY_BELOW_NORMAL</code>; children start with <code>BELOW_NORMAL_PRIORITY_CLASS</code>.</li>
+        <li>Applied per task, so toggling affects tasks started afterwards.</li>
+      </ul></li>
+    <li><strong>Keep awake</strong> (<code>keep_awake</code>, default on): while a job runs, Baleen prevents idle sleep, and releases it when the job ends.
+      <ul>
+        <li>macOS: <code>caffeinate -i -w &lt;pid&gt;</code>.</li>
+        <li>Windows: <code>SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED)</code>.</li>
+        <li>Closing a laptop lid can still sleep the machine; the UI says so.</li>
+      </ul></li>
+    <li><strong>Provenance:</strong> the run JSON records cores, RAM, the resource settings and the resolved B, M, T, K, F at start, plus every change made during the run.</li>
+  </ul>
+
+  <h3>5.6 Cancel &amp; crash</h3>
+  <ul>
+    <li><strong>Cancel</strong> stops dispatching. Tasks already running finish, including LibreOffice batches and FFmpeg encodes. Remaining items then get <span class="st skipped">SKIPPED</span> <code>CANCELLED</code>, and the report and run JSON are written. The UI shows "Stopping after n files in progress…".</li>
+    <li><strong>Crash recovery:</strong> on start, Baleen finalises any run that has a journal but no report. It writes the report from the journal, marks unprocessed items <span class="st skipped">SKIPPED</span> <code>INTERRUPTED</code>, and marks the run Stopped. Stale work and staging folders (Baleen-owned only) are removed. A re-run resumes per §7.5.</li>
+    <li><strong>One job at a time</strong> per Baleen instance; the output lock (§5.1) also stops two instances writing one output root.</li>
+  </ul>
+</section>
+
+<!-- ===================================================== 06 -->
+<section class="doc-section" id="formats">
+  <div class="section-kicker">06 · Format matrix &amp; conversion</div>
+  <h2>What becomes what</h2>
+  <div class="rule-accent"></div>
+  <p>Five archival targets: <code>.jpg</code> <code>.tif</code> <code>.pdf</code> (PDF/A) <code>.mp4</code> <code>.m4a</code>. Routing starts from the extension; content probing (Pillow, FFprobe, XMP) refines it.</p>
+  <div class="tbl-wrap"><table class="tbl wrap-first">
+    <thead><tr><th>Source</th><th>Target</th><th>Action</th><th>Engine</th><th>Checks</th></tr></thead>
+    <tbody>
+      <tr><td><code>.jpg .jpeg .jpe</code></td><td><code>.jpg</code></td><td>copy / check (never re-encoded)</td><td>—</td><td>V-IMG</td></tr>
+      <tr><td><code>.tif .tiff</code></td><td><code>.tif</code></td><td>copy / check (never re-encoded)</td><td>—</td><td>V-IMG (all pages)</td></tr>
+      <tr><td><code>.png .bmp .gif .webp</code>, and images whose content does not match their extension</td><td><code>.jpg</code>, or <code>.tif</code> if alpha / &gt;8-bit / CMYK</td><td>convert</td><td>Pillow</td><td>V-IMG</td></tr>
+      <tr><td><code>.doc .docx .rtf .odt .wpd .wps .sxw</code></td><td><code>.pdf</code></td><td>convert</td><td>LibreOffice Writer</td><td>V-PDF-OPEN · V-PDFA</td></tr>
+      <tr><td><code>.xls .xlsx .ods</code></td><td><code>.pdf</code></td><td>convert</td><td>LibreOffice Calc</td><td>V-PDF-OPEN · V-PDFA</td></tr>
+      <tr><td><code>.ppt .pptx .odp</code></td><td><code>.pdf</code></td><td>convert</td><td>LibreOffice Impress</td><td>V-PDF-OPEN · V-PDFA</td></tr>
+      <tr><td><code>.txt</code></td><td><code>.pdf</code></td><td>convert (§6.3 encoding rules)</td><td>LibreOffice Writer</td><td>V-PDF-OPEN · V-PDFA · V-TEXT</td></tr>
+      <tr><td><code>.html .htm</code></td><td><code>.pdf</code></td><td>convert (remote resources blocked)</td><td>LibreOffice Writer</td><td>V-PDF-OPEN · V-PDFA</td></tr>
+      <tr><td><code>.eml</code></td><td><code>.pdf</code> + <code>&lt;stem&gt;_attachments/</code></td><td>convert</td><td>Python <code>email</code> → HTML → LibreOffice</td><td>V-PDF-OPEN · V-PDFA (+ each attachment)</td></tr>
+      <tr><td><code>.pdf</code></td><td><code>.pdf</code></td><td>copy / check if valid PDF/A; otherwise flag</td><td>—</td><td>V-PDF-OPEN · V-PDFA</td></tr>
+      <tr><td><code>.avi .mov .mp4 .m4v .mkv .mpg .mpeg .vob .wmv .asf .flv .3gp .webm .ts .mts .m2ts .dv</code></td><td><code>.mp4</code></td><td>copy / remux / transcode</td><td>FFmpeg</td><td>V-AV-PROBE · V-AV-DUR · V-AV-DECODE</td></tr>
+      <tr><td><code>.wma .mp3 .wav .aif .aiff .aac .m4a .flac .ogg .oga .opus .amr .au</code></td><td><code>.m4a</code> (setting: <code>.mp4</code>)</td><td>copy / remux / transcode</td><td>FFmpeg</td><td>V-AV-PROBE · V-AV-DUR · V-AV-DECODE</td></tr>
+      <tr><td>System files (§5.2)</td><td>—</td><td>none</td><td>—</td><td><span class="st ignored">IGNORED</span></td></tr>
+      <tr><td>Anything else (<code>.msg .heic .psd .ai .zip .exe .mid</code> …)</td><td>—</td><td>none</td><td>—</td><td><span class="st unsupported">UNSUPPORTED</span></td></tr>
+    </tbody>
+  </table></div>
+  <p class="small muted">Audio and video are routed by content, not extension: a video-extension file with no real video stream goes down the audio route, and vice versa (§6.7).</p>
+
+  <h3>6.1 Images (Pillow)</h3>
+  <ul>
+    <li><code>Image.MAX_IMAGE_PIXELS</code> is raised to 1,000,000,000 so large archival scans open. Sources are local files the user chose.</li>
+    <li><strong>JPEG / TIFF content:</strong> byte copy after V-IMG; never re-encoded (DR-16).</li>
+    <li><strong>Other images:</strong> more than one frame → <span class="st review">NEEDS_REVIEW</span> <code>MULTI_FRAME_IMAGE</code>. Alpha (RGBA, LA, PA, or a <code>transparency</code> key), more than 8 bits per channel (I;16*, I, F), or CMYK → TIFF with LZW compression, ICC kept. Otherwise → RGB JPEG, quality 95, 4:4:4 subsampling, optimised, ICC and EXIF kept.</li>
+    <li><strong>Content mismatch:</strong> when Pillow's detected format differs from the extension, route by content and add note <code>CONTENT_MISMATCH</code>.</li>
+    <li>A source that needs conversion but cannot be decoded → <span class="st failed">FAILED</span> <code>SOURCE_UNREADABLE</code>. A JPEG/TIFF source that fails V-IMG → <span class="st review">NEEDS_REVIEW</span> <code>SOURCE_INVALID</code> (§8).</li>
+  </ul>
+
+  <h3>6.2 Documents (LibreOffice)</h3>
+<pre class="code">soffice -env:UserInstallation=<span class="k">&lt;file URI of data/lo-profile&gt;</span>
+        --headless --invisible --nologo --norestore --nolockcheck --nodefault
+        [--infilter=<span class="k">&lt;import filter&gt;</span>]
+        --convert-to 'pdf:<span class="k">&lt;export filter&gt;</span>:{"SelectPdfVersion":{"type":"long","value":"<span class="k">&lt;N&gt;</span>"}}'
+        --outdir <span class="k">&lt;staging dir&gt;</span>  <span class="k">&lt;staging input&gt;</span>
+<span class="c"># export filter: writer_pdf_Export | calc_pdf_Export | impress_pdf_Export
+# N: 1 = PDF/A-1b · 2 = PDF/A-2b · 3 = PDF/A-3b      (setting pdfa_level)
+# infilter: .txt → "Text (encoded)" with UTF-8 · .html/.htm → "HTML (StarWriter)"</span></pre>
+  <ul>
+    <li>Arguments are passed as a list, never through a shell. The private profile lives in <code>data/lo-profile</code> and is initialised on first use.</li>
+    <li>Normally run in batches by the Documents lane (§5.5). A file retried on its own has a 300 s timeout; on timeout, kill the whole process tree → <span class="st failed">FAILED</span> <code>TIMEOUT</code>.</li>
+    <li>No output or an error exit → <span class="st failed">FAILED</span> <code>CONVERSION_ERROR</code>. A password-protected document → <code>PASSWORD_PROTECTED</code>.</li>
+    <li>Fonts: system fonts only (DR-15). Substitution is possible and accepted.</li>
+  </ul>
+
+  <h3>6.3 Plain text encoding</h3>
+  <ul>
+    <li><strong>Certain:</strong> a UTF-8 or UTF-16 BOM, or a strict UTF-8 decode that succeeds (pure ASCII counts).</li>
+    <li><strong>Not certain, setting <code>txt_encoding = auto</code>:</strong> <span class="st review">NEEDS_REVIEW</span> <code>ENCODING_UNCERTAIN</code>; nothing written. The message names the first of <code>big5, gb18030, shift_jis, windows-1252</code> that decodes strictly, as a hint.</li>
+    <li><strong>Not certain, setting = a named encoding:</strong> decode strictly with it. Failure → <span class="st failed">FAILED</span> <code>ENCODING_MISMATCH</code>.</li>
+    <li>Normalise line endings to LF and write a UTF-8 (BOM) staging copy for import.</li>
+    <li><span class="id">V-TEXT</span>: non-whitespace characters extracted from the PDF must be ≥ 98% of the source's; otherwise <span class="st failed">FAILED</span> <code>TEXT_LOSS</code> (usually missing glyphs).</li>
+  </ul>
+
+  <h3>6.4 HTML pages</h3>
+  <ul>
+    <li>The staging copy is rewritten before import:
+      <ul>
+        <li>Remove <code>&lt;script&gt;</code>, <code>&lt;iframe&gt;</code>, <code>&lt;object&gt;</code>, <code>&lt;embed&gt;</code>.</li>
+        <li>Resource URLs using <code>http:</code>, <code>https:</code>, <code>ftp:</code> or <code>//</code> (in <code>src</code>, <code>srcset</code>, <code>background</code>, <code>&lt;link href&gt;</code>, CSS <code>url()</code>) are replaced by visible text <code>[external resource not archived: URL]</code>.</li>
+        <li>Anchor links stay as they are.</li>
+      </ul>
+    </li>
+    <li>Relative resources (e.g. images beside the page) resolve against the original source folder through an injected <code>&lt;base href&gt;</code>. Read-only access; nothing is created there.</li>
+    <li>Charset comes from the BOM or <code>&lt;meta charset&gt;</code>; otherwise apply §6.3.</li>
+  </ul>
+
+  <h3>6.5 E-mail (.eml)</h3>
+  <ol>
+    <li>Parse with Python <code>email</code> (<code>policy.default</code>). Unparseable → <span class="st failed">FAILED</span> <code>CONVERSION_ERROR</code>.</li>
+    <li>Render one HTML document:
+      <ol type="a">
+        <li><strong>Headers:</strong> From, To, Cc, Date (original string, plus ISO 8601 when parseable), Subject, all RFC 2047-decoded.</li>
+        <li><strong>Attachments block:</strong> each attachment's name, size and saved relative path (or "not saved", per policy).</li>
+        <li><strong>Body:</strong> the <code>text/html</code> alternative if present, sanitised as in §6.4; otherwise <code>text/plain</code>, preformatted with wrapping. <code>cid:</code> images become <code>[inline image: name, saved as attachment]</code> and are handled as attachments.</li>
+      </ol>
+    </li>
+    <li><strong>Charset:</strong> decode the body strictly with the declared charset. On failure, decode with replacement characters and flag <span class="st review">NEEDS_REVIEW</span> <code>CHARSET_ERRORS</code>. The output is still written.</li>
+    <li><strong><code>hide_email_addresses</code></strong>: every e-mail address in headers and body is replaced by <code>[address hidden]</code>; display names are kept.</li>
+    <li>Convert the HTML with LibreOffice (§6.2, HTML import filter).</li>
+  </ol>
+  <div class="tbl-wrap"><table class="tbl wrap-first">
+    <thead><tr><th>Setting <code>eml_attachments</code></th><th>Behaviour</th></tr></thead>
+    <tbody>
+      <tr><td><code>extract</code> (default)</td><td>
+        <p>Each attachment is saved to staging and processed as its own item, with source path <code>&lt;eml path&gt;#&lt;sanitised name&gt;</code>. An attachment is any part with <code>Content-Disposition: attachment</code>, any non-text part with a filename, or a <code>cid:</code> inline image.</p>
+        <p>Outputs go into <code>&lt;eml output stem&gt;_attachments/</code> beside the e-mail PDF, under the same format matrix, clash rule and checks.</p>
+        <p>Nested <code>message/rfc822</code> parts are processed as e-mails recursively, to a maximum depth of 3. Deeper → <span class="st review">NEEDS_REVIEW</span> <code>EML_NESTING_TOO_DEEP</code>.</p>
+      </td></tr>
+      <tr><td><code>block</code></td><td>An e-mail with at least one attachment → <span class="st review">NEEDS_REVIEW</span> <code>EML_ATTACHMENTS_BLOCKED</code>; nothing written.</td></tr>
+      <tr><td><code>list</code></td><td>The PDF lists the attachments; their content is dropped. Status <span class="st ok">OK</span> with note <code>ATTACHMENTS_DROPPED</code>.</td></tr>
+    </tbody>
+  </table></div>
+  <p class="small"><strong>Attachment names:</strong> an attachment without a filename becomes <code>attachment-&lt;n&gt;&lt;ext&gt;</code>, where n is its 1-based order and the extension comes from the MIME type. Sanitisation follows §7.8.</p>
+
+  <h3>6.6 Existing PDFs</h3>
+  <ul>
+    <li>Encrypted → <span class="st review">NEEDS_REVIEW</span> <code>PDF_ENCRYPTED</code>.</li>
+    <li>Read XMP <code>pdfaid:part</code> and <code>pdfaid:conformance</code>. No PDF/A claim → <span class="st review">NEEDS_REVIEW</span> <code>NOT_PDFA</code>; not copied.</li>
+    <li>Claimed → validate with veraPDF at the claimed flavour. Pass → <span class="st ok">OK</span> (copied if <code>copy_existing</code>). Fail → <span class="st review">NEEDS_REVIEW</span> <code>PDFA_INVALID</code>; not copied.</li>
+    <li>Any valid PDF/A flavour is accepted; <code>pdfa_level</code> applies only to new conversions (DR-07).</li>
+  </ul>
+
+  <h3>6.7 Audio &amp; video (FFmpeg)</h3>
+  <ul>
+    <li><strong>Probe:</strong> <code>ffprobe -v error -show_format -show_streams -of json</code>. Failure → <span class="st failed">FAILED</span> <code>SOURCE_UNREADABLE</code>.</li>
+    <li><strong>Classify streams:</strong> video streams with <code>disposition.attached_pic = 1</code> are cover art, ignored and dropped. A real video stream → video route; otherwise audio streams → audio route; neither → <span class="st unsupported">UNSUPPORTED</span> <code>NO_MEDIA_STREAMS</code>. Subtitle and data streams are dropped, with note <code>STREAMS_DROPPED</code>.</li>
+    <li><strong>Video → <code>.mp4</code>:</strong>
+      <ul>
+        <li>Already MP4, video in {h264, hevc} and audio in {aac, mp3} → byte copy (or check).</li>
+        <li>Same codecs in another container → remux with <code>-c copy</code>.</li>
+        <li>Otherwise transcode video with <code>libx264 -preset slow -pix_fmt yuv420p</code>: CRF 18 (<code>high</code>) or CRF 23 (<code>standard</code>). Odd dimensions are padded with <code>pad=ceil(iw/2)*2:ceil(ih/2)*2</code> (no resampling). Frame rate and interlacing are untouched.</li>
+        <li>Audio: copied if aac or mp3; otherwise AAC at 192 kb/s (<code>high</code>) or 128 kb/s (<code>standard</code>), keeping sample rate and channels.</li>
+      </ul>
+    </li>
+    <li><strong>Audio → <code>.m4a</code></strong> (or <code>.mp4</code> per <code>audio_container</code>):
+      <ul>
+        <li>aac or mp3 streams are copied into the MPEG-4 container (DR-13).</li>
+        <li>Anything else → AAC at 192 or 128 kb/s.</li>
+        <li><code>-vn</code> drops cover art.</li>
+        <li>A source already in the target container and extension → byte copy.</li>
+      </ul>
+    </li>
+    <li><strong>Always:</strong> <code>-nostdin -n -protocol_whitelist file,pipe -fflags +genpts</code> on input; <code>-map_metadata 0 -movflags +faststart -f mp4</code> on output.</li>
+    <li><strong>Timeout:</strong> max(600 s, 10 × duration) → <span class="st failed">FAILED</span> <code>TIMEOUT</code>.</li>
+  </ul>
+</section>
+
+<!-- ===================================================== 07 -->
+<section class="doc-section" id="naming">
+  <div class="section-kicker">07 · Output layout &amp; naming</div>
+  <h2>A mirror, not a rename</h2>
+  <div class="rule-accent"></div>
+  <h3>7.1 Output root</h3>
+<pre class="code">&lt;output root&gt;/
+├── _baleen/
+│   ├── report-20261005-143012.csv      <span class="c">one per run</span>
+│   ├── run-20261005-143012.json
+│   ├── journal-20261005-143012.sqlite  <span class="c">results index (§10.4)</span>
+│   └── .lock                           <span class="c">only while running</span>
+├── .baleen-staging/                    <span class="c">.part files while publishing</span>
+└── &lt;mirrored source folders&gt;/
+    ├── report.pdf
+    ├── 訪談_doc.pdf
+    ├── 訪談_eml.pdf
+    ├── 訪談_eml_attachments/
+    │   └── photo.jpg
+    └── clip.mp4</pre>
+  <p>Run IDs are <code>YYYYMMDD-HHMMSS</code> in local time, with <code>-2</code>, <code>-3</code>… appended if needed.</p>
+
+  <h3>7.2 Name rule</h3>
+  <p>Output name = <code>&lt;source stem&gt;&lt;target extension&gt;</code>. The target extension is lower-case (§6). The stem is kept exactly as the filesystem returns it: no Unicode normalisation, no case change.</p>
+
+  <h3>7.3 Clash rule (DR-05)</h3>
+  <ul>
+    <li><strong>Scope:</strong> clashes are resolved per output directory, over <em>every item planned into it</em>: all supported source files in the mirrored source directory, plus any attachments planned there. This holds regardless of <code>copy_existing</code> or eventual status, so names are stable across settings.</li>
+    <li><strong>Key:</strong> the NFC-normalised, case-folded full target name.</li>
+    <li><strong>Suffix:</strong> if two or more items share a key, each becomes <code>&lt;stem&gt;_&lt;source ext, lower-case, no dot&gt;&lt;target ext&gt;</code>.</li>
+    <li><strong>Unresolved:</strong> if keys still collide, every item involved → <span class="st review">NEEDS_REVIEW</span> <code>NAME_CLASH_UNRESOLVED</code>.</li>
+    <li><strong>Attachments folder:</strong> <code>&lt;final e-mail output stem&gt;_attachments</code>.</li>
+  </ul>
+  <div class="tbl-wrap"><table class="tbl">
+    <thead><tr><th>Source files in one folder</th><th>Outputs</th></tr></thead>
+    <tbody>
+      <tr><td><code>report.doc</code></td><td><code>report.pdf</code></td></tr>
+      <tr><td><code>IMG_0001.JPG</code></td><td><code>IMG_0001.jpg</code></td></tr>
+      <tr><td><code>訪談.doc</code> + <code>訪談.eml</code></td><td><code>訪談_doc.pdf</code>, <code>訪談_eml.pdf</code>, <code>訪談_eml_attachments/</code></td></tr>
+      <tr><td><code>photo.bmp</code> + <code>photo.jpg</code></td><td><code>photo_bmp.jpg</code>, <code>photo_jpg.jpg</code></td></tr>
+      <tr><td><code>notes.txt</code> + <code>notes.pdf</code></td><td><code>notes_txt.pdf</code>, <code>notes_pdf.pdf</code></td></tr>
+      <tr><td><code>a.JPG</code> + <code>a.jpg</code> (case-sensitive volume)</td><td>both <span class="st review">NEEDS_REVIEW</span> <code>NAME_CLASH_UNRESOLVED</code></td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>7.4 Determinism</h3>
+  <p>The plan depends only on the source listing, <code>audio_container</code> (it changes an extension) and e-mail contents (attachments). Shuffling scan order MUST NOT change any name (tested).</p>
+
+  <h3>7.5 Existing outputs &amp; resume (DR-18)</h3>
+  <p>If the final path already exists, search prior reports <code>&lt;output&gt;/_baleen/report-*.csv</code>, newest first, for a row matching all of:</p>
+  <ul>
+    <li>the same <code>source_path</code> and <code>source_sha256</code>;</li>
+    <li>the same <code>output_path</code>;</li>
+    <li>an <code>output_sha256</code> equal to the existing file's.</li>
+  </ul>
+  <p>Then:</p>
+  <ul>
+    <li><strong>Match:</strong> re-run the checks on the existing file. Pass → <span class="st ok">OK</span> <code>RESUMED</code>. Fail → <span class="st review">NEEDS_REVIEW</span> <code>OUTPUT_INVALID</code>. The file is left untouched either way.</li>
+    <li><strong>No match:</strong> <span class="st review">NEEDS_REVIEW</span> <code>OUTPUT_OCCUPIED</code>; nothing written (P2).</li>
+  </ul>
+
+  <h3>7.6 Timestamps</h3>
+  <p>Output file mtime = source mtime. Directory times are not managed.</p>
+
+  <h3>7.7 Path limits</h3>
+  <p>On Windows, file operations use extended-length paths (<code>\\?\</code>). Any path component longer than 255 UTF-16 code units → <span class="st review">NEEDS_REVIEW</span> <code>PATH_TOO_LONG</code>.</p>
+
+  <h3>7.8 Sanitising attachment names</h3>
+  <p>Applies only to names from inside e-mails; source names are never changed.</p>
+  <ul>
+    <li>Strip path components and control characters.</li>
+    <li>Replace <code>&lt; &gt; : " / \ | ? *</code> with <code>_</code>.</li>
+    <li>Trim trailing dots and spaces.</li>
+    <li>Suffix Windows reserved names (<code>CON PRN AUX NUL COM1–9 LPT1–9</code>) with <code>_</code>.</li>
+    <li>Truncate the stem so the name is ≤ 200 bytes in UTF-8.</li>
+    <li>An empty result → <code>attachment-&lt;n&gt;</code>.</li>
+  </ul>
+</section>
+
+<!-- ===================================================== 08 -->
+<section class="doc-section" id="verification">
+  <div class="section-kicker">08 · Verification</div>
+  <h2>Proof, not hope</h2>
+  <div class="rule-accent"></div>
+  <div class="tbl-wrap"><table class="tbl wrap-first">
+    <thead><tr><th>Check</th><th>Applies to</th><th>Pass condition</th><th>Tool</th></tr></thead>
+    <tbody>
+      <tr><td><span class="id">V-IMG</span></td><td><code>.jpg .tif</code> outputs and sources</td><td>Detected format is JPEG/TIFF matching the extension; every frame decodes fully</td><td>Pillow</td></tr>
+      <tr><td><span class="id">V-PDF-OPEN</span></td><td><code>.pdf</code></td><td>Opens without a password; page count ≥ 1</td><td>pypdf</td></tr>
+      <tr><td><span class="id">V-PDFA</span></td><td><code>.pdf</code></td><td>veraPDF reports compliant at the target flavour (new PDFs: <code>pdfa_level</code>; existing PDFs: the claimed flavour)</td><td>veraPDF (Java)</td></tr>
+      <tr><td><span class="id">V-TEXT</span></td><td><code>.txt</code> conversions</td><td>Extracted non-whitespace characters ≥ 98% of source</td><td>pypdf</td></tr>
+      <tr><td><span class="id">V-AV-PROBE</span></td><td><code>.mp4 .m4a</code></td><td>Parses; container is MP4 family. Video target: ≥ 1 video stream. Audio target: no video stream, ≥ 1 audio stream</td><td>FFprobe</td></tr>
+      <tr><td><span class="id">V-AV-DUR</span></td><td>A/V conversions</td><td>|output − source duration| ≤ max(1 s, 1% of source)</td><td>FFprobe</td></tr>
+      <tr><td><span class="id">V-AV-DECODE</span></td><td><code>.mp4 .m4a</code></td><td><code>ffmpeg -v error -i &lt;file&gt; -f null -</code> exits 0 with empty stderr</td><td>FFmpeg</td></tr>
+      <tr><td><span class="id">V-HASH</span></td><td>Every published output</td><td>SHA-256 read back from the <code>.part</code> file on the output volume equals the verified local result (§5.4)</td><td>Baleen</td></tr>
+    </tbody>
+  </table></div>
+  <h4>Result per check</h4>
+  <p><code>pass</code> · <code>fail</code> · <code>unavailable</code> (tool missing or crashed) · <code>n/a</code>. Recorded in the report's <code>checks</code> column.</p>
+  <h4>Outcome rules</h4>
+  <ul>
+    <li><strong>A new output fails any check:</strong> not placed → <span class="st failed">FAILED</span> <code>VERIFY_FAILED</code>.</li>
+    <li><strong>An existing archival source fails a check:</strong> not copied → <span class="st review">NEEDS_REVIEW</span> <code>SOURCE_INVALID</code> (find another copy of the file). For JPEG, TIFF, PDF, MP4 and M4A sources this takes precedence over <code>SOURCE_UNREADABLE</code>.</li>
+    <li><strong>No fail, but a check is unavailable:</strong> placed → <span class="st review">NEEDS_REVIEW</span> <code>VALIDATOR_MISSING</code> or <code>VALIDATOR_ERROR</code>. Never <span class="st ok">OK</span> (DR-08, DR-09).</li>
+    <li><strong>All pass:</strong> <span class="st ok">OK</span>.</li>
+  </ul>
+  <h4>veraPDF invocation</h4>
+<pre class="code">verapdf --format xml --flavour <span class="k">&lt;1b|2b|3b|claimed&gt;</span> <span class="k">&lt;file.pdf&gt;</span>
+<span class="c"># JAVA_HOME = bundled JRE · timeout 300 s
+# pass ⇔ validationReport/@isCompliant = "true"
+# no parsable report ⇒ result "unavailable" (VALIDATOR_ERROR)</span></pre>
+  <p class="small muted">An XMP PDF/A claim alone never counts as validation (DR-08).</p>
+</section>
+
+<!-- ===================================================== 09 -->
+<section class="doc-section" id="statuses">
+  <div class="section-kicker">09 · Statuses &amp; reason codes</div>
+  <h2>Six statuses, one row each</h2>
+  <div class="rule-accent"></div>
+  <div class="tbl-wrap"><table class="tbl wrap-first">
+    <thead><tr><th>Status</th><th>Meaning</th><th>Output written?</th></tr></thead>
+    <tbody>
+      <tr><td><span class="st ok">OK</span></td><td>Converted, copied or checked; every check passed</td><td>Yes (convert/copy); n/a (check)</td></tr>
+      <tr><td><span class="st review">NEEDS_REVIEW</span></td><td>A person must decide; the reason says why</td><td>Per reason (table below)</td></tr>
+      <tr><td><span class="st failed">FAILED</span></td><td>A tool failed, or a new output failed verification</td><td>Never</td></tr>
+      <tr><td><span class="st unsupported">UNSUPPORTED</span></td><td>Format not handled in v1</td><td>Never</td></tr>
+      <tr><td><span class="st ignored">IGNORED</span></td><td>System file or symlink, intentionally skipped</td><td>Never</td></tr>
+      <tr><td><span class="st skipped">SKIPPED</span></td><td>Not processed because the run was cancelled</td><td>Never</td></tr>
+    </tbody>
+  </table></div>
+  <p>The <code>reason</code> column may hold several codes separated by <code>;</code>. Severity: FAILED &gt; NEEDS_REVIEW &gt; UNSUPPORTED &gt; OK. Notes (<code>CONTENT_MISMATCH</code>, <code>STREAMS_DROPPED</code>, <code>ATTACHMENTS_DROPPED</code>) never change the status.</p>
+  <div class="tbl-wrap"><table class="tbl">
+    <thead><tr><th>Code</th><th>Status</th><th>Written</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><code>RESUMED</code></td><td><span class="st ok">OK</span></td><td>kept</td><td>Output from an earlier run, re-verified (§7.5)</td></tr>
+      <tr><td><code>ATTACHMENTS_DROPPED</code></td><td>note</td><td>yes</td><td>E-mail attachments listed but not saved (<code>list</code> policy)</td></tr>
+      <tr><td><code>CONTENT_MISMATCH</code></td><td>note</td><td>—</td><td>Extension did not match content; routed by content</td></tr>
+      <tr><td><code>STREAMS_DROPPED</code></td><td>note</td><td>—</td><td>Subtitle/data streams not carried over</td></tr>
+      <tr><td><code>ENCODING_UNCERTAIN</code></td><td><span class="st review">NEEDS_REVIEW</span></td><td>no</td><td>Text encoding not certain; choose one in Settings</td></tr>
+      <tr><td><code>CHARSET_ERRORS</code></td><td><span class="st review">NEEDS_REVIEW</span></td><td>yes</td><td>E-mail body had undecodable bytes (replacement characters)</td></tr>
+      <tr><td><code>MULTI_FRAME_IMAGE</code></td><td><span class="st review">NEEDS_REVIEW</span></td><td>no</td><td>Animated GIF/WebP etc.</td></tr>
+      <tr><td><code>NOT_PDFA</code></td><td><span class="st review">NEEDS_REVIEW</span></td><td>no</td><td>Existing PDF makes no PDF/A claim</td></tr>
+      <tr><td><code>PDFA_INVALID</code></td><td><span class="st review">NEEDS_REVIEW</span></td><td>no</td><td>Existing PDF claims PDF/A but fails validation</td></tr>
+      <tr><td><code>PDF_ENCRYPTED</code></td><td><span class="st review">NEEDS_REVIEW</span></td><td>no</td><td>Existing PDF is encrypted</td></tr>
+      <tr><td><code>SOURCE_INVALID</code></td><td><span class="st review">NEEDS_REVIEW</span></td><td>no</td><td>Already-archival source fails its own checks</td></tr>
+      <tr><td><code>NOT_ARCHIVAL_FORMAT</code></td><td><span class="st review">NEEDS_REVIEW</span></td><td>—</td><td>Check mode only: convertible, but not yet archival</td></tr>
+      <tr><td><code>VALIDATOR_MISSING</code></td><td><span class="st review">NEEDS_REVIEW</span></td><td>yes</td><td>A check could not run because its tool is missing</td></tr>
+      <tr><td><code>VALIDATOR_ERROR</code></td><td><span class="st review">NEEDS_REVIEW</span></td><td>yes</td><td>The checking tool crashed or produced no result</td></tr>
+      <tr><td><code>TOOL_MISSING</code></td><td><span class="st review">NEEDS_REVIEW</span></td><td>no</td><td>The converter for this format is missing</td></tr>
+      <tr><td><code>EML_ATTACHMENTS_BLOCKED</code></td><td><span class="st review">NEEDS_REVIEW</span></td><td>no</td><td><code>block</code> policy and the e-mail has attachments</td></tr>
+      <tr><td><code>EML_NESTING_TOO_DEEP</code></td><td><span class="st review">NEEDS_REVIEW</span></td><td>no</td><td>Forwarded e-mails nested more than 3 deep</td></tr>
+      <tr><td><code>NAME_CLASH_UNRESOLVED</code></td><td><span class="st review">NEEDS_REVIEW</span></td><td>no</td><td>Suffix rule could not separate names</td></tr>
+      <tr><td><code>OUTPUT_OCCUPIED</code></td><td><span class="st review">NEEDS_REVIEW</span></td><td>no</td><td>Output path holds a file Baleen did not produce</td></tr>
+      <tr><td><code>OUTPUT_INVALID</code></td><td><span class="st review">NEEDS_REVIEW</span></td><td>kept</td><td>Earlier output fails re-verification; left untouched</td></tr>
+      <tr><td><code>PATH_TOO_LONG</code></td><td><span class="st review">NEEDS_REVIEW</span></td><td>no</td><td>A path component exceeds 255 code units</td></tr>
+      <tr><td><code>CONVERSION_ERROR</code></td><td><span class="st failed">FAILED</span></td><td>no</td><td>Converter error or no output</td></tr>
+      <tr><td><code>PASSWORD_PROTECTED</code></td><td><span class="st failed">FAILED</span></td><td>no</td><td>Document requires a password</td></tr>
+      <tr><td><code>ENCODING_MISMATCH</code></td><td><span class="st failed">FAILED</span></td><td>no</td><td>Text does not decode with the chosen encoding</td></tr>
+      <tr><td><code>TEXT_LOSS</code></td><td><span class="st failed">FAILED</span></td><td>no</td><td>V-TEXT below 98%</td></tr>
+      <tr><td><code>VERIFY_FAILED</code></td><td><span class="st failed">FAILED</span></td><td>no</td><td>A new output failed a check</td></tr>
+      <tr><td><code>TIMEOUT</code></td><td><span class="st failed">FAILED</span></td><td>no</td><td>Tool exceeded its time limit</td></tr>
+      <tr><td><code>SOURCE_UNREADABLE</code></td><td><span class="st failed">FAILED</span></td><td>no</td><td>Source cannot be read or decoded</td></tr>
+      <tr><td><code>SOURCE_CHANGED</code></td><td><span class="st failed">FAILED</span></td><td>no</td><td>Source size/mtime changed during the run</td></tr>
+      <tr><td><code>NO_WORK_SPACE</code></td><td><span class="st failed">FAILED</span></td><td>no</td><td>Not enough free space in the work folder for this file</td></tr>
+      <tr><td><code>UNSUPPORTED_FORMAT</code></td><td><span class="st unsupported">UNSUPPORTED</span></td><td>no</td><td>Not in §6</td></tr>
+      <tr><td><code>NO_MEDIA_STREAMS</code></td><td><span class="st unsupported">UNSUPPORTED</span></td><td>no</td><td>Media container with no audio/video</td></tr>
+      <tr><td><code>SYSTEM_FILE</code></td><td><span class="st ignored">IGNORED</span></td><td>no</td><td>§5.2 list</td></tr>
+      <tr><td><code>SYMLINK</code></td><td><span class="st ignored">IGNORED</span></td><td>no</td><td>Links are not followed</td></tr>
+      <tr><td><code>CANCELLED</code></td><td><span class="st skipped">SKIPPED</span></td><td>no</td><td>Run cancelled before this item</td></tr>
+      <tr><td><code>INTERRUPTED</code></td><td><span class="st skipped">SKIPPED</span></td><td>no</td><td>Baleen stopped unexpectedly before this item (§5.6)</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ===================================================== 10 -->
+<section class="doc-section" id="report">
+  <div class="section-kicker">10 · Report &amp; run record</div>
+  <h2>The archival record</h2>
+  <div class="rule-accent"></div>
+  <p>The report is part of the archive. It records what happened to every file and the fixity of every output. Convert runs write to <code>&lt;output&gt;/_baleen/</code>. Check runs write to <code>&lt;BALEEN_HOME&gt;/data/reports/</code> and are downloadable.</p>
+  <h3>10.1 CSV columns (in order)</h3>
+  <div class="tbl-wrap"><table class="tbl">
+    <thead><tr><th>#</th><th>Column</th><th>Content</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td><code>run_id</code></td><td>Run identifier</td></tr>
+      <tr><td>2</td><td><code>source_path</code></td><td>Relative to source root, <code>/</code> separators. Attachments: <code>mail.eml#photo.jpg</code>; nested: <code>a.eml#b.eml#c.jpg</code></td></tr>
+      <tr><td>3</td><td><code>source_size</code></td><td>Bytes</td></tr>
+      <tr><td>4</td><td><code>source_mtime</code></td><td>ISO 8601, UTC</td></tr>
+      <tr><td>5</td><td><code>source_sha256</code></td><td>Hex</td></tr>
+      <tr><td>6</td><td><code>source_format</code></td><td>Detected, e.g. <code>JPEG</code>, <code>AVI (mjpeg / pcm_s16le)</code>, <code>MS Word 97–2003</code></td></tr>
+      <tr><td>7</td><td><code>category</code></td><td><code>image | document | text | html | email | pdf | video | audio | other</code></td></tr>
+      <tr><td>8</td><td><code>action</code></td><td><code>convert | remux | copy | check | none</code></td></tr>
+      <tr><td>9</td><td><code>method</code></td><td>Human-readable, with engine version and key parameters, e.g. <code>FFmpeg 7.1 · libx264 crf18 · aac 192k</code></td></tr>
+      <tr><td>10</td><td><code>output_path</code></td><td>Relative to output root; empty if none</td></tr>
+      <tr><td>11</td><td><code>output_size</code></td><td>Bytes</td></tr>
+      <tr><td>12</td><td><code>output_sha256</code></td><td>Hex</td></tr>
+      <tr><td>13</td><td><code>status</code></td><td>§9</td></tr>
+      <tr><td>14</td><td><code>reason</code></td><td>Codes, <code>;</code>-separated</td></tr>
+      <tr><td>15</td><td><code>checks</code></td><td>e.g. <code>V-PDF-OPEN=pass;V-PDFA=pass(2b)</code></td></tr>
+      <tr><td>16</td><td><code>message</code></td><td>Human detail; tool stderr excerpt ≤ 500 characters</td></tr>
+    </tbody>
+  </table></div>
+  <p>The file is UTF-8 with BOM (opens correctly in Excel), RFC 4180 quoting, CRLF line endings. Rows are in plan order (the sorted scan order of §5.2), with attachment rows directly after their e-mail. Items finish out of order, so the CSV is written once at the end of the run, from the journal (§10.4). During the run the journal is the crash-safe record.</p>
+  <h3>10.2 Run JSON</h3>
+<pre class="code">{
+  "schema_version": 1,
+  "run_id": "20261005-143012", "mode": "convert",       <span class="c">// or "check"</span>
+  "baleen_version": "1.0.0",
+  "started_at": "…", "finished_at": "…", "cancelled": false,
+  "host": { "os": "macOS", "os_version": "15.6", "arch": "arm64", "hostname": "…" },
+  "source_root": "…", "output_root": "…",
+  "settings": { … all §11 keys … },
+  "tools": { "libreoffice": {"path": "…", "version": "…"}, "ffmpeg": {…}, "ffprobe": {…},
+             "java": {…}, "verapdf": {…}, "python": {…}, "pillow": {…}, "pypdf": {…} },
+  "counts": { "by_status": {…}, "by_category": {…}, "by_action": {…} },
+  "report_file": "report-20261005-143012.csv", "report_sha256": "…"
+}</pre>
+  <h3>10.3 Run index</h3>
+  <p><code>&lt;BALEEN_HOME&gt;/data/runs.json</code> lists the 100 most recent runs (id, workflow, roots, counts, state, report path) for the Runs page (UI-H1). Older runs drop off the list; their reports stay on disk.</p>
+  <h3>10.4 Run journal &amp; results index</h3>
+  <p>Every finished item is committed to <code>journal-&lt;run-id&gt;.sqlite</code>, next to the report (SQLite, WAL mode, one commit per item).</p>
+  <ul>
+    <li><strong>During the run</strong> it is the crash-safe record (§5.6).</li>
+    <li><strong>Afterwards</strong> it is the index the run page queries for filters, sorting, paging and the inspector, so pages stay fast at 50,000 rows.</li>
+    <li><strong>The CSV remains the archival record.</strong> If a journal is missing, Baleen rebuilds it from the CSV.</li>
+  </ul>
+  <div class="callout warm"><span class="label">Privacy</span><p>Reports and logs contain file paths and e-mail headers (unless hidden). Treat them as sensitive as the source material. They stay on the machine; Baleen never uploads anything.</p></div>
+</section>
+
+<!-- ===================================================== 11 -->
+<section class="doc-section" id="settings">
+  <div class="section-kicker">11 · Settings</div>
+  <h2>Two folders, seven choices</h2>
+  <div class="rule-accent"></div>
+  <div class="tbl-wrap"><table class="tbl">
+    <thead><tr><th>Key</th><th>UI label</th><th>Default</th><th>Values</th><th>Effect</th></tr></thead>
+    <tbody>
+      <tr><td><code>source_dir</code></td><td>Source folder</td><td>last used</td><td>absolute path</td><td>Folder to convert or check; read-only (P1)</td></tr>
+      <tr><td><code>output_dir</code></td><td>Output folder</td><td>last used</td><td>absolute path</td><td>Must not overlap the source (§5.1)</td></tr>
+      <tr><td><code>copy_existing</code></td><td>Also copy files that are already archival</td><td><code>true</code></td><td><code>true · false</code></td><td>true: verified JPEG/TIFF/PDF-A/MP4/M4A sources are copied to output. false: checked in place only (DR-06)</td></tr>
+      <tr><td><code>pdfa_level</code></td><td>PDF/A level</td><td><code>2b</code></td><td><code>1b · 2b · 3b</code></td><td>Flavour for new PDFs and their V-PDFA</td></tr>
+      <tr><td><code>txt_encoding</code></td><td>Text encoding when unsure</td><td><code>auto</code></td><td><code>auto · big5 · gb18030 · shift_jis · windows-1252</code></td><td>§6.3</td></tr>
+      <tr><td><code>eml_attachments</code></td><td>E-mail attachments</td><td><code>extract</code></td><td><code>extract · block · list</code></td><td>§6.5</td></tr>
+      <tr><td><code>hide_email_addresses</code></td><td>Hide e-mail addresses in PDFs</td><td><code>false</code></td><td><code>true · false</code></td><td>§6.5</td></tr>
+      <tr><td><code>video_quality</code></td><td>Video re-encode quality</td><td><code>high</code></td><td><code>high</code> (CRF 18, AAC 192k) · <code>standard</code> (CRF 23, AAC 128k)</td><td>Only when transcoding</td></tr>
+      <tr><td><code>audio_container</code></td><td>Audio-only output</td><td><code>m4a</code></td><td><code>m4a · mp4</code></td><td>§6.7 (DR-11)</td></tr>
+    </tbody>
+  </table></div>
+  <ul>
+    <li><strong>Persistence:</strong> <code>data/settings.json</code> with <code>schema_version</code>. An unreadable or invalid file → defaults plus a visible warning.</li>
+    <li><strong>Reset:</strong> "Reset to defaults" restores everything except the two folders.</li>
+    <li><strong>Provenance:</strong> every run records the full settings in its run JSON.</li>
+  </ul>
+  <h4>App preferences (Settings page, UI-S1, UI-S2)</h4>
+  <div class="tbl-wrap"><table class="tbl">
+    <thead><tr><th>Key</th><th>UI label</th><th>Default</th><th>Effect</th></tr></thead>
+    <tbody>
+      <tr><td><code>processor_use</code> (+ <code>processor_cores</code>)</td><td>Processor use</td><td><code>balanced</code></td><td><code>gentle · balanced · maximum · custom</code> (1 … cores) → budget B (§5.5)</td></tr>
+      <tr><td><code>memory_limit</code> (+ <code>memory_gb</code>)</td><td>Memory for converters</td><td><code>auto</code></td><td><code>auto · custom</code> (1 … RAM − 2 GB) → budget M</td></tr>
+      <tr><td><code>transfer_slots</code> (+ <code>transfer_count</code>)</td><td>File transfers at once</td><td><code>auto</code></td><td><code>auto · custom</code> (1 … 16) → budget T</td></tr>
+      <tr><td><code>low_priority</code></td><td>Run at lower priority</td><td><code>true</code></td><td>Below-normal priority for workers and child processes (§5.5)</td></tr>
+      <tr><td><code>keep_awake</code></td><td>Keep this computer awake</td><td><code>true</code></td><td>Prevent idle sleep while a job runs (§5.5)</td></tr>
+      <tr><td><code>work_dir</code></td><td>Work folder</td><td><code>data/work</code></td><td>Local work area (§5.4). Must be a writable local folder outside source and output.</td></tr>
+      <tr><td><code>notify_on_finish</code></td><td>Show a desktop notification</td><td><code>false</code></td><td>Browser notification when a run finishes (permission asked on enable)</td></tr>
+      <tr><td><code>progress_in_title</code></td><td>Show progress in the browser tab</td><td><code>true</code></td><td>Tab title shows progress (UI-G2)</td></tr>
+    </tbody>
+  </table></div>
+  <p class="small muted">Stored under <code>"app"</code> in <code>data/settings.json</code>. These are not workflow settings, but the resource settings and their resolved budgets are recorded in each run JSON (§5.5). Changes save immediately and apply live.</p>
+  <h4>Advanced (environment / file only, not in UI)</h4>
+  <p><code>BALEEN_PORT</code> · <code>BALEEN_SOFFICE</code> · <code>BALEEN_FFMPEG</code> · <code>BALEEN_FFPROBE</code> · <code>BALEEN_JAVA_HOME</code> · <code>BALEEN_VERAPDF</code> · timeouts <code>lo_timeout_s = 300</code>, <code>verapdf_timeout_s = 300</code>, <code>av_timeout_min_s = 600</code>.</p>
+  <p><strong>Tool lookup order:</strong> environment override → bundled <code>runtime/</code> → <code>PATH</code> → standard install locations (<code>C:\Program Files\LibreOffice</code>, <code>/Applications/LibreOffice.app</code>).</p>
+</section>
+
+<!-- ===================================================== 12 -->
+<section class="doc-section" id="ui">
+  <div class="section-kicker">12 · User interface (behaviour)</div>
+  <h2>Workflows, runs, system</h2>
+  <div class="rule-accent"></div>
+  <div class="callout"><span class="label">Scope of this section</span><p>This section defines what each page does. Layout, visual design, components, copy and every screen state (W-01 to W-23) are in <code>docs/baleen-design.html</code>. Its decisions D-01 to D-24 are part of this spec (DR-31, DR-36). Where the two docs conflict on behaviour, this spec wins.</p></div>
+
+  <h3>12.1 Shell &amp; navigation</h3>
+  <div class="tbl-wrap"><table class="tbl wrap-first">
+    <thead><tr><th>ID</th><th>Requirement</th></tr></thead>
+    <tbody>
+      <tr><td><span class="id">UI-G1</span></td><td><strong>Left rail</strong> with three groups:
+        <ul>
+          <li><strong>Workflows:</strong> one item per registered workflow (§12.8), currently Convert and Check.</li>
+          <li><strong>History:</strong> Runs, with a count.</li>
+          <li><strong>System:</strong> Tools (status dot), Settings, About.</li>
+        </ul>
+        Collapse, a running-job card and Quit sit at the bottom. The active item has <code>aria-current="page"</code>. Rail width follows the design breakpoints (expanded, icons only, drawer).</td></tr>
+      <tr><td><span class="id">UI-G2</span></td><td><strong>Running job visibility.</strong> On every page, the rail shows the running job's workflow and percentage and links to its run page.
+        <ul>
+          <li>The tab title reads <code>48% · Convert · Baleen</code> while running and <code>✓ Done · Convert · Baleen</code> after finishing (preference <code>progress_in_title</code>).</li>
+          <li>An optional desktop notification fires on finish (preference <code>notify_on_finish</code>, off by default).</li>
+        </ul></td></tr>
+      <tr><td><span class="id">UI-G3</span></td><td><strong>Connection lost.</strong> After 3 consecutive failed polls, a page-wide banner appears instantly. It retries every 5 s and clears itself on success.</td></tr>
+      <tr><td><span class="id">UI-G4</span></td><td><strong>Quit</strong> (rail) opens a confirmation with initial focus on "Stay". If a job is running, Baleen finishes the current item and writes the report first. Then the server exits and <code>/stopped</code> shows "Baleen has stopped." Closing the launcher window also stops Baleen; per-item atomicity (P5) keeps that safe.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>12.2 Workflow setup pages (common)</h3>
+  <ul>
+    <li><strong>Layout:</strong> numbered cards (① folders, ② options, ③ preview or an explainer card) and a persistent action bar at the bottom.</li>
+    <li><strong>Disabled Start:</strong> the action bar always says why Start is disabled.</li>
+    <li><strong>One job at a time:</strong> while any job runs, every Start button is disabled and an info notice links to the running job's page.</li>
+    <li><strong>Missing tools:</strong> shown as a warning notice at the top of the page. Starting stays allowed.</li>
+  </ul>
+
+  <h3>12.3 Convert <code>/convert</code></h3>
+  <div class="tbl-wrap"><table class="tbl wrap-first">
+    <thead><tr><th>ID</th><th>Requirement</th></tr></thead>
+    <tbody>
+      <tr><td><span class="id">UI-C1</span></td><td><strong>Source and output folders.</strong> Each is a text field (paste a path) with <em>Browse…</em>, which opens the OS folder dialog (§12.9). Validation runs on blur and on submit: exists, readable / writable, overlap rule (§5.1). An error replaces the status line under the field.</td></tr>
+      <tr><td><span class="id">UI-C2</span></td><td><strong>Options</strong> are rendered from the workflow's settings schema (§11), grouped: Documents, E-mail, Audio &amp; video, Files already archival.
+        <ul>
+          <li>"Reset" restores defaults.</li>
+          <li>A preset selector is shown disabled, reading "Default" (or "Default (modified)") and tagged v1.1 (DR-30).</li>
+        </ul></td></tr>
+      <tr><td><span class="id">UI-C3</span></td><td><strong>Missing tools</strong> trigger a notice that names the affected files and links to Tools:
+        <ul>
+          <li>LibreOffice → documents, text, web pages and e-mail: <code>TOOL_MISSING</code>.</li>
+          <li>FFmpeg → audio and video: <code>TOOL_MISSING</code>.</li>
+          <li>veraPDF / Java → PDFs: <code>VALIDATOR_MISSING</code>.</li>
+        </ul></td></tr>
+      <tr><td><span class="id">UI-C4</span></td><td><strong>Preview</strong> scans and plans without writing anything. It shows:
+        <ul>
+          <li>files found; convert / copy / unsupported / ignored counts; category bars;</li>
+          <li>clash renames (source → output name);</li>
+          <li>problems knowable at plan time.</li>
+        </ul>
+        Changing folders or options afterwards marks the preview <em>out of date</em>. Preview is optional. Target: ≤ 10 s for 2,000 files on local disk.</td></tr>
+      <tr><td><span class="id">UI-C5</span></td><td><strong>Start</strong> opens a confirmation showing source → output, counts, settings chips and "Your source folder will not be changed." Confirming starts the job and navigates to its run page (§12.5).</td></tr>
+      <tr><td><span class="id">UI-C6</span></td><td><strong>Browse waiting state.</strong> While the OS dialog is open, the button shows "Waiting for the folder dialog…" with a hint that the dialog may be behind the browser. Cancelling the dialog changes nothing.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>12.4 Check <code>/check</code></h3>
+  <div class="tbl-wrap"><table class="tbl wrap-first">
+    <thead><tr><th>ID</th><th>Requirement</th></tr></thead>
+    <tbody>
+      <tr><td><span class="id">UI-K1</span></td><td><strong>Folder to check</strong>: field + Browse, same validation as UI-C1 (read-only). No options in v1.</td></tr>
+      <tr><td><span class="id">UI-K2</span></td><td><strong>Explainer card</strong>, "What Baleen checks":
+        <ul>
+          <li>JPEG/TIFF full decode</li>
+          <li>PDF/A validation</li>
+          <li>MP4/M4A full decode</li>
+          <li>SHA-256 for every file</li>
+          <li>convertible files listed as <code>NOT_ARCHIVAL_FORMAT</code> with their target format</li>
+        </ul>
+        <em>Start check</em> starts a read-only job and navigates to its run page.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>12.5 Run page <code>/runs/&lt;id&gt;</code></h3>
+  <div class="tbl-wrap"><table class="tbl wrap-first">
+    <thead><tr><th>ID</th><th>Requirement</th></tr></thead>
+    <tbody>
+      <tr><td><span class="id">UI-R1</span></td><td><strong>Header</strong>: breadcrumb (Runs › id), workflow title and a status pill (Running / Completed / Completed · n to look at / Cancelled / Stopped). Below it: source → output, start time and duration, settings chips (Convert), and page actions.</td></tr>
+      <tr><td><span class="id">UI-R2</span></td><td><strong>Live state</strong> (while running):
+        <ul>
+          <li>"812 of 1,670 files", percentage, progress bar and elapsed time.</li>
+          <li><strong>In progress (n)</strong>: the files being worked on right now, each with its category icon and current action.</li>
+          <li><strong>Processor use</strong> selector: Gentle / Balanced / Maximum, or the current Custom value. Next to it, the resolved budgets in words ("Using 4 of 8 cores · up to 4 GB memory · 4 transfers") and a link to Resource settings. Changes apply at once to new tasks (§5.5); a toast confirms.</li>
+          <li>Status tiles updating live, and a "Latest" list (the last 6 finished items) instead of the full table.</li>
+        </ul>
+        <em>Cancel run</em> asks for confirmation (initial focus "Keep running"), then stops dispatching and waits for the files in progress. Polling: every 1 s, or every 3 s while the tab is hidden.</td></tr>
+      <tr><td><span class="id">UI-R3</span></td><td><strong>Completed state</strong>: a headline ("8 of 1,670 files need your attention" or "All 1,670 files are OK") and six status tiles that toggle a status filter.
+        <ul>
+          <li>Tile order: Failed, Needs review, Unsupported, OK, Ignored, Skipped.</li>
+          <li>Actions: <em>Open output folder</em> (Convert), <em>Download report</em>, more (copy run ID, reveal report).</li>
+        </ul></td></tr>
+      <tr><td><span class="id">UI-R4</span></td><td><strong>Results table.</strong>
+        <ul>
+          <li>Columns: Status · Source · Output · Action · Reason. Check runs omit Output.</li>
+          <li>Default sort: severity, then source path.</li>
+          <li>Text filter on paths; server-side pagination, 100 rows per page.</li>
+          <li>Path cells keep the file name visible and truncate the folder part.</li>
+          <li>A reason code always carries its human label (tooltip).</li>
+        </ul></td></tr>
+      <tr><td><span class="id">UI-R5</span></td><td><strong>Inspector</strong> (clicking a row, or <kbd>Enter</kbd> on it) opens a side panel.
+        <ul>
+          <li>Sections: What happened (label, code, message) · What to do (per-reason help, design §10) · Action · Source (path, size, modified, SHA-256) · Output (path, size, SHA-256, or "No output was written") · Checks (pass / fail / unavailable / n/a with detail).</li>
+          <li>Actions: Reveal source, Reveal output, Copy row.</li>
+          <li>Keys: <kbd>↑</kbd><kbd>↓</kbd> move the selection and the inspector follows; <kbd>Esc</kbd> closes and returns focus to the row.</li>
+          <li>Layout: docks at window width ≥ 1440 px, where the table drops Output and Action; overlays the table below that.</li>
+        </ul></td></tr>
+      <tr><td><span class="id">UI-R6</span></td><td><strong>Cancelled state</strong>: a notice "Run cancelled after n of m files", saying that finished work is saved and that re-running resumes. Remaining items show as Skipped.</td></tr>
+      <tr><td><span class="id">UI-R7</span></td><td><strong>Stopped state</strong> (fatal mid-run, e.g. the output drive disconnected): an alert notice with what was processed, that the report was saved, how to resume, and the log path.</td></tr>
+      <tr><td><span class="id">UI-R8</span></td><td><strong>Persistence</strong>: run pages survive restarts; they are read from the report CSV and run JSON.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>12.6 Runs <code>/runs</code></h3>
+  <div class="tbl-wrap"><table class="tbl wrap-first">
+    <thead><tr><th>ID</th><th>Requirement</th></tr></thead>
+    <tbody>
+      <tr><td><span class="id">UI-H1</span></td><td><strong>History table</strong>:
+        <ul>
+          <li>Columns: Started · Workflow · Folder · Files · Result (stacked mini-bar + "n to look at", or "All OK" / "Cancelled" / "Running") · Duration.</li>
+          <li>Filters: workflow (All / Convert / Check) and a folder text filter.</li>
+          <li>A row opens its run page.</li>
+        </ul></td></tr>
+      <tr><td><span class="id">UI-H2</span></td><td><strong>Empty state</strong>: "No runs yet", one sentence, and <em>Start with Convert</em>.</td></tr>
+      <tr><td><span class="id">UI-H3</span></td><td><strong>Retention</strong>: the run index keeps the 100 most recent runs (§10.3). Older reports remain on disk; they are only removed from the list.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>12.7 System pages</h3>
+  <div class="tbl-wrap"><table class="tbl wrap-first">
+    <thead><tr><th>ID</th><th>Requirement</th></tr></thead>
+    <tbody>
+      <tr><td><span class="id">UI-T1</span></td><td><strong>Tools</strong> <code>/tools</code>: a summary notice, then each external tool (LibreOffice, FFmpeg, FFprobe, Java, veraPDF) with role, status, version, source (bundled / system / override) and path. A missing tool shows "Affects" and "Fix" text. <em>Check again</em> re-runs detection.</td></tr>
+      <tr><td><span class="id">UI-S1</span></td><td><strong>Settings</strong> <code>/settings</code>, in this order:
+        <ul>
+          <li>Resource use (UI-S2);</li>
+          <li>When a run finishes: <code>notify_on_finish</code>, <code>progress_in_title</code>;</li>
+          <li>Data: Baleen folder (Open), Logs (Open logs folder), Reset workflow options (confirm);</li>
+          <li>Advanced, read-only: address, environment overrides, timeouts.</li>
+        </ul></td></tr>
+      <tr><td><span class="id">UI-S2</span></td><td><strong>Resource use</strong>, written so non-technical users understand each choice:
+        <ul>
+          <li><strong>This computer:</strong> processor cores, memory, work-folder free space, and whether the current folders are on a network drive.</li>
+          <li><strong>Processor use:</strong> Gentle / Balanced / Maximum / Custom, with one plain sentence per choice, a core meter ("Uses 4 of 8 cores"), and a stepper (1 … cores) for Custom.</li>
+          <li><strong>Memory for converters:</strong> Auto (showing its GB) / Custom (slider, 1 GB … RAM − 2 GB), with "Each document converter reserves about 1 GB".</li>
+          <li><strong>File transfers at once:</strong> Auto (showing 4 or 8, and why) / Custom (stepper 1 … 16), with "Lower this if colleagues notice the shared drive slowing down".</li>
+          <li><strong>While running:</strong> Run at lower priority; Keep this computer awake, with the laptop-lid caveat.</li>
+          <li><strong>Work folder:</strong> path + Browse + free space + how much space a run needs.</li>
+          <li><strong>With these settings:</strong> a live, plain-language summary computed by the server with the §5.5 rules, e.g. "4 file tasks at once · 2 document converters · 1 video encoder using 4 cores · PDF/A checks in batches · 4 file transfers · up to 4 GB memory".</li>
+          <li><strong>Saving:</strong> changes save immediately and apply to a running job at its next dispatch; the page says so. "Defaults" restores Balanced, Auto, Auto, on, on, <code>data/work</code>.</li>
+        </ul></td></tr>
+      <tr><td><span class="id">UI-A1</span></td><td><strong>About</strong> <code>/about</code>:
+        <ul>
+          <li>Wordmark (the logo once designed), version and licence; "by Walking Whale" with the WW logo (the only in-app endorsement).</li>
+          <li>Links: project, specification, report a problem, with a reminder never to attach archive files.</li>
+          <li>The third-party software list with versions and licences.</li>
+        </ul></td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>12.8 Workflow registry (extension contract)</h3>
+  <p>A workflow is a module that registers:</p>
+  <ul>
+    <li><code>id</code>, <code>name</code>, <code>icon</code>, <code>order</code>, <code>description</code>;</li>
+    <li><code>folders</code> (key, label, role read/write, help);</li>
+    <li><code>options</code> (a schema of groups → fields: key, label, help, type <code>seg | switch | select</code>, values, default);</li>
+    <li><code>preview</code>, <code>start_label</code>, <code>confirm</code>, <code>result_columns</code>, <code>explainer</code>;</li>
+    <li>its <code>plan()</code> and <code>run()</code> functions.</li>
+  </ul>
+  <p>The rail item, setup page, options panel, confirmation and run page are generated from this registration. Adding a workflow MUST NOT require changes to shared templates. Design doc §02 has the reference object.</p>
+
+  <h3>12.9 Native folder dialog</h3>
+  <p><code>POST /api/pick-folder</code> makes the server open the OS dialog and return an absolute path, or "cancelled". Timeout 10 min.</p>
+  <ul>
+    <li><strong>macOS:</strong> <code>osascript</code> with <code>activate</code> + <code>choose folder</code>.</li>
+    <li><strong>Windows:</strong> PowerShell <code>-STA</code> <code>FolderBrowserDialog</code> with a top-most owner, UTF-8 output.</li>
+    <li><strong>Linux:</strong> <code>zenity</code> or <code>kdialog</code> if present.</li>
+    <li><strong>Unavailable:</strong> Browse is hidden; pasting a path always works.</li>
+  </ul>
+
+  <h3>12.10 Accessibility &amp; browsers</h3>
+  <ul>
+    <li>WCAG 2.1 AA; the checklist and computed contrast table are in design §03 and §11.</li>
+    <li>Status is always icon + text, never colour alone.</li>
+    <li>Keyboard map: design §09.</li>
+    <li>Progress goes to a polite live region (start, every 25%, finish).</li>
+    <li>Supported browsers: current Safari, Chrome, Edge, Firefox.</li>
+    <li>No JS framework: htmx plus a small vanilla module, with no inline scripts (SEC-6).</li>
+  </ul>
+</section>
+
+<!-- ===================================================== 13 -->
+<section class="doc-section" id="security">
+  <div class="section-kicker">13 · Local server &amp; security</div>
+  <h2>Loopback, token, origin</h2>
+  <div class="rule-accent"></div>
+  <p>Any web page the user visits could try to call a local server. These rules make that useless.</p>
+  <div class="tbl-wrap"><table class="tbl wrap-first">
+    <thead><tr><th>ID</th><th>Rule</th></tr></thead>
+    <tbody>
+      <tr><td><span class="id">SEC-1</span></td><td>Bind <code>127.0.0.1</code> only, never <code>0.0.0.0</code>. Port: the first free one in 8765–8799, unless <code>BALEEN_PORT</code> is set.</td></tr>
+      <tr><td><span class="id">SEC-2</span></td><td>Each process generates a 256-bit random launch token.
+        <ul>
+          <li><code>serve</code> opens the browser at <code>/auth?t=&lt;token&gt;</code>.</li>
+          <li>The server sets cookie <code>baleen_session</code> (HttpOnly, SameSite=Strict, Path=/, session lifetime) and redirects to <code>/</code>.</li>
+          <li>The console prints the same URL for re-opening.</li>
+        </ul></td></tr>
+      <tr><td><span class="id">SEC-3</span></td><td>Every route except <code>/auth</code> and <code>/static/*</code> requires the cookie (constant-time compare). Missing or wrong → 403 page explaining how to open Baleen from the launcher.</td></tr>
+      <tr><td><span class="id">SEC-4</span></td><td>The <code>Host</code> header MUST be <code>127.0.0.1:&lt;port&gt;</code> or <code>localhost:&lt;port&gt;</code>; otherwise reject. This defends against DNS rebinding.</td></tr>
+      <tr><td><span class="id">SEC-5</span></td><td>State-changing endpoints are POST-only. <code>Origin</code> MUST equal the server origin; if it is absent, <code>Referer</code> MUST match; otherwise 403.</td></tr>
+      <tr><td><span class="id">SEC-6</span></td><td>Response headers:
+        <ul>
+          <li><code>Content-Security-Policy: default-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'</code></li>
+          <li><code>X-Content-Type-Options: nosniff</code></li>
+          <li><code>Referrer-Policy: same-origin</code></li>
+          <li><code>Cache-Control: no-store</code> on dynamic responses</li>
+        </ul>
+        No inline scripts. Set htmx <code>includeIndicatorStyles = false</code> to satisfy the CSP.</td></tr>
+      <tr><td><span class="id">SEC-7</span></td><td>The server accepts absolute paths only and resolves real paths. It reads only inside the source root and writes only inside the output root and <code>BALEEN_HOME/data</code>. "Open / reveal" works only for paths inside those roots.</td></tr>
+      <tr><td><span class="id">SEC-8</span></td><td>Subprocesses get argument lists only (no shell), explicit tool paths, and a sanitised environment (TMP/TEMP → <code>data/tmp</code>). The whole process tree is killed on timeout or cancel.</td></tr>
+      <tr><td><span class="id">SEC-9</span></td><td>No network at runtime (P8): no telemetry or update checks; FFmpeg protocol whitelist; remote resources in HTML and e-mail neutralised (§6.4). Verified offline in CI (AC-10).</td></tr>
+      <tr><td><span class="id">SEC-10</span></td><td>Source files may be malformed or hostile. Converters run as the user without an extra sandbox in v1; pinned tool versions are kept current, and every release lists them.</td></tr>
+      <tr><td><span class="id">SEC-11</span></td><td>Log at <code>data/logs/baleen.log</code>, rotating 5 × 5 MB. It is local only and may contain personal names in paths.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ===================================================== 14 -->
+<section class="doc-section" id="packaging">
+  <div class="section-kicker">14 · Packaging, install, uninstall</div>
+  <h2>One folder in, one folder out</h2>
+  <div class="rule-accent"></div>
+  <h3>14.1 Release artifacts</h3>
+  <p><code>baleen-&lt;ver&gt;-win-x64.zip</code> and <code>baleen-&lt;ver&gt;-mac-arm64.zip</code>, optionally <code>mac-x64</code>, plus <code>SHA256SUMS</code> and the GPL source archives (§15). Each is about 1 GB unpacked; LibreOffice is the bulk.</p>
+  <h3>14.2 Bundle layout</h3>
+<pre class="code">Baleen-1.0.0-mac-arm64/
+├── Start Baleen.command           <span class="c">Windows: Start Baleen.bat</span>
+├── README.txt                     <span class="c">start · stop · uninstall · first-run notes</span>
+├── LICENSE · NOTICE
+├── THIRD_PARTY_NOTICES/           <span class="c">one file per component + source links</span>
+├── runtime/                       <span class="c">read-only at run time</span>
+│   ├── python/                    <span class="c">CPython + baleen + Python deps</span>
+│   ├── ffmpeg/                    <span class="c">ffmpeg · ffprobe</span>
+│   ├── LibreOffice.app/           <span class="c">Windows: libreoffice/ (administrative install tree)</span>
+│   ├── jre/                       <span class="c">Temurin JRE 21 (bin/java at this level)</span>
+│   ├── verapdf/                   <span class="c">veraPDF CLI</span>
+│   └── VERSIONS.json              <span class="c">exact versions + SHA-256 of every download</span>
+└── data/                          <span class="c">created on first run · all mutable state</span>
+    ├── settings.json · runs.json
+    ├── reports/ · logs/ · tmp/
+    ├── lo-profile/                <span class="c">LibreOffice user profile</span>
+    └── java/                      <span class="c">Java user prefs</span></pre>
+
+  <h3>14.3 Launchers</h3>
+  <ul>
+    <li><strong>Working directory:</strong> change to the launcher's own folder and set <code>BALEEN_HOME</code> to it.</li>
+    <li><strong>Environment, so all state stays in the folder:</strong>
+      <ul>
+        <li><code>TMPDIR</code> (macOS) or <code>TEMP</code> and <code>TMP</code> (Windows) → <code>data/tmp</code></li>
+        <li><code>PYTHONNOUSERSITE=1</code>, <code>PYTHONDONTWRITEBYTECODE=1</code></li>
+        <li><code>JAVA_TOOL_OPTIONS=-Djava.util.prefs.userRoot=&lt;data/java&gt; -Djava.util.prefs.systemRoot=&lt;data/java&gt;</code></li>
+      </ul>
+    </li>
+    <li><strong>Run:</strong> <code>runtime/python/… -m baleen serve</code>. The console window stays open showing the log; closing it stops Baleen. On a non-zero exit it waits for a key press.</li>
+    <li><strong>Windows:</strong> <code>chcp 65001</code>; every path quoted (spaces and CJK).</li>
+    <li><strong>Development:</strong> if <code>runtime/</code> is absent (source checkout), fall back to <code>python3</code> / <code>py</code> on PATH and say so.</li>
+  </ul>
+
+  <h3>14.4 Install (user steps)</h3>
+  <ol>
+    <li>Copy the unzipped folder to a local disk, e.g. from the NAS or a USB drive.</li>
+    <li>Double-click <em>Start Baleen</em>. The browser opens.</li>
+  </ol>
+  <div class="callout warm"><span class="label">First run</span>
+    <p><strong>macOS:</strong> a folder that arrived via browser download, AirDrop or e-mail is quarantined. Run once in Terminal: <code>xattr -dr com.apple.quarantine "&lt;folder&gt;"</code>. On first access to a network volume, macOS asks whether Terminal may access it; choose <em>Allow</em>.</p>
+    <p><strong>Windows:</strong> if the zip was downloaded, right-click it → Properties → <em>Unblock</em> before extracting. SmartScreen may still ask "Run anyway" for the .bat.</p>
+  </div>
+
+  <h3>14.5 Uninstall</h3>
+  <p>Quit Baleen and delete the folder.</p>
+  <ul>
+    <li><strong>Kept by design:</strong> output folders and their <code>_baleen/</code> reports. They are the archival record.</li>
+    <li><strong>Allowed traces outside the folder:</strong> the macOS privacy permission entry for Terminal (system-managed), and the browser's history and session cookie for <code>127.0.0.1</code>.</li>
+    <li><strong>Nothing else.</strong> AC-11 verifies this.</li>
+  </ul>
+
+  <h3>14.6 Build script</h3>
+<pre class="code">python scripts/build_bundle.py --platform <span class="k">win-x64 | mac-arm64 | mac-x64</span> [--version X.Y.Z] [--cache DIR]</pre>
+  <ol>
+    <li><strong>Read pins</strong> from <code>scripts/runtimes.json</code>: per component and platform, version, URL, SHA-256, archive type, extraction rule, license, source URL.</li>
+    <li><strong>Download</strong> to the cache and <strong>verify SHA-256</strong>; abort on mismatch. Checksums come from vendors' published checksum files where available; otherwise they are recorded at pin time in a reviewed PR.</li>
+    <li><strong>Python:</strong> extract the python-build-standalone <code>install_only</code> archive → <code>runtime/python</code>. Then <code>pip install --no-deps --require-hashes -r requirements.lock</code>, then <code>pip install --no-deps .</code>.</li>
+    <li><strong>FFmpeg:</strong>
+      <ul>
+        <li>Windows: pinned static GPL build (e.g. BtbN FFmpeg-Builds).</li>
+        <li>macOS: pinned static build (e.g. martin-riedl.de).</li>
+        <li>Copy <code>ffmpeg</code> and <code>ffprobe</code> only.</li>
+      </ul>
+    </li>
+    <li><strong>LibreOffice:</strong>
+      <ul>
+        <li>Windows: <code>msiexec /a &lt;msi&gt; /qn TARGETDIR=&lt;abs&gt;\runtime\libreoffice</code> (administrative install: no registry or system changes).</li>
+        <li>macOS: <code>hdiutil attach -nobrowse -readonly</code>, <code>ditto</code> LibreOffice.app into <code>runtime/</code>, detach.</li>
+        <li>Pin archived release URLs (<code>downloadarchive.documentfoundation.org</code>).</li>
+      </ul>
+    </li>
+    <li><strong>JRE:</strong> Temurin 21 JRE archive → <code>runtime/jre</code>, normalised so that <code>runtime/jre/bin/java</code> exists on both platforms.</li>
+    <li><strong>veraPDF:</strong> <code>java -jar &lt;installer&gt;.jar scripts/verapdf-auto-install.xml</code> (headless IzPack) → <code>runtime/verapdf</code>, CLI packs only.</li>
+    <li><strong>Records:</strong> write <code>runtime/VERSIONS.json</code> and <code>THIRD_PARTY_NOTICES/</code>; copy launchers, README.txt, LICENSE, NOTICE.</li>
+    <li><strong>Smoke test with the bundled runtime:</strong> <code>baleen doctor</code> (all tools found), then <code>baleen convert</code> on <code>tests/fixtures/smoke</code>. Statuses must match expectations.</li>
+    <li><strong>Zip.</strong></li>
+  </ol>
+
+  <h3>14.7 Continuous integration</h3>
+  <div class="tbl-wrap"><table class="tbl wrap-first">
+    <thead><tr><th>Workflow</th><th>Trigger</th><th>Does</th></tr></thead>
+    <tbody>
+      <tr><td><code>test.yml</code></td><td>push, PR</td><td>
+        <ul>
+          <li>ubuntu-latest: apt LibreOffice, FFmpeg, JRE, plus the veraPDF installer; lint and unit + integration tests; integration suite again with networking disabled.</li>
+          <li>macos-latest and windows-latest: unit tests only.</li>
+        </ul></td></tr>
+      <tr><td><code>bundle.yml</code></td><td>tag <code>v*</code>, manual</td><td>
+        <ul>
+          <li>Matrix: windows-latest → win-x64, macos (arm64) → mac-arm64.</li>
+          <li>Build bundle, smoke test, then a clean-uninstall check: snapshot the user profile before and after; fail on unexpected new paths.</li>
+          <li>Upload artifacts. On tag, draft a GitHub Release with the zips, <code>SHA256SUMS</code> and the GPL source archives.</li>
+        </ul></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ===================================================== 15 -->
+<section class="doc-section" id="licensing">
+  <div class="section-kicker">15 · Licensing &amp; naming</div>
+  <h2>Open source, cleanly</h2>
+  <div class="rule-accent"></div>
+  <ul>
+    <li><strong>Baleen code:</strong> Apache-2.0, © 2026 Walking Whale Co., Ltd., with a <code>NOTICE</code> file. Contributions are accepted under Apache-2.0 (inbound = outbound).</li>
+    <li><strong>No GPL linking:</strong> FFmpeg, LibreOffice, Java and veraPDF are separate executables, invoked as subprocesses and shipped unmodified. Baleen's Python code imports only permissively licensed libraries.</li>
+    <li><strong>No client data in the repository:</strong> fixtures are generated (§16.1). Issue templates ask reporters not to attach archive material.</li>
+  </ul>
+  <div class="tbl-wrap"><table class="tbl wrap-first">
+    <thead><tr><th>Component</th><th>License</th><th>Obligation in each release</th></tr></thead>
+    <tbody>
+      <tr><td>FFmpeg (GPL build, includes x264)</td><td>GPL-2.0-or-later</td><td>License text in bundle; exact corresponding source archives for FFmpeg and x264 attached to the GitHub Release</td></tr>
+      <tr><td>LibreOffice</td><td>MPL-2.0 (+ its own notices)</td><td>Ship unmodified with its license files; link to source</td></tr>
+      <tr><td>Temurin JRE</td><td>GPL-2.0 with Classpath Exception</td><td>Ship its license and notice files; link to source</td></tr>
+      <tr><td>veraPDF</td><td>GPL-3.0-or-later / MPL-2.0</td><td>License text; link to source</td></tr>
+      <tr><td>CPython (python-build-standalone)</td><td>PSF-2.0 + bundled libraries</td><td>Ship its license files</td></tr>
+      <tr><td>Python packages, htmx</td><td>BSD-3, MIT-CMU, Apache-2.0, 0BSD</td><td>License texts in <code>THIRD_PARTY_NOTICES/</code></td></tr>
+    </tbody>
+  </table></div>
+  <h3>Naming (DR-23)</h3>
+  <div class="tbl-wrap"><table class="tbl wrap-first">
+    <tbody>
+      <tr><td>Repository</td><td><code>walking-whale-baleen</code></td></tr>
+      <tr><td>Product name (UI, docs, prose)</td><td><strong>Baleen</strong>, endorsed as "Baleen by Walking Whale". Full company name <em>Walking Whale Co., Ltd.</em> in footer, LICENSE, NOTICE and About.</td></tr>
+      <tr><td>Code identifiers</td><td>Lower-case <code>baleen</code>: import package, CLI (<code>python -m baleen</code>), env vars (<code>BALEEN_*</code>), folders (<code>_baleen/</code>, <code>.baleen-staging/</code>), cookie, log file</td></tr>
+      <tr><td>Python distribution name</td><td><code>walking-whale-baleen</code> (the bare name <code>baleen</code> is taken on PyPI). Not published to PyPI in v1.</td></tr>
+      <tr><td>Release files</td><td><code>baleen-&lt;ver&gt;-&lt;platform&gt;.zip</code> → folder <code>Baleen-&lt;ver&gt;-&lt;platform&gt;/</code> → launcher <em>Start Baleen</em></td></tr>
+      <tr><td>Logo</td><td>Designed separately (design D-10); v1 ships the wordmark and a placeholder favicon. Logo files live in <code>assets/brand/</code>. They are Walking Whale trademarks, excluded from Apache-2.0; <code>NOTICE</code> and README say so.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ===================================================== 16 -->
+<section class="doc-section" id="testing">
+  <div class="section-kicker">16 · Testing &amp; acceptance</div>
+  <h2>How we know it works</h2>
+  <div class="rule-accent"></div>
+  <h3>16.1 Fixtures (generated, never real archive data)</h3>
+  <p><code>tests/fixtures/make_fixtures.py</code> builds a synthetic tree with Pillow, LibreOffice, FFmpeg, pypdf and Python <code>email</code>.</p>
+  <div class="tbl-wrap"><table class="tbl wrap-first">
+    <thead><tr><th>Group</th><th>Fixtures</th></tr></thead>
+    <tbody>
+      <tr><td>Images</td><td>JPEG with EXIF + ICC; <code>.JPG</code> upper-case; 2-page TIFF; PNG RGBA; PNG 16-bit; BMP 24-bit; animated GIF (3 frames); WebP; PNG content named <code>.jpg</code>; truncated JPEG</td></tr>
+      <tr><td>Documents</td><td>DOC, DOCX, RTF, ODT, XLS, PPT (generated by LibreOffice from HTML at fixture time)</td></tr>
+      <tr><td>Text</td><td>UTF-8 with CJK; UTF-8 BOM; UTF-16 BOM; Big5 (→ <code>ENCODING_UNCERTAIN</code> in auto; OK with <code>big5</code>)</td></tr>
+      <tr><td>HTML</td><td>Page with remote <code>&lt;img&gt;</code> and <code>&lt;script&gt;</code> (assert no network and the placeholder text in the PDF); page with a relative local image</td></tr>
+      <tr><td>E-mail</td><td>Plain UTF-8; HTML with a <code>cid:</code> image; two attachments (DOCX + JPEG); nested <code>message/rfc822</code> with a JPEG; Big5 body; attachment without filename; 4-level nesting (→ <code>EML_NESTING_TOO_DEEP</code>)</td></tr>
+      <tr><td>Media</td><td>AVI MJPEG + PCM (transcode); MPG MPEG-1 + MP2 (transcode); MP4 H.264 + AAC (copy); MKV H.264 + AAC (remux); MOV 321×241 (pad); WMA (→ m4a); MP3 with cover art (remux, cover dropped); WAV; audio-only AVI (audio route)</td></tr>
+      <tr><td>PDF</td><td>Plain PDF (<code>NOT_PDFA</code>); PDF/A-2b (generated by LibreOffice); encrypted PDF (<code>PDF_ENCRYPTED</code>)</td></tr>
+      <tr><td>Other</td><td><code>.msg</code>-named bytes and <code>.zip</code> (UNSUPPORTED); <code>Thumbs.db</code>, <code>.DS_Store</code>, <code>desktop.ini</code> (IGNORED); symlink (IGNORED, POSIX)</td></tr>
+      <tr><td>Names</td><td>CJK folders and files, spaces, emoji, near-limit lengths, every clash case in §7.3</td></tr>
+    </tbody>
+  </table></div>
+  <h3>16.2 Unit tests</h3>
+  <p>Covered: plan (clash rule incl. attachments; shuffled input order; <code>copy_existing</code> does not change names); sanitiser; encoding detection; settings validation; status severity; CSV writer (quoting, BOM); resume lookup; path overlap (case, symlinks); security middleware (token, Host, Origin).</p>
+  <h3>16.3 Integration tests</h3>
+  <p>Each fixture → expected (status, reason, output name, checks) in the golden file <code>tests/integration/expected.csv</code>. Tests skip when a tool is missing locally; in CI every tool MUST be present.</p>
+  <h3>16.4 Acceptance criteria (release blockers)</h3>
+  <div class="tbl-wrap"><table class="tbl wrap-first">
+    <thead><tr><th>ID</th><th>Criterion</th></tr></thead>
+    <tbody>
+      <tr><td><span class="id">AC-01</span></td><td><strong>Source untouched:</strong> the directory listing and every file's SHA-256, size and mtime are identical before and after a run. No lock or temp files appear.</td></tr>
+      <tr><td><span class="id">AC-02</span></td><td><strong>Completeness:</strong> every scanned file and every attachment appears exactly once in the report.</td></tr>
+      <tr><td><span class="id">AC-03</span></td><td><strong>Integrity:</strong> every file under the output root (excluding <code>_baleen/</code>) has a report row with matching <code>output_sha256</code>. No file exists for FAILED / UNSUPPORTED / IGNORED / SKIPPED rows.</td></tr>
+      <tr><td><span class="id">AC-04</span></td><td><strong>Formats:</strong> every placed output is <code>.jpg .tif .pdf .mp4 .m4a</code> and passes its checks. With all tools present, no <code>VALIDATOR_MISSING</code>.</td></tr>
+      <tr><td><span class="id">AC-05</span></td><td><strong>Naming:</strong> fixture outputs match the §7 golden names.</td></tr>
+      <tr><td><span class="id">AC-06</span></td><td><strong>PDF/A:</strong> all new PDFs validate in veraPDF at 1b, 2b and 3b when configured.</td></tr>
+      <tr><td><span class="id">AC-07</span></td><td><strong>Idempotent:</strong> an identical second run reports earlier OK rows as <code>RESUMED</code>. No file changes, no new files.</td></tr>
+      <tr><td><span class="id">AC-08</span></td><td><strong>Crash-safe:</strong> killing the process mid-LibreOffice and mid-FFmpeg, then re-running, completes. No partial files under final names; no staging left afterwards.</td></tr>
+      <tr><td><span class="id">AC-09</span></td><td><strong>Cancel:</strong> remaining rows are SKIPPED / <code>CANCELLED</code>; report and run JSON are written.</td></tr>
+      <tr><td><span class="id">AC-10</span></td><td><strong>Offline:</strong> the integration suite passes with networking disabled, with no outbound attempts.</td></tr>
+      <tr><td><span class="id">AC-11</span></td><td><strong>Clean uninstall:</strong> on mac-arm64 and win-x64, a smoke run creates nothing outside the bundle and output folders except §14.5's allowed list.</td></tr>
+      <tr><td><span class="id">AC-12</span></td><td><strong>Security:</strong> no cookie → 403; wrong Host → rejected; cross-origin POST → 403; not reachable on non-loopback interfaces.</td></tr>
+      <tr><td><span class="id">AC-13</span></td><td><strong>Performance</strong> (2020-era laptop, local SSD): check + copy 2,000 JPEGs (1 GB) ≤ 5 min; Preview of 2,000 files ≤ 10 s.</td></tr>
+      <tr><td><span class="id">AC-14</span></td><td><strong>UI:</strong> Convert and Check flows completed keyboard-only in Safari, Chrome, Edge and Firefox; layout per design doc.</td></tr>
+      <tr><td><span class="id">AC-15</span></td><td><strong>Resource limits honoured</strong> (8-core machine, at Gentle, Balanced and Maximum):
+        <ul>
+          <li>CPU time of Baleen's process tree, averaged over any 30 s window, ≤ B + 0.5 cores.</li>
+          <li>Reserved memory never exceeds M.</li>
+          <li>Concurrent transfers never exceed T.</li>
+          <li>A mid-run change to Processor use takes effect at the next dispatch.</li>
+        </ul></td></tr>
+      <tr><td><span class="id">AC-16</span></td><td><strong>Throughput:</strong> on a generated benchmark set (2,000 JPEGs, 200 documents, 40 videos), Balanced on an 8-core Apple-silicon Mac and an 8-core Windows x64 PC is ≥ 2.5× faster than <code>custom 1</code>. Absolute targets are set in M2 from the first measurements and recorded here.</td></tr>
+    </tbody>
+  </table></div>
+  <h3>16.5 Manual checklist (before v1.0.0)</h3>
+  <p>On a clean Mac (Apple silicon) and a clean Windows 11 PC, step through:</p>
+  <ol>
+    <li>Unzip and start.</li>
+    <li>Native folder pickers, including Chinese paths.</li>
+    <li>An SMB share: <code>/Volumes/…</code> on macOS; UNC path and mapped drive on Windows.</li>
+    <li>Convert the reference set.</li>
+    <li>Check the result.</li>
+    <li>Quit, then delete the folder.</li>
+  </ol>
+</section>
+
+<!-- ===================================================== 17 -->
+<section class="doc-section" id="decisions">
+  <div class="section-kicker">17 · Decision records</div>
+  <h2>Closed decisions</h2>
+  <div class="rule-accent"></div>
+  <p>All records: status <strong>Accepted</strong>, 2026-10-05, decided by Czesio (Walking Whale) unless noted. DR-27 to DR-31 were added in v1.1, DR-32 to DR-37 in v1.2. To change one, add a new record that supersedes it; never edit history.</p>
+
+  <div class="dr"><div class="dr-head"><span class="id">DR-01</span><span class="dr-title">Scope: conversion and verification only</span></div><dl>
+    <dt>Decision</dt><dd>Baleen converts and verifies. Renaming to identifier schemes, cataloguing and metadata are out of scope.</dd>
+    <dt>Why</dt><dd>Naming rules are collection-specific and need human decisions; conversion and verification are generic and automatable.</dd>
+    <dt>Rejected</dt><dd>A combined rename + convert tool (scoped first, then cut).</dd></dl></div>
+
+  <div class="dr"><div class="dr-head"><span class="id">DR-02</span><span class="dr-title">Delivery: portable folder per OS, no installer, no signing</span></div><dl>
+    <dt>Decision</dt><dd>Zip per platform with all runtimes bundled; distributed by NAS, USB or GitHub Releases. Not code-signed.</dd>
+    <dt>Why</dt><dd>Zero install, uninstall by deletion, internal-first use. Signing costs money and maintenance: Apple US$99/yr plus notarisation, and a Windows OV certificate (Azure Artifact Signing is unavailable to Taiwan organisations). Not justified for v1.</dd>
+    <dt>Rejected</dt><dd>
+      <ul>
+        <li>Electron/Tauri app: signing, size, nested-binary notarisation.</li>
+        <li>Browser-only app: Safari and Firefox lack folder access; no viable PDF/A conversion or validation in the browser.</li>
+        <li>NAS container: depends on the client's IT.</li>
+      </ul>
+    </dd></dl></div>
+
+  <div class="dr"><div class="dr-head"><span class="id">DR-03</span><span class="dr-title">UI stack: Python + Starlette + Jinja2 + htmx</span></div><dl>
+    <dt>Decision</dt><dd>Server-rendered pages with htmx polling; no Node build step.</dd>
+    <dt>Why</dt><dd>One language end to end; offline; any browser works; stable, well-documented technology suits AI-assisted development.</dd>
+    <dt>Rejected</dt><dd>React/Vue SPA (second toolchain), NiceGUI (API churn), Streamlit (rerun model fights long jobs), Tk/Qt (look, size).</dd></dl></div>
+
+  <div class="dr"><div class="dr-head"><span class="id">DR-04</span><span class="dr-title">Read-only source; separate mirrored output</span></div><dl>
+    <dt>Decision</dt><dd>Outputs go to a user-chosen folder mirroring the source structure.</dd>
+    <dt>Why</dt><dd>Safety by construction: no rollback needed; undo = delete output.</dd>
+    <dt>Rejected</dt><dd>Writing next to originals (mixes old and new; risks the source).</dd></dl></div>
+
+  <div class="dr"><div class="dr-head"><span class="id">DR-05</span><span class="dr-title">Naming: keep stem, suffix only on clash</span></div><dl>
+    <dt>Decision</dt><dd><code>name.doc → name.pdf</code>. On a clash, every party gets <code>_&lt;ext&gt;</code>. Clashes are computed over all supported files in the directory, regardless of settings.</dd>
+    <dt>Why</dt><dd>Familiar names for people; stable names across settings and re-runs.</dd>
+    <dt>Rejected</dt><dd>Always keeping the old extension (<code>name.doc.pdf</code>); writing beside the original.</dd></dl></div>
+
+  <div class="dr"><div class="dr-head"><span class="id">DR-06</span><span class="dr-title">Already-archival files: check and copy by default</span></div><dl>
+    <dt>Decision</dt><dd><code>copy_existing = true</code>; the output becomes the complete normalised set. Setting allows check-only.</dd>
+    <dt>Why</dt><dd>One clean folder to hand over; every file in it has been verified.</dd>
+    <dt>Rejected</dt><dd>Check-only default (output would hold conversions only).</dd></dl></div>
+
+  <div class="dr"><div class="dr-head"><span class="id">DR-07</span><span class="dr-title">PDF/A: default 2b; existing PDFs not converted</span></div><dl>
+    <dt>Decision</dt><dd>
+      <ul>
+        <li>New PDFs: 1b, 2b or 3b, the levels LibreOffice exports; default 2b.</li>
+        <li>Existing PDFs: any valid PDF/A flavour accepted. Non-PDF/A PDFs are flagged, not converted.</li>
+      </ul>
+    </dd>
+    <dt>Why</dt><dd>2b is the common archival baseline and allows modern compression. Converting arbitrary PDFs needs Ghostscript (AGPL) and is error-prone.</dd>
+    <dt>Rejected</dt><dd>PDF/A-2u as default (LibreOffice cannot target it directly); bundling Ghostscript.</dd></dl></div>
+
+  <div class="dr"><div class="dr-head"><span class="id">DR-08</span><span class="dr-title">PDF/A validity only from veraPDF</span></div><dl>
+    <dt>Decision</dt><dd>Only a veraPDF compliant result counts as PDF/A. XMP claims never count.</dd>
+    <dt>Why</dt><dd>veraPDF is the reference open-source validator endorsed by the PDF Association; claims are cheap to fake or get wrong.</dd>
+    <dt>Rejected</dt><dd>Trusting the converter's PDF/A flag.</dd></dl></div>
+
+  <div class="dr"><div class="dr-head"><span class="id">DR-09</span><span class="dr-title">Unverifiable vs failed outputs</span></div><dl>
+    <dt>Decision</dt><dd>Outputs that fail a check are never placed. Outputs whose check could not run are placed but marked NEEDS_REVIEW.</dd>
+    <dt>Why</dt><dd>A missing validator is an environment problem, not a file problem. Placing the file keeps the work, and the flag keeps it honest.</dd>
+    <dt>Rejected</dt><dd>Blocking all PDFs when veraPDF is missing; silently passing them.</dd></dl></div>
+
+  <div class="dr"><div class="dr-head"><span class="id">DR-10</span><span class="dr-title">E-mail: HTML → LibreOffice; attachments extracted</span></div><dl>
+    <dt>Decision</dt><dd>Render headers and body to HTML and convert with LibreOffice. Attachments are saved and converted by default. Remote content is never fetched.</dd>
+    <dt>Why</dt><dd>Nothing is lost; no Chromium or Ghostscript in the bundle (size and AGPL); privacy (tracking pixels).</dd>
+    <dt>Rejected</dt><dd>Block-by-default (needs a human for every e-mail); list-only (drops content); Chromium print-to-PDF.</dd></dl></div>
+
+  <div class="dr"><div class="dr-head"><span class="id">DR-11</span><span class="dr-title">Audio-only output: .m4a by default</span></div><dl>
+    <dt>Decision</dt><dd>Audio goes into the MPEG-4 container with the <code>.m4a</code> extension. Setting allows <code>.mp4</code> for strict "MP4 only" policies.</dd>
+    <dt>Why</dt><dd>Same container and codec as MP4, but players and catalogues recognise it as audio.</dd>
+    <dt>Rejected</dt><dd><code>.mp4</code> default (empty video windows); WAV/FLAC (out of target set).</dd></dl></div>
+
+  <div class="dr"><div class="dr-head"><span class="id">DR-12</span><span class="dr-title">Audio/video: copy when possible, otherwise H.264 + AAC</span></div><dl>
+    <dt>Decision</dt><dd>
+      <ul>
+        <li>H.264/HEVC + AAC/MP3 streams are copied or remuxed.</li>
+        <li>Anything else is transcoded to x264 (CRF 18 high, CRF 23 standard) + AAC (192k / 128k).</li>
+        <li>No deinterlacing or scaling; odd dimensions are padded.</li>
+      </ul>
+    </dd>
+    <dt>Why</dt><dd>Avoid generation loss where possible; maximise playback compatibility; keep the picture untouched.</dd>
+    <dt>Rejected</dt><dd>Lossless FFV1/Matroska (outside the target set); hardware encoders (inconsistent across OSes).</dd></dl></div>
+
+  <div class="dr"><div class="dr-head"><span class="id">DR-13</span><span class="dr-title">MP3 streams are copied, not re-encoded</span></div><dl>
+    <dt>Decision</dt><dd>MP3 audio is carried into MP4/M4A as-is.</dd>
+    <dt>Why</dt><dd>Re-encoding lossy to lossy loses quality for no archival gain. Revisit if R-11 finds playback problems.</dd>
+    <dt>Rejected</dt><dd>Always transcoding to AAC.</dd></dl></div>
+
+  <div class="dr"><div class="dr-head"><span class="id">DR-14</span><span class="dr-title">Text encoding: certain or ask</span></div><dl>
+    <dt>Decision</dt><dd>Only a BOM or strict UTF-8 counts as certain. Otherwise flag, unless the user picks an encoding.</dd>
+    <dt>Why</dt><dd>Mis-decoded text archived as truth is worse than a flagged file (P3).</dd>
+    <dt>Rejected</dt><dd>Heuristic charset detection (chardet-style guessing).</dd></dl></div>
+
+  <div class="dr"><div class="dr-head"><span class="id">DR-15</span><span class="dr-title">Fonts: system fonts only in v1</span></div><dl>
+    <dt>Decision</dt><dd>No bundled fonts; LibreOffice uses the machine's fonts and substitutes when needed.</dd>
+    <dt>Why</dt><dd>On Windows, system fonts (e.g. PMingLiU) give the closest match to how documents looked in Word. Bundling Noto CJK would make output identical across OSes, but further from the original.</dd>
+    <dt>Rejected</dt><dd>Bundled Noto CJK forced for consistency (revisit if cross-platform identity matters).</dd></dl></div>
+
+  <div class="dr"><div class="dr-head"><span class="id">DR-16</span><span class="dr-title">Images: never re-encode JPEG/TIFF</span></div><dl>
+    <dt>Decision</dt><dd>JPEG and TIFF are byte-copied. Others → JPEG q95 4:4:4, or TIFF LZW when alpha, high bit depth or CMYK. Multi-frame images are flagged.</dd>
+    <dt>Why</dt><dd>No generation loss; transparency, depth and colour model preserved where JPEG can't hold them.</dd>
+    <dt>Rejected</dt><dd>Everything → TIFF (huge); PNG as a target (outside the target set).</dd></dl></div>
+
+  <div class="dr"><div class="dr-head"><span class="id">DR-17</span><span class="dr-title">Fixity: SHA-256 everywhere</span></div><dl>
+    <dt>Decision</dt><dd>Hash every source and output; record both in the report.</dd>
+    <dt>Why</dt><dd>Standard archival fixity; enables resume and later audits.</dd>
+    <dt>Rejected</dt><dd>MD5 (weak); no hashing (no evidence).</dd></dl></div>
+
+  <div class="dr"><div class="dr-head"><span class="id">DR-18</span><span class="dr-title">Resume through prior reports</span></div><dl>
+    <dt>Decision</dt><dd>An existing output counts as done only if a prior report proves Baleen produced it from the same source bytes. Otherwise it is never overwritten.</dd>
+    <dt>Why</dt><dd>Safe restarts after crashes or cancels without trusting file names.</dd>
+    <dt>Rejected</dt><dd>Skip-if-exists (could skip unrelated files); overwrite (violates P2).</dd></dl></div>
+
+  <div class="dr"><div class="dr-head"><span class="id">DR-19</span><span class="dr-title">Sequential processing, one job at a time</span><span class="chip warm">Superseded by DR-32</span></div><dl>
+    <dt>Decision</dt><dd>No parallelism in v1.</dd>
+    <dt>Why</dt><dd>LibreOffice runs as a single instance per profile; typical workloads are small; simpler failure handling.</dd>
+    <dt>Rejected</dt><dd>Worker pools (revisit for large video batches).</dd></dl></div>
+
+  <div class="dr"><div class="dr-head"><span class="id">DR-20</span><span class="dr-title">System files ignored but listed</span></div><dl>
+    <dt>Decision</dt><dd>OS and NAS clutter (§5.2) is IGNORED and still reported. Other dotfiles are processed.</dd>
+    <dt>Why</dt><dd>Completeness (P9) without noise; avoids hiding real content that merely starts with a dot.</dd>
+    <dt>Rejected</dt><dd>Silently skipping all hidden files.</dd></dl></div>
+
+  <div class="dr"><div class="dr-head"><span class="id">DR-21</span><span class="dr-title">English only</span></div><dl>
+    <dt>Decision</dt><dd>UI, README and docs in English.</dd>
+    <dt>Why</dt><dd>Open-source reach; one string set to maintain.</dd>
+    <dt>Rejected</dt><dd>zh-TW + English UI (i18n overhead in v1).</dd></dl></div>
+
+  <div class="dr"><div class="dr-head"><span class="id">DR-22</span><span class="dr-title">License: Apache-2.0</span></div><dl>
+    <dt>Decision</dt><dd>Baleen under Apache-2.0. GPL tools ship as separate, unmodified executables, with corresponding sources attached to releases.</dd>
+    <dt>Why</dt><dd>Permissive with an explicit patent grant; institutions can adopt and embed it.</dd>
+    <dt>Rejected</dt><dd>MIT (no patent clause); GPL-3.0 (deters institutional reuse).</dd></dl></div>
+
+  <div class="dr"><div class="dr-head"><span class="id">DR-23</span><span class="dr-title">Naming: walking-whale-baleen / Baleen / baleen</span></div><dl>
+    <dt>Decision</dt><dd>
+      <ul>
+        <li>Repository: <code>walking-whale-baleen</code>.</li>
+        <li>Product: "Baleen by Walking Whale".</li>
+        <li>Code identifiers: lower-case <code>baleen</code>.</li>
+        <li>Distribution name: <code>walking-whale-baleen</code>; not on PyPI in v1.</li>
+      </ul>
+    </dd>
+    <dt>Why</dt><dd>Brand-endorsed and unique repo name; a short product name in the UI; conventional lower-case code names. The PyPI name <code>baleen</code> is already taken.</dd>
+    <dt>Decided by</dt><dd>Repository name: Czesio. Display and code conventions: delegated to the spec author.</dd></dl></div>
+
+  <div class="dr"><div class="dr-head"><span class="id">DR-24</span><span class="dr-title">Platforms</span></div><dl>
+    <dt>Decision</dt><dd>Bundles for win-x64 and mac-arm64; mac-x64 optional; Linux from source.</dd>
+    <dt>Why</dt><dd>Matches likely users' machines; Intel Macs are end-of-line.</dd>
+    <dt>Rejected</dt><dd>Universal macOS binaries (size ×2).</dd></dl></div>
+
+  <div class="dr"><div class="dr-head"><span class="id">DR-25</span><span class="dr-title">Local server security model</span></div><dl>
+    <dt>Decision</dt><dd>Loopback bind, launch-token cookie, and Host/Origin checks (§13).</dd>
+    <dt>Why</dt><dd>Stops other websites and DNS rebinding from driving file operations.</dd>
+    <dt>Rejected</dt><dd>Unauthenticated localhost API.</dd></dl></div>
+
+  <div class="dr"><div class="dr-head"><span class="id">DR-26</span><span class="dr-title">Visual design in a separate doc</span></div><dl>
+    <dt>Decision</dt><dd><code>docs/baleen-design.html</code> defines the minimalist UI/UX on Walking Whale brand guidelines. This spec defines behaviour.</dd>
+    <dt>Why</dt><dd>Separates what from how-it-looks; both docs travel with the repo.</dd>
+    <dt>Rejected</dt><dd>Leaving design to the implementer.</dd></dl></div>
+
+  <div class="dr"><div class="dr-head"><span class="id">DR-27</span><span class="dr-title">Shell: workflows + runs + system, from a workflow registry</span></div><dl>
+    <dt>Decision</dt><dd>A grouped left rail (Workflows / History / System). Workflows register themselves; the rail, setup page, options panel and run page are generated from the registration (§12.8). This replaces the two-page structure of v1.0 §12.</dd>
+    <dt>Why</dt><dd>Open source will bring new workflows; each should be one module, not a redesign.</dd>
+    <dt>Rejected</dt><dd>Top-bar tabs (do not scale past about 5); home launcher only (extra click per task).</dd>
+    <dt>Decided by</dt><dd>Czesio, 2026-10-05 (design D-01, D-02)</dd></dl></div>
+
+  <div class="dr"><div class="dr-head"><span class="id">DR-28</span><span class="dr-title">One run page: live, then results</span></div><dl>
+    <dt>Decision</dt><dd>Starting any workflow opens <code>/runs/&lt;id&gt;</code>, which shows live progress and becomes the results view. It replaces the v1.0 progress and completion requirements and the results half of the old Check page.</dd>
+    <dt>Why</dt><dd>One place to look per run; history and live views share the same page.</dd>
+    <dt>Rejected</dt><dd>Progress on the setup page plus a separate results page.</dd>
+    <dt>Decided by</dt><dd>Czesio, 2026-10-05 (design D-03)</dd></dl></div>
+
+  <div class="dr"><div class="dr-head"><span class="id">DR-29</span><span class="dr-title">File details in a side inspector</span></div><dl>
+    <dt>Decision</dt><dd>A 420 px inspector that docks at window width ≥ 1440 px (the table drops Output and Action) and overlays below that. Arrow keys move the selection; <kbd>Esc</kbd> closes.</dd>
+    <dt>Why</dt><dd>The table keeps its scroll position; there is room for more detail later.</dd>
+    <dt>Rejected</dt><dd>Expandable rows (the list jumps around).</dd>
+    <dt>Decided by</dt><dd>Czesio, 2026-10-05; breakpoint by the design author (design D-04)</dd></dl></div>
+
+  <div class="dr"><div class="dr-head"><span class="id">DR-30</span><span class="dr-title">Presets: slot in v1, feature in v1.1</span></div><dl>
+    <dt>Decision</dt><dd>The options header shows a disabled "Preset · Default" selector tagged v1.1, plus Reset. Saving, importing and exporting presets ship in v1.1.</dd>
+    <dt>Why</dt><dd>Reserves the layout without growing v1.</dd>
+    <dt>Rejected</dt><dd>Full presets in v1; no presets.</dd>
+    <dt>Decided by</dt><dd>Czesio, 2026-10-05 (design D-06)</dd></dl></div>
+
+  <div class="dr"><div class="dr-head"><span class="id">DR-31</span><span class="dr-title">Design decisions are part of the spec</span></div><dl>
+    <dt>Decision</dt><dd>Design doc decisions D-01 to D-20 (shell, tokens incl. the <code>#B4533C</code> alert colour, fonts, interim wordmark with the logo deferred to a designer, icons, copy, breakpoints, retention of 100 runs) are binding. Changing one needs a new record in either doc.</dd>
+    <dt>Why</dt><dd>One source of truth across the two documents.</dd>
+    <dt>Decided by</dt><dd>Czesio, 2026-10-05</dd></dl></div>
+
+  <div class="dr"><div class="dr-head"><span class="id">DR-32</span><span class="dr-title">Parallel lanes within user-set budgets</span><span class="chip warm">Supersedes DR-19</span></div><dl>
+    <dt>Decision</dt><dd>One job at a time, but items are processed in parallel across four lanes (Files, Documents, Media, PDF/A), within processor, memory and transfer budgets (§5.5). Python threads, not processes. Default: Balanced.</dd>
+    <dt>Why</dt><dd>Measured on the real tool chain (2 vCPU sandbox):
+      <ul>
+        <li>x264 already multi-threads (1.8×).</li>
+        <li>Pillow decoding and SHA-256 scale with threads (1.7×, 2.1×), because the heavy work runs in C outside the GIL.</li>
+        <li>LibreOffice start-up dominates (11×).</li>
+      </ul>
+      Sequential processing would leave most cores idle and take hours at the 20,000-file target. Threads behave the same on Windows and macOS.</dd>
+    <dt>Rejected</dt><dd>Sequential processing (DR-19); a multiprocessing pool (spawn and pickling complexity, no gain since the work is in C or child processes); unbounded parallelism (overloads laptops and shared NAS).</dd>
+    <dt>Decided by</dt><dd>Czesio, 2026-10-05; formulas by spec author</dd></dl></div>
+
+  <div class="dr"><div class="dr-head"><span class="id">DR-33</span><span class="dr-title">Work locally, publish atomically</span></div><dl>
+    <dt>Decision</dt><dd>Stage, convert and verify in a local work folder. Publish to the output as <code>.part</code>, read it back for V-HASH, then rename into place.</dd>
+    <dt>Why</dt><dd>Decoding, LibreOffice and veraPDF run against local disk, not SMB. Atomic placement (P5) and an honest V-HASH are kept.</dd>
+    <dt>Rejected</dt><dd>Staging inside the output root (v1.1; decodes over the network); skipping the read-back (weaker fixity).</dd></dl></div>
+
+  <div class="dr"><div class="dr-head"><span class="id">DR-34</span><span class="dr-title">Journal + index; CSV written at the end</span></div><dl>
+    <dt>Decision</dt><dd>Each run has a SQLite journal (standard library) that is both the crash-safe record and the UI index. The CSV is written in plan order when the run ends.</dd>
+    <dt>Why</dt><dd>Parallel items finish out of order; determinism (P7) and fast filtering at tens of thousands of rows.</dd>
+    <dt>Rejected</dt><dd>Appending the CSV out of order; in-memory results only (lost on crash).</dd></dl></div>
+
+  <div class="dr"><div class="dr-head"><span class="id">DR-35</span><span class="dr-title">Batch LibreOffice and veraPDF</span></div><dl>
+    <dt>Decision</dt><dd>
+      <ul>
+        <li>LibreOffice: up to 8 files per call, grouped by import filter, with failed batches retried file by file.</li>
+        <li>veraPDF: up to 25 files per JVM, grouped by flavour.</li>
+      </ul>
+    </dd>
+    <dt>Why</dt><dd>Process start-up costs 11× for LibreOffice (measured), and veraPDF reloads its profile per launch.</dd>
+    <dt>Rejected</dt><dd>One process per file (v1.1); a resident UNO listener (needs LibreOffice's bundled Python and a socket bridge; revisit if batching proves insufficient).</dd></dl></div>
+
+  <div class="dr"><div class="dr-head"><span class="id">DR-36</span><span class="dr-title">User-adjustable, explained resource use</span></div><dl>
+    <dt>Decision</dt><dd>
+      <ul>
+        <li>Settings › Resource use offers: Processor use (Gentle / Balanced / Maximum / Custom), Memory for converters, File transfers at once, Run at lower priority, Keep this computer awake, and Work folder, with plain-language help and a live "With these settings" summary.</li>
+        <li>Processor use is also on the run page.</li>
+        <li>Changes apply live.</li>
+        <li>Design D-21 to D-24 specify these screens and are binding like D-01 to D-20.</li>
+      </ul>
+    </dd>
+    <dt>Why</dt><dd>Archivists run Baleen on everyday laptops and shared drives. They must be able to trade speed for responsiveness without knowing what a thread is.</dd>
+    <dt>Decided by</dt><dd>Czesio (requirement), 2026-10-05; presets, defaults and copy by spec author</dd></dl></div>
+
+  <div class="dr"><div class="dr-head"><span class="id">DR-37</span><span class="dr-title">No GPU in v1</span></div><dl>
+    <dt>Decision</dt><dd>No GPU use or detection.</dd>
+    <dt>Why</dt><dd>Conversion and validation have no GPU path. Hardware video encoders trade quality and reproducibility (DR-12, P7). Revisit with future AI workflows (OCR, speech-to-text), which would add the GPU as a scheduler resource.</dd>
+    <dt>Decided by</dt><dd>Czesio, 2026-10-05</dd></dl></div>
+</section>
+
+<!-- ===================================================== 18 -->
+<section class="doc-section" id="risks">
+  <div class="section-kicker">18 · Risks to validate</div>
+  <h2>Unproven assumptions</h2>
+  <div class="rule-accent"></div>
+  <p>These are believed to work but are not yet demonstrated. Validate each one early, in the milestone noted.</p>
+  <div class="tbl-wrap"><table class="tbl wrap-first">
+    <thead><tr><th>ID</th><th>Risk</th><th>How to validate / fallback</th><th>When</th></tr></thead>
+    <tbody>
+      <tr><td><span class="id">R-01</span></td><td>LibreOffice running headless from a portable folder on macOS (outside /Applications, possibly quarantined)</td><td>First spike on a clean CI runner and a real Mac; README quarantine step</td><td>M4 start</td></tr>
+      <tr><td><span class="id">R-02</span></td><td>veraPDF headless install and run with the bundled JRE; paths with spaces/CJK on Windows</td><td>Bundle smoke test on windows-latest</td><td>M4</td></tr>
+      <tr><td><span class="id">R-03</span></td><td>Native folder dialogs from a background server (focus, UTF-8, UNC)</td><td>Manual test; paste-path fallback always available</td><td>M3</td></tr>
+      <tr><td><span class="id">R-04</span></td><td>SMB specifics: Unicode NFD/NFC from the macOS SMB client, case-insensitivity, slow listings; UNC vs mapped drive</td><td>Manual checklist §16.5; normalise only for comparison keys</td><td>M5</td></tr>
+      <tr><td><span class="id">R-05</span></td><td>LibreOffice fetching linked remote images inside DOC/HTML</td><td>Offline integration run (AC-10); if fetch attempts appear, disable via profile settings</td><td>M2</td></tr>
+      <tr><td><span class="id">R-06</span></td><td>Old DOC layout fidelity (font substitution)</td><td>Spot-check against Word on Windows; DR-15 accepted</td><td>M5</td></tr>
+      <tr><td><span class="id">R-07</span></td><td>Big5 e-mails with wrong or missing charset declarations</td><td><code>CHARSET_ERRORS</code> path; fixture coverage</td><td>M2</td></tr>
+      <tr><td><span class="id">R-08</span></td><td>GPL source obligations for FFmpeg/x264</td><td>Release checklist; source archives attached by CI</td><td>M4</td></tr>
+      <tr><td><span class="id">R-09</span></td><td>Windows long paths and reserved names in source trees</td><td>Extended-length paths; fixtures</td><td>M1</td></tr>
+      <tr><td><span class="id">R-10</span></td><td>Very large files (memory, time)</td><td>Streaming hashes; Pillow pixel limit; FFmpeg timeouts</td><td>M2</td></tr>
+      <tr><td><span class="id">R-11</span></td><td>MP3-in-MP4 playback in QuickTime / Windows Media Player</td><td>Manual playback test; if poor, supersede DR-13 with AAC transcode</td><td>M5</td></tr>
+      <tr><td><span class="id">R-12</span></td><td>LibreOffice batch edge cases: one bad file stalling a batch; output-name mapping</td><td>Fixtures with a corrupt document inside a batch; retry-singly path tested</td><td>M2</td></tr>
+      <tr><td><span class="id">R-13</span></td><td>Parallel transfers overloading a small NAS or hitting SMB session limits</td><td>Transfer budget (auto 4 on network); manual NAS test (§16.5)</td><td>M5</td></tr>
+      <tr><td><span class="id">R-14</span></td><td>Priority and keep-awake APIs (macOS QoS / nice / caffeinate; Windows thread priority / SetThreadExecutionState) behaving as expected from a launcher-started Python process</td><td>Manual checks on both platforms; AC-15</td><td>M4</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ===================================================== 19 -->
+<section class="doc-section" id="delivery">
+  <div class="section-kicker">19 · Delivery plan</div>
+  <h2>Five milestones</h2>
+  <div class="rule-accent"></div>
+  <div class="grid">
+    <div class="card"><span class="id">M1</span><div class="card-title">Engine &amp; CLI</div><p>settings, tools, scan, plan, scheduler (lanes and budgets), runner, journal, report, verify; CLI <code>convert</code>, <code>check</code>, <code>doctor</code>; unit tests.</p></div>
+    <div class="card"><span class="id">M2</span><div class="card-title">Converters</div><p>image, document, text, HTML, e-mail, media; fixture generator; integration tests + golden file.</p></div>
+    <div class="card"><span class="id">M3</span><div class="card-title">UI</div><p>server, security middleware, folder pickers, workflow registry; shell, Convert and Check setup pages, run page with inspector, Runs, Tools, Settings (incl. Resource use), About, per design doc.</p></div>
+    <div class="card"><span class="id">M4</span><div class="card-title">Packaging</div><p>runtimes.json pins, build script, launchers, CI workflows, notices, release drafting.</p></div>
+    <div class="card"><span class="id">M5</span><div class="card-title">Hardening &amp; v1.0.0</div><p>AC-01…AC-14, manual checklist on clean Mac and Windows, README, release.</p></div>
+  </div>
+  <div class="callout"><span class="label">Definition of done</span>
+    <ul>
+      <li>Every automatable acceptance criterion passes in CI.</li>
+      <li>The manual checklist (§16.5) is signed off on both platforms.</li>
+      <li>README.md and README.txt are complete.</li>
+      <li>The v1.0.0 GitHub Release holds both zips, <code>SHA256SUMS</code> and the GPL source archives.</li>
+    </ul></div>
+</section>
+
+<!-- ===================================================== A -->
+<section class="doc-section" id="appendix">
+  <div class="section-kicker">Appendices</div>
+  <h2>Reference</h2>
+  <div class="rule-accent"></div>
+
+  <h3>A. Command line</h3>
+<pre class="code">python -m baleen serve   [--port N] [--no-browser]
+python -m baleen convert <span class="k">&lt;source&gt; &lt;output&gt;</span> [--set key=value]...
+python -m baleen check   <span class="k">&lt;folder&gt;</span> [--report PATH]
+<span class="c"># resource flags for convert and check (override Settings for that run):</span>
+<span class="c">#   --processor gentle|balanced|maximum|N   --memory auto|GB   --transfers auto|N</span>
+<span class="c">#   --work-dir PATH   --no-low-priority   --no-keep-awake</span>
+python -m baleen doctor                       <span class="c"># tool paths and versions</span>
+
+<span class="c"># exit codes: 0 all OK/IGNORED · 1 any NEEDS_REVIEW/UNSUPPORTED/SKIPPED
+#             2 any FAILED · 3 fatal (bad arguments, lock held, invalid roots)</span></pre>
+
+  <h3>B. HTTP endpoints</h3>
+  <div class="tbl-wrap"><table class="tbl">
+    <thead><tr><th>Method</th><th>Path</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td>GET</td><td><code>/auth?t=…</code></td><td>Exchange launch token for session cookie (SEC-2)</td></tr>
+      <tr><td>GET</td><td><code>/</code></td><td>Redirect to <code>/convert</code></td></tr>
+      <tr><td>GET</td><td><code>/convert</code> · <code>/check</code></td><td>Workflow setup pages (generated from the registry, §12.8)</td></tr>
+      <tr><td>GET</td><td><code>/runs</code></td><td>Run history (UI-H1)</td></tr>
+      <tr><td>GET</td><td><code>/runs/&lt;id&gt;</code></td><td>Run page: live → results (UI-R1…R8)</td></tr>
+      <tr><td>GET</td><td><code>/runs/&lt;id&gt;/progress</code></td><td>Progress fragment, polled; its final response swaps in the results</td></tr>
+      <tr><td>GET</td><td><code>/runs/&lt;id&gt;/rows?status=&amp;q=&amp;page=</code></td><td>Results table fragment</td></tr>
+      <tr><td>GET</td><td><code>/runs/&lt;id&gt;/rows/&lt;n&gt;</code></td><td>Inspector fragment for one row</td></tr>
+      <tr><td>GET</td><td><code>/runs/&lt;id&gt;/report.csv</code></td><td>Download report</td></tr>
+      <tr><td>GET</td><td><code>/job</code></td><td>Global job status for the rail card (polled while a job runs)</td></tr>
+      <tr><td>GET</td><td><code>/tools</code> · <code>/settings</code> · <code>/about</code> · <code>/stopped</code></td><td>System pages, post-quit page</td></tr>
+      <tr><td>GET</td><td><code>/static/*</code></td><td>htmx, CSS, fonts, icons, favicon</td></tr>
+      <tr><td>GET</td><td><code>/settings/plan</code></td><td>Resolved resource plan fragment, the "With these settings" box (UI-S2)</td></tr>
+      <tr><td>POST</td><td><code>/api/settings</code></td><td>Save workflow settings or app preferences (incl. resource use; applies live)</td></tr>
+      <tr><td>POST</td><td><code>/api/validate-path</code></td><td>Inline folder validation</td></tr>
+      <tr><td>POST</td><td><code>/api/pick-folder</code></td><td>Open native dialog</td></tr>
+      <tr><td>POST</td><td><code>/api/preview</code></td><td>Scan + plan, no writes</td></tr>
+      <tr><td>POST</td><td><code>/api/convert</code> · <code>/api/check</code></td><td>Start a job → redirect to <code>/runs/&lt;id&gt;</code></td></tr>
+      <tr><td>POST</td><td><code>/api/job/cancel</code></td><td>Cancel after current item</td></tr>
+      <tr><td>POST</td><td><code>/api/tools/recheck</code></td><td>Re-run tool detection</td></tr>
+      <tr><td>POST</td><td><code>/api/open</code></td><td>Open / reveal a path in Finder or Explorer (SEC-7)</td></tr>
+      <tr><td>POST</td><td><code>/api/quit</code></td><td>Graceful shutdown → <code>/stopped</code></td></tr>
+    </tbody>
+  </table></div>
+  <p class="small muted">All POST routes follow SEC-5. Routes return HTML fragments for htmx; <code>/api/pick-folder</code> and <code>/api/validate-path</code> may return JSON.</p>
+
+  <h3>C. Glossary</h3>
+  <div class="tbl-wrap"><table class="tbl wrap-first">
+    <tbody>
+      <tr><td>Archival format</td><td>One of the five targets: JPEG, TIFF, PDF/A, MP4, M4A.</td></tr>
+      <tr><td>Workflow</td><td>A registered job type (Convert, Check, …) with its own setup page (§12.8).</td></tr>
+      <tr><td>Run</td><td>One execution of a workflow: a run page, a report CSV and a run JSON.</td></tr>
+      <tr><td>PDF/A, flavour</td><td>ISO 19005 PDF for long-term preservation. 1b / 2b / 3b = parts 1–3, conformance level "b" (basic: reliable visual reproduction).</td></tr>
+      <tr><td>Copy · remux · transcode</td><td>Byte copy of the file · streams copied into a new container · streams decoded and re-encoded.</td></tr>
+      <tr><td>CRF</td><td>Constant Rate Factor in x264; lower = higher quality. 18 is visually near-lossless.</td></tr>
+      <tr><td>Fixity</td><td>Evidence that a file has not changed: here, SHA-256.</td></tr>
+      <tr><td>Work folder · staging</td><td>The work folder is the local, Baleen-owned area where files are converted and verified. <code>.baleen-staging/</code> in the output root holds <code>.part</code> files during publish.</td></tr>
+      <tr><td>Lane · budget</td><td>A lane is a queue of one kind of work (Files, Documents, Media, PDF/A). Budgets are the user-set limits on processor cores, memory and file transfers that all lanes share (§5.5).</td></tr>
+      <tr><td>veraPDF</td><td>Open-source PDF/A validator endorsed by the PDF Association.</td></tr>
+      <tr><td>SMB / NAS</td><td>Windows file-sharing protocol / network storage device serving it.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>D. Reference workload (anonymised)</h3>
+  <div class="tbl-wrap"><table class="tbl">
+    <thead><tr><th>Format</th><th>Files</th><th>Size</th><th>Expected action</th></tr></thead>
+    <tbody>
+      <tr><td>JPEG</td><td>1,598</td><td>800 MB</td><td>check + copy</td></tr>
+      <tr><td>AVI · MPG · WMA</td><td>16 · 6 · 2</td><td>155 MB</td><td>transcode (MJPEG / MPEG-1 / WMA)</td></tr>
+      <tr><td>DOC · RTF · TXT</td><td>18 · 5 · 1</td><td>&lt; 1 MB</td><td>convert → PDF/A</td></tr>
+      <tr><td>EML</td><td>14</td><td>2 MB</td><td>convert → PDF/A + attachments</td></tr>
+      <tr><td>BMP</td><td>1</td><td>6 MB</td><td>convert → JPEG</td></tr>
+      <tr><td>TIFF</td><td>1</td><td>1 MB</td><td>check + copy</td></tr>
+      <tr><td>PDF</td><td>8</td><td>2 MB</td><td>check; copy if PDF/A, else NOT_PDFA</td></tr>
+      <tr><td><strong>Total</strong></td><td><strong>1,670</strong></td><td><strong>≈ 967 MB</strong></td><td>63 conversions · 1,607 checks</td></tr>
+    </tbody>
+  </table></div>
+
+  <footer class="doc-footer">
+    <span>Walking Whale Co., Ltd.</span>
+    <span>Baleen · Specification v1.2 · Apache-2.0</span>
+    <span>Taipei, Taiwan</span>
+    <span>Est. September 2025</span>
+  </footer>
+</section>
+
+</main>
+
+<script>
+(function(){
+  var btn=document.getElementById('menuBtn'), nav=document.getElementById('sidenav'), ov=document.getElementById('navOverlay');
+  function setOpen(o){btn.classList.toggle('open',o);nav.classList.toggle('open',o);ov.classList.toggle('show',o);btn.setAttribute('aria-expanded',o?'true':'false');}
+  btn.addEventListener('click',function(){setOpen(!nav.classList.contains('open'));});
+  ov.addEventListener('click',function(){setOpen(false);});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')setOpen(false);});
+  nav.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<900)setOpen(false);});});
+
+  var fill=document.getElementById('progress-fill');
+  function prog(){var h=document.documentElement.scrollHeight-window.innerHeight;fill.style.width=(h>0?window.scrollY/h*100:0)+'%';}
+  window.addEventListener('scroll',prog,{passive:true});window.addEventListener('resize',prog);prog();
+
+  var links={};nav.querySelectorAll('a[href^="#"]').forEach(function(a){links[a.getAttribute('href').slice(1)]=a;});
+  var secs=Array.prototype.slice.call(document.querySelectorAll('main > section[id]'));
+  if('IntersectionObserver' in window){
+    var spy=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){
+      Object.keys(links).forEach(function(k){links[k].classList.remove('active');});
+      var l=links[e.target.id]; if(l){l.classList.add('active');}
+    }});},{rootMargin:'-45% 0px -50% 0px'});
+    secs.forEach(function(s){spy.observe(s);});
+    var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if(!reduce){
+      document.documentElement.classList.add('reveal-ready');
+      var rv=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');rv.unobserve(e.target);}});},{rootMargin:'0px 0px -8% 0px'});
+      document.querySelectorAll('.doc-section').forEach(function(s){rv.observe(s);});
+    }
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Baleen
+dist/
+runtime/
+data/
+.scratch/
+
+# Node (build-time asset extraction only)
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini

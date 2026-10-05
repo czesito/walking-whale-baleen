@@ -1,0 +1,11 @@
+Baleen by Walking Whale
+Copyright 2026 Walking Whale Co., Ltd.
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+The Baleen and Walking Whale names and logos are trademarks of Walking Whale
+Co., Ltd. and are not licensed under Apache-2.0.
+
+Release bundles include unmodified third-party programs (CPython, LibreOffice,
+FFmpeg, Eclipse Temurin, veraPDF) and libraries, each under its own licence.
+Their licence texts and source links are in THIRD_PARTY_NOTICES/.

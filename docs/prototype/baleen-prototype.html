@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Baleen · prototype</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PCEtLSBQTEFDRUhPTERFUiB1bnRpbCB0aGUgZGVzaWduZWQgbG9nbyBhcnJpdmVzIC0tPjxyZWN0IHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgcng9IjciIGZpbGw9IiMwRDFGM0MiLz48dGV4dCB4PSIxNiIgeT0iMjMuNSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9Ikdlb3JnaWEsc2VyaWYiIGZvbnQtc2l6ZT0iMjEiIGZvbnQtd2VpZ2h0PSI2MDAiIGZpbGw9IiNGQkZBRjYiPkI8L3RleHQ+PC9zdmc+">
+<!-- Prototype only: the real app bundles these fonts as local woff2 (see design doc §03). -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* =====================================================================
+   baleen.css — design tokens + components (lift into src/baleen/static)
+   ===================================================================== */
+:root{
+  /* Walking Whale brand tokens */
+  --ww-bg:#FBFAF6; --ww-surface:#FFFFFF; --ww-wash:#F7F4EE;
+  --ww-abyss:#0D1F3C; --ww-tidal:#2E5F7A; --ww-surface-blue:#A8C5D6;
+  --ww-bone:#C8B99A; --ww-biolum:#6DBFA0; --ww-sediment:#E8E0D0;
+  --ww-border:rgba(200,185,154,.55); --ww-border-soft:rgba(200,185,154,.30);
+  /* Baleen functional tokens (design doc D-07) */
+  --bl-alert:#B4533C;                 /* FAILED only */
+  --bl-alert-tint:rgba(180,83,60,.09);
+  --bl-alert-line:rgba(180,83,60,.40);
+  --bl-ok-ink:#2F7A5C;                /* Biolum, darkened: icons on tints */
+  --bl-review-ink:#7D6B4A;            /* Bone, darkened: icons on tints */
+  /* Semantic aliases */
+  --bg:var(--ww-bg); --surface:var(--ww-surface); --surface-2:var(--ww-wash);
+  --text:var(--ww-abyss); --text-2:var(--ww-tidal); --text-3:rgba(13,31,60,.64);
+  --line:var(--ww-border-soft); --line-strong:var(--ww-border);
+  --hover:rgba(13,31,60,.05); --selected:rgba(168,197,214,.22);
+  --focus:var(--ww-tidal);
+  /* Type */
+  --font-display:"Cormorant Garamond",Georgia,serif;
+  --font-ui:"Inter",system-ui,-apple-system,"Segoe UI","PingFang TC","Microsoft JhengHei","Noto Sans TC",sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,"PingFang TC","Microsoft JhengHei",monospace;
+  /* Shape, depth, motion */
+  --r-sm:6px; --r-md:10px; --r-lg:16px; --r-xl:20px;
+  --sh-sm:0 1px 2px rgba(13,31,60,.04),0 4px 16px rgba(13,31,60,.05);
+  --sh-md:0 12px 40px rgba(13,31,60,.07);
+  --sh-lg:0 24px 64px rgba(13,31,60,.16);
+  --ease:cubic-bezier(.4,0,.2,1);
+  --t-fast:120ms; --t-panel:260ms; --t-enter:280ms;
+  /* Layout */
+  --rail-w:232px; --rail-w-c:64px; --insp-w:420px; --page-max:960px;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:400 14px/1.5 var(--font-ui);-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--text-2);text-underline-offset:3px;text-decoration-color:var(--line-strong)}
+a:hover{text-decoration-color:var(--text-2)}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.ic{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.ic.sm{width:16px;height:16px}.ic.xs{width:14px;height:14px}.ic.lg{width:22px;height:22px}
+.mono{font-family:var(--font-mono)}
+.num{font-variant-numeric:tabular-nums}
+.muted{color:var(--text-2)}.faint{color:var(--text-3)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.spin{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes pop{from{opacity:0;transform:scale(.98)}to{opacity:1;transform:none}}
+@keyframes indet{0%{transform:translateX(-100%)}100%{transform:translateX(330%)}}
+
+/* ---------- shell ---------- */
+.app{display:grid;grid-template-columns:var(--rail-w) minmax(0,1fr);height:100vh;overflow:hidden}
+.rail{background:var(--ww-wash);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0;overflow-y:auto;overflow-x:hidden}
+.main{position:relative;display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden}
+.scroll{flex:1;min-height:0;overflow-y:auto;transition:margin-right var(--t-panel) var(--ease)}
+.page{max-width:var(--page-max);margin:0 auto;padding:40px 40px 64px;animation:rise var(--t-enter) var(--ease) both}
+.page.wide{max-width:1240px}
+
+/* rail */
+.rail-brand{display:flex;align-items:center;gap:10px;padding:18px 18px 12px;min-height:62px}
+.wm-short{display:none;font-family:var(--font-display);font-weight:600;font-size:24px;line-height:1}
+.wordmark{font-family:var(--font-display);font-weight:600;font-size:24px;letter-spacing:-.01em;line-height:1}
+.rail-ver{font-family:var(--font-mono);font-size:10.5px;color:var(--text-3);margin-left:auto}
+.rail-group{padding:8px 10px 2px}
+.rail-label{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);padding:6px 10px 4px}
+.rail-item{position:relative;display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;margin:1px 0;border-radius:var(--r-md);color:var(--text);text-decoration:none;font-weight:500;cursor:pointer;border:0;background:transparent;width:100%;text-align:left;transition:background var(--t-fast),color var(--t-fast)}
+.rail-item:hover{background:var(--hover)}
+.rail-item.active{background:var(--surface);box-shadow:var(--sh-sm)}
+.rail-item.active::before{content:"";position:absolute;left:-10px;top:9px;bottom:9px;width:3px;border-radius:0 3px 3px 0;background:var(--ww-biolum)}
+.rail-item .lbl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rail-item .count{margin-left:auto;font-family:var(--font-mono);font-size:11px;color:var(--text-3)}
+.rail-item .dot{margin-left:auto;width:8px;height:8px;border-radius:50%;background:var(--ww-biolum);flex:none}
+.rail-item .dot.bad{background:var(--bl-alert)}
+.rail-item .soon{margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--text-3);border:1px dashed var(--line-strong);border-radius:6px;padding:0 5px}
+.rail-item.disabled{color:var(--text-3);cursor:default}.rail-item.disabled:hover{background:transparent}
+.rail-foot{margin-top:auto;padding:10px 10px 14px;display:grid;gap:4px}
+.rail-job{display:grid;gap:6px;padding:10px 12px;margin:0 0 6px;border-radius:12px;background:var(--surface);border:1px solid var(--line);cursor:pointer;text-align:left}
+.rail-job .row{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600}
+.rail-job .row .pct{margin-left:auto;font-family:var(--font-mono);font-weight:500;color:var(--text-2)}
+.rail-job .progress{height:4px}
+.tip{position:relative}
+@media (min-width:1024px){
+  .app.collapsed{grid-template-columns:var(--rail-w-c) minmax(0,1fr)}
+  .app.collapsed .rail-label,.app.collapsed .lbl,.app.collapsed .wordmark,.app.collapsed .rail-ver,
+  .app.collapsed .rail-item .count,.app.collapsed .rail-item .soon,.app.collapsed .rail-job .txt,.app.collapsed .rail-job .row .pct{display:none}
+  .app.collapsed .rail-brand{justify-content:center;padding:18px 0 12px}
+  .app.collapsed .wm-short{display:block}
+  .app.collapsed .rail-item{justify-content:center;padding:0}
+  .app.collapsed .rail-item .dot{position:absolute;top:7px;right:9px;width:7px;height:7px}
+  .app.collapsed .rail-group{padding:8px 10px 2px}
+  .app.collapsed .rail-job{padding:8px}
+  .app.collapsed .rail-item:hover::after{content:attr(data-tip);position:absolute;left:calc(100% + 10px);top:50%;transform:translateY(-50%);background:var(--ww-abyss);color:var(--ww-bg);font-size:12px;font-weight:500;padding:5px 9px;border-radius:8px;white-space:nowrap;z-index:70;pointer-events:none}
+}
+.topbar-m{display:none}
+.scrim{position:fixed;inset:0;background:rgba(13,31,60,.28);z-index:54;display:none}
+@media (max-width:1023px){
+  .app,.app.collapsed{grid-template-columns:minmax(0,1fr)}
+  .rail{position:fixed;left:0;top:0;bottom:0;width:var(--rail-w);z-index:55;transform:translateX(-100%);transition:transform var(--t-panel) var(--ease);box-shadow:var(--sh-lg)}
+  .app.drawer .rail{transform:none}
+  .app.drawer .scrim{display:block}
+  .topbar-m{display:flex;align-items:center;gap:10px;height:52px;padding:0 14px;border-bottom:1px solid var(--line);background:var(--ww-wash);flex:none}
+  .page{padding:28px 20px 48px}
+  .actionbar{padding:12px 20px !important}
+}
+
+/* page header */
+.crumb{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-2);margin-bottom:12px}
+.crumb a{color:var(--text-2);text-decoration:none}.crumb a:hover{text-decoration:underline}
+.kicker{font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);margin-bottom:6px}
+.page-head{display:flex;align-items:flex-end;gap:24px;margin-bottom:28px;flex-wrap:wrap}
+.page-title{font-family:var(--font-display);font-weight:600;font-size:38px;line-height:1.02;letter-spacing:-.015em;margin:0;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.rule{width:38px;height:5px;border-radius:3px;background:var(--ww-bone);margin:14px 0 0}
+.page-desc{font-size:15px;color:var(--text-2);max-width:64ch;margin:12px 0 0}
+.page-head .actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+
+/* cards */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--sh-sm);padding:22px 24px;margin-bottom:16px}
+.card.flat{box-shadow:none}
+.card-head{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.step{width:26px;height:26px;border-radius:50%;border:1px solid var(--ww-bone);display:grid;place-items:center;font-family:var(--font-mono);font-size:12px;color:var(--text-2);flex:none}
+.card-title{font-weight:600;font-size:16px}
+.card-sub{font-size:13px;color:var(--text-2)}
+.card-head .right{margin-left:auto;display:flex;gap:8px;align-items:center}
+
+/* fields */
+.field{display:grid;gap:6px;margin-bottom:20px}
+.field:last-child{margin-bottom:0}
+.label{font-weight:600;font-size:13.5px}
+.help{font-size:13px;color:var(--text-2)}
+.path{display:flex;gap:8px;align-items:center}
+.input-wrap{position:relative;flex:1;display:flex;align-items:center;min-width:0}
+.input-wrap > .ic{position:absolute;left:12px;color:var(--text-3);pointer-events:none}
+.input{width:100%;height:40px;border:1px solid var(--line-strong);border-radius:var(--r-md);background:var(--surface);padding:0 12px 0 38px;font-family:var(--font-mono);font-size:13px;min-width:0;transition:border-color var(--t-fast),box-shadow var(--t-fast)}
+.input.plain{padding-left:12px;font-family:var(--font-ui)}
+.input::placeholder{color:var(--text-3)}
+.input:focus{outline:none;border-color:var(--focus);box-shadow:0 0 0 3px rgba(46,95,122,.16)}
+.field.error .input{border-color:var(--bl-alert)}
+.msg{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--text-2)}
+.msg .ic{width:15px;height:15px}
+.msg.ok .ic{color:var(--bl-ok-ink)}
+.msg.err{color:var(--bl-alert)}
+.search{position:relative;display:flex;align-items:center}
+.search .ic{position:absolute;left:10px;color:var(--text-3)}
+.search .input{height:34px;padding-left:32px;font-family:var(--font-ui);font-size:13px;width:260px}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border-radius:var(--r-md);border:1px solid transparent;font-weight:600;font-size:14px;cursor:pointer;white-space:nowrap;text-decoration:none;transition:background var(--t-fast),border-color var(--t-fast),color var(--t-fast),box-shadow var(--t-fast)}
+.btn.primary{background:var(--ww-abyss);color:var(--ww-bg)}
+.btn.primary:hover{background:var(--ww-tidal)}
+.btn.secondary{background:var(--surface);border-color:var(--line-strong);color:var(--text)}
+.btn.secondary:hover{background:var(--ww-wash)}
+.btn.ghost{background:transparent;color:var(--text-2)}
+.btn.ghost:hover{background:var(--hover);color:var(--text)}
+.btn.sm{height:32px;padding:0 12px;font-size:13px;border-radius:8px;gap:6px}
+.btn.sm .ic{width:16px;height:16px}
+.btn.icon{width:36px;padding:0}
+.btn.icon.sm{width:32px}
+.btn:disabled,.btn[aria-disabled=true]{opacity:.45;cursor:not-allowed;pointer-events:none}
+
+/* segmented, switch, select */
+.seg{display:inline-flex;background:var(--ww-wash);border:1px solid var(--line);border-radius:var(--r-md);padding:3px;gap:2px;flex-wrap:wrap}
+.seg button{border:0;background:transparent;height:30px;padding:0 12px;border-radius:8px;font-size:13px;font-weight:500;color:var(--text-2);cursor:pointer;white-space:nowrap}
+.seg button:hover{color:var(--text)}
+.seg button[aria-pressed=true]{background:var(--surface);color:var(--text);font-weight:600;box-shadow:var(--sh-sm)}
+.switch{position:relative;width:38px;height:22px;border-radius:999px;background:rgba(13,31,60,.2);border:0;cursor:pointer;flex:none;transition:background var(--t-fast)}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:var(--ww-surface);box-shadow:0 1px 2px rgba(13,31,60,.25);transition:transform var(--t-panel) var(--ease)}
+.switch[aria-checked=true]{background:var(--ww-tidal)}
+.switch[aria-checked=true]::after{transform:translateX(16px)}
+.select{appearance:none;-webkit-appearance:none;height:36px;border:1px solid var(--line-strong);border-radius:var(--r-md);padding:0 34px 0 12px;font-size:13.5px;cursor:pointer;
+  background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232E5F7A' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 10px center/14px}
+.select:disabled{opacity:.6;cursor:not-allowed}
+
+/* options (schema-driven rows) */
+.opt-group{border-top:1px solid var(--line);padding-top:14px;margin-top:6px}
+.opt-group:first-child{border-top:0;padding-top:0;margin-top:0}
+.opt-group-title{font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);margin:2px 0 2px}
+.opt{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 20px;align-items:center;padding:10px 0}
+.opt .label{font-weight:600}
+.opt .help{margin-top:1px}
+.preset{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-2)}
+.v11{font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;color:var(--text-3);border:1px dashed var(--line-strong);border-radius:6px;padding:1px 6px}
+
+/* badges, codes */
+.badge{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px 0 7px;border-radius:999px;font-size:12.5px;font-weight:500;white-space:nowrap;border:1px solid transparent;color:var(--text)}
+.badge .ic{width:15px;height:15px}
+.badge.ok{background:rgba(109,191,160,.15);border-color:rgba(109,191,160,.5)}.badge.ok .ic{color:var(--bl-ok-ink)}
+.badge.review{background:var(--ww-sediment);border-color:var(--ww-bone)}.badge.review .ic{color:var(--bl-review-ink)}
+.badge.failed{background:var(--bl-alert-tint);border-color:var(--bl-alert-line)}.badge.failed .ic{color:var(--bl-alert)}
+.badge.unsupported{background:rgba(168,197,214,.26);border-color:rgba(168,197,214,.85)}.badge.unsupported .ic{color:var(--ww-tidal)}
+.badge.ignored,.badge.skipped{background:var(--ww-wash);border-color:var(--line-strong)}.badge.ignored .ic,.badge.skipped .ic{color:var(--text-3)}
+.badge.running{background:rgba(46,95,122,.07);border-color:rgba(46,95,122,.3)}.badge.running .ic{color:var(--ww-tidal)}
+.badge.lg{height:30px;font-size:13.5px;padding:0 12px 0 9px;font-family:var(--font-ui)}
+.badge.lg .ic{width:17px;height:17px}
+.code{font-family:var(--font-mono);font-size:11.5px;padding:1px 7px;border-radius:var(--r-sm);background:var(--ww-wash);border:1px solid var(--line);white-space:nowrap}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;padding:3px 10px;border-radius:999px;border:1px solid var(--line-strong);background:var(--surface);white-space:nowrap}
+
+/* stat tiles */
+.tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;text-align:left;cursor:pointer;transition:border-color var(--t-fast),box-shadow var(--t-fast)}
+.tile:hover{border-color:var(--line-strong)}
+.tile .t-label{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--text-2);white-space:nowrap}
+.tile .t-label .ic{width:15px;height:15px}
+.tile .t-num{font-size:24px;font-weight:600;letter-spacing:-.01em;margin-top:2px;font-variant-numeric:tabular-nums}
+.tile.zero .t-num{color:var(--text-3)}
+.tile[aria-pressed=true]{border-color:var(--ww-tidal);box-shadow:inset 0 0 0 1px var(--ww-tidal)}
+.tile.ok .ic{color:var(--bl-ok-ink)}.tile.review .ic{color:var(--bl-review-ink)}.tile.failed .ic{color:var(--bl-alert)}
+.tile.unsupported .ic{color:var(--ww-tidal)}.tile.ignored .ic,.tile.skipped .ic{color:var(--text-3)}
+.tile.failed:not(.zero){border-color:var(--bl-alert-line)}
+
+/* progress */
+.progress{position:relative;height:8px;border-radius:999px;background:rgba(13,31,60,.08);overflow:hidden}
+.progress > i{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,var(--ww-tidal),var(--ww-biolum));border-radius:inherit;transition:width .4s linear}
+.progress.indet > i{width:30%;animation:indet 1.4s var(--ease) infinite}
+
+/* notices & banner */
+.notice{display:flex;gap:12px;align-items:flex-start;padding:12px 16px;border-radius:12px;border:1px solid;font-size:13.5px;margin-bottom:16px}
+.notice > .ic{margin-top:1px}
+.notice .n-body{flex:1;min-width:0}
+.notice .n-title{font-weight:600}
+.notice .n-actions{display:flex;gap:8px;align-items:center;flex:none}
+.notice.info{background:rgba(168,197,214,.16);border-color:rgba(168,197,214,.75)}.notice.info > .ic{color:var(--ww-tidal)}
+.notice.warn{background:var(--ww-sediment);border-color:var(--ww-bone)}.notice.warn > .ic{color:var(--bl-review-ink)}
+.notice.alert{background:var(--bl-alert-tint);border-color:var(--bl-alert-line)}.notice.alert > .ic{color:var(--bl-alert)}
+.notice.ok{background:rgba(109,191,160,.12);border-color:rgba(109,191,160,.5)}.notice.ok > .ic{color:var(--bl-ok-ink)}
+.banner{display:flex;align-items:center;gap:10px;padding:10px 24px;background:var(--bl-alert-tint);border-bottom:1px solid var(--bl-alert-line);font-size:13.5px;flex:none}
+.banner > .ic{color:var(--bl-alert)}
+.banner .btn{margin-left:auto}
+
+/* action bar */
+.actionbar{display:flex;align-items:center;gap:12px;padding:12px 40px;border-top:1px solid var(--line);background:rgba(251,250,246,.94);backdrop-filter:blur(12px);flex:none;z-index:20}
+.actionbar .status{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--text-2);min-width:0}
+.actionbar .status .ic{color:var(--text-3)}
+.actionbar .btns{margin-left:auto;display:flex;gap:8px}
+
+/* stats row (preview) */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:2px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--line)}
+.stat{background:var(--surface);padding:12px 14px}
+.stat .s-label{font-size:12.5px;color:var(--text-2)}
+.stat .s-num{font-size:22px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.bars{display:grid;gap:8px;margin-top:16px}
+.bar-row{display:grid;grid-template-columns:110px 1fr 70px;gap:12px;align-items:center;font-size:13px}
+.bar-row .b-label{display:flex;gap:6px;align-items:center;color:var(--text-2)}
+.bar-row .b-label .ic{width:15px;height:15px}
+.bar{height:6px;border-radius:999px;background:rgba(13,31,60,.06);overflow:hidden}
+.bar > i{display:block;height:100%;background:var(--ww-tidal);border-radius:inherit}
+.bar-row .b-num{text-align:right;font-variant-numeric:tabular-nums;color:var(--text-2)}
+details.disclose{border-top:1px solid var(--line);margin-top:16px;padding-top:12px}
+details.disclose summary{cursor:pointer;font-weight:600;font-size:13.5px;display:flex;align-items:center;gap:8px;list-style:none}
+details.disclose summary::-webkit-details-marker{display:none}
+details.disclose summary .ic{transition:transform var(--t-fast);color:var(--text-3)}
+details.disclose[open] summary .ic.chev{transform:rotate(90deg)}
+.maplist{margin:10px 0 0;padding:0;list-style:none;display:grid;gap:6px;font-size:12.5px}
+.maplist li{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:10px;align-items:center;font-family:var(--font-mono)}
+.maplist li .ic{color:var(--text-3)}
+.maplist li span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* tables */
+.tbl-card{padding:0;overflow:hidden}
+.toolbar{display:flex;gap:10px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.pager{display:flex;align-items:center;gap:6px;margin-left:auto;font-size:13px;color:var(--text-2)}
+.tbl-scroll{overflow-x:auto}
+table.data{width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;min-width:760px}
+table.data.compact{min-width:520px}
+.data th{position:sticky;top:0;background:var(--ww-wash);font-family:var(--font-mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--text-3);font-weight:500;text-align:left;padding:0 14px;height:34px;border-bottom:1px solid var(--line);z-index:1;white-space:nowrap}
+.data td{height:44px;padding:0 14px;border-bottom:1px solid var(--line);font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.data tbody tr{cursor:pointer;outline:none}
+.data tbody tr:hover td{background:var(--ww-wash)}
+.data tbody tr.sel td{background:var(--selected)}
+.data tbody tr.sel td:first-child{box-shadow:inset 3px 0 0 var(--ww-tidal)}
+.data tbody tr:focus-visible td{background:var(--selected)}
+.data tbody tr:last-child td{border-bottom:0}
+.pathcell{display:flex;min-width:0;align-items:baseline}
+.pathcell .dir{color:var(--text-3);font-family:var(--font-mono);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:0 1 auto}
+.pathcell .name{font-weight:500;flex:0 0 auto;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pathcell .none{color:var(--text-3)}
+.stack{display:flex;height:6px;width:110px;border-radius:999px;overflow:hidden;background:rgba(13,31,60,.06)}
+.stack i{display:block;height:100%}
+.stack .s-ok{background:var(--ww-biolum)}.stack .s-review{background:var(--ww-bone)}.stack .s-failed{background:var(--bl-alert)}.stack .s-unsupported{background:var(--ww-surface-blue)}
+
+/* run page */
+.runmeta{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;font-size:13px;color:var(--text-2);margin-top:12px}
+.runmeta .item{display:flex;gap:6px;align-items:center;min-width:0}
+.runmeta .ic{color:var(--text-3);width:15px;height:15px}
+.runmeta .p{font-family:var(--font-mono);font-size:12.5px;color:var(--text);max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.live{display:grid;gap:14px}
+.live-top{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}
+.live-big{font-size:30px;font-weight:600;letter-spacing:-.015em;font-variant-numeric:tabular-nums}
+.live-big small{font-size:15px;font-weight:500;color:var(--text-2)}
+.live-pct{font-family:var(--font-mono);font-size:13px;color:var(--text-2)}
+.live-el{margin-left:auto;font-size:13px;color:var(--text-2);display:flex;gap:6px;align-items:center}
+.live-now{display:flex;gap:10px;align-items:center;font-size:13px;color:var(--text-2);min-width:0}
+.live-now .p{font-family:var(--font-mono);font-size:12.5px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.activity{list-style:none;margin:0;padding:0}
+.activity li{display:grid;grid-template-columns:130px minmax(0,1fr) 110px;gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px;animation:rise var(--t-enter) var(--ease) both}
+.activity li:last-child{border-bottom:0}
+.headline{font-size:18px;font-weight:600;display:flex;align-items:center;gap:10px;margin-bottom:14px}
+
+/* inspector */
+.inspector{position:absolute;top:0;right:0;bottom:0;width:var(--insp-w);max-width:100%;background:var(--surface);border-left:1px solid var(--line);box-shadow:var(--sh-lg);transform:translateX(100%);visibility:hidden;transition:transform var(--t-panel) var(--ease),visibility 0s linear var(--t-panel);display:flex;flex-direction:column;z-index:40}
+.inspector.open{transform:none;visibility:visible;transition:transform var(--t-panel) var(--ease),visibility 0s}
+.insp-head{padding:16px 20px 14px;border-bottom:1px solid var(--line);display:grid;gap:8px}
+.insp-head .top{display:flex;align-items:center;gap:8px}
+.insp-head .top .btn{margin-left:auto}
+.insp-name{font-weight:600;font-size:16px;word-break:break-word}
+.insp-dir{font-family:var(--font-mono);font-size:12px;color:var(--text-3);word-break:break-all}
+.insp-body{flex:1;overflow-y:auto;padding:0 20px 20px}
+.insp-sec{padding:16px 0;border-bottom:1px solid var(--line)}
+.insp-sec:last-child{border-bottom:0}
+.insp-sec h5{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);font-weight:500;margin:0 0 10px}
+dl.kv{display:grid;grid-template-columns:84px minmax(0,1fr);gap:7px 12px;margin:0;font-size:13px}
+dl.kv dt{color:var(--text-3)}
+dl.kv dd{margin:0;min-width:0;word-break:break-word}
+.hash{display:flex;gap:6px;align-items:center;font-family:var(--font-mono);font-size:12px}
+.hash span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.checks{list-style:none;margin:0;padding:0;display:grid;gap:8px;font-size:13px}
+.checks li{display:flex;gap:8px;align-items:flex-start}
+.checks .ic{width:16px;height:16px;margin-top:1px}
+.checks .pass{color:var(--bl-ok-ink)}.checks .fail{color:var(--bl-alert)}.checks .unav{color:var(--bl-review-ink)}.checks .na{color:var(--text-3)}
+.checks .cid{font-family:var(--font-mono);font-size:12px;min-width:96px}
+.help-box{background:var(--ww-wash);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:13.5px;line-height:1.55}
+.msgbox{font-family:var(--font-mono);font-size:12px;background:var(--ww-wash);border-radius:10px;padding:10px 12px;white-space:pre-wrap;word-break:break-word;margin-top:8px}
+.insp-foot{padding:12px 20px;border-top:1px solid var(--line);display:flex;gap:8px;flex-wrap:wrap}
+@media (min-width:1440px){.main.docked .scroll{margin-right:var(--insp-w)}.main.docked .inspector{box-shadow:none}}
+
+/* modal, toast */
+.overlay{position:fixed;inset:0;background:rgba(13,31,60,.32);backdrop-filter:blur(2px);display:none;align-items:center;justify-content:center;z-index:60;padding:24px}
+.overlay.open{display:flex;animation:fade var(--t-panel) var(--ease)}
+.modal{width:min(560px,100%);max-height:calc(100vh - 48px);overflow:auto;background:var(--surface);border-radius:var(--r-xl);box-shadow:var(--sh-lg);padding:26px 28px 22px;animation:pop var(--t-panel) var(--ease)}
+.modal h2{font-family:var(--font-display);font-weight:600;font-size:30px;line-height:1.05;margin:0 0 8px}
+.modal p{margin:6px 0;color:var(--text-2)}
+.m-foot{display:flex;justify-content:flex-end;gap:8px;margin-top:22px}
+.route{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 12px;font-size:13px;background:var(--ww-wash);border-radius:12px;padding:12px 14px;margin:14px 0}
+.route dt{color:var(--text-3)}.route dd{margin:0;font-family:var(--font-mono);font-size:12.5px;word-break:break-all}
+.safe{display:flex;gap:8px;align-items:center;font-size:13.5px;font-weight:500;margin-top:12px}
+.safe .ic{color:var(--bl-ok-ink)}
+.toast{position:fixed;right:20px;bottom:20px;background:var(--ww-abyss);color:var(--ww-bg);border-radius:12px;padding:10px 14px;font-size:13px;box-shadow:var(--sh-lg);display:flex;gap:8px;align-items:center;opacity:0;transform:translateY(10px);transition:opacity var(--t-panel) var(--ease),transform var(--t-panel) var(--ease);z-index:70;pointer-events:none}
+.toast.show{opacity:1;transform:none}
+.toast .ic{color:var(--ww-biolum)}
+
+/* empty, full-screen */
+.empty{text-align:center;padding:56px 24px;color:var(--text-2)}
+.empty-ic{width:52px;height:52px;border-radius:50%;background:var(--ww-wash);border:1px solid var(--line);display:grid;place-items:center;margin:0 auto;color:var(--text-2)}
+.empty-ic .ic{width:22px;height:22px}
+.empty h3{font-weight:600;font-size:16px;color:var(--text);margin:16px 0 4px}
+.empty p{margin:0 auto 18px;max-width:46ch}
+.full{min-height:100vh;display:grid;place-items:center;padding:24px;background:var(--bg)}
+.full .box{max-width:520px;text-align:center}
+.full .wordmark{font-size:28px;color:var(--text-2)}
+.full h1{font-family:var(--font-display);font-weight:600;font-size:40px;line-height:1.05;margin:18px 0 8px}
+.full p{color:var(--text-2);margin:6px 0}
+.full ol{text-align:left;color:var(--text-2);display:inline-block;margin:14px 0 0;padding-left:20px}
+
+/* tools, settings, about, runs */
+.tool{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:4px 14px;align-items:start;padding:16px 0;border-bottom:1px solid var(--line)}
+.tool:last-child{border-bottom:0}
+.tool .st{margin-top:2px}
+.tool .t-name{font-weight:600}
+.tool .t-role{font-size:13px;color:var(--text-2)}
+.tool .t-path{grid-column:2/4;font-family:var(--font-mono);font-size:12px;color:var(--text-3);word-break:break-all}
+.tool .t-ver{font-family:var(--font-mono);font-size:12.5px;text-align:right}
+.tool .t-help{grid-column:2/4;font-size:13px}
+.kvrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.kvrow:last-child{border-bottom:0}
+.kvrow .help{margin-top:2px}
+.about-hero{display:flex;gap:18px;align-items:center}
+.ww-endorse{display:flex;gap:12px;align-items:center;margin-top:16px;font-size:13px;color:var(--text-2)}
+.ww-endorse img{height:26px}
+.notices{columns:2;column-gap:28px;font-size:13px}
+.notices div{break-inside:avoid;padding:6px 0;border-bottom:1px solid var(--line)}
+
+/* resource use */
+.facts{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 6px}
+.facts .chip .ic{width:14px;height:14px;color:var(--text-2)}
+.opt.stack{grid-template-columns:minmax(0,1fr) auto}
+.opt .sub{grid-column:1/-1;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.meter{display:inline-flex;gap:4px}
+.meter i{width:14px;height:18px;border-radius:4px;background:rgba(13,31,60,.08);border:1px solid var(--line)}
+.meter i.on{background:var(--ww-tidal);border-color:var(--ww-tidal)}
+.meter-lbl{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+.stepper{display:inline-flex;align-items:center;border:1px solid var(--line-strong);border-radius:var(--r-md);overflow:hidden;background:var(--surface)}
+.stepper button{width:34px;height:32px;border:0;background:transparent;font-size:16px;cursor:pointer;color:var(--text)}
+.stepper button:hover{background:var(--ww-wash)}
+.stepper button:disabled{opacity:.35;cursor:not-allowed}
+.stepper output{min-width:34px;text-align:center;font-weight:600;font-variant-numeric:tabular-nums;font-size:13.5px}
+.range{-webkit-appearance:none;appearance:none;width:220px;height:6px;border-radius:999px;background:rgba(13,31,60,.1);outline-offset:6px}
+.range::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--ww-tidal);border:2px solid var(--surface);box-shadow:0 1px 3px rgba(13,31,60,.3);cursor:pointer}
+.range::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--ww-tidal);border:2px solid var(--surface)}
+.plan{background:var(--ww-wash);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-top:16px}
+.plan-title{font-weight:600;font-size:13.5px;margin-bottom:8px;display:flex;gap:8px;align-items:center}
+.plan ul{list-style:none;margin:0;padding:0;display:grid;gap:6px;font-size:13.5px}
+.plan li{display:flex;gap:10px;align-items:center}
+.plan li .ic{width:16px;height:16px;color:var(--text-2)}
+.plan li b{font-variant-numeric:tabular-nums}
+.plan .foot{margin-top:10px;font-size:12.5px;color:var(--text-2)}
+.inprog{list-style:none;margin:0;padding:0;display:grid;gap:0}
+.inprog li{display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px}
+.inprog li:last-child{border-bottom:0}
+.inprog li .ic{width:16px;height:16px;color:var(--text-2)}
+.res-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding-top:12px;border-top:1px solid var(--line);font-size:13px;color:var(--text-2)}
+.res-row .select{height:32px;font-size:13px}
+.res-row b{color:var(--text);font-variant-numeric:tabular-nums}
+
+/* gallery (design reference route) */
+.gal h2{font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);font-weight:500;margin:34px 0 12px}
+.gal .row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.gal .swatch{width:140px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface);font-size:12px}
+.gal .swatch i{display:block;height:54px}
+.gal .swatch div{padding:8px 10px}
+.gal .swatch code{font-family:var(--font-mono);font-size:11px;color:var(--text-2)}
+
+@media (max-width:1279px){.tiles{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}}
+</style>
+</head>
+<body>
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true"><symbol id="i-convert" viewBox="0 0 24 24"><path d="m16 3 4 4-4 4" /> <path d="M20 7H4" /> <path d="m8 21-4-4 4-4" /> <path d="M4 17h16" /></symbol><symbol id="i-check" viewBox="0 0 24 24"><path d="M13 5h8" /> <path d="M13 12h8" /> <path d="M13 19h8" /> <path d="m3 17 2 2 4-4" /> <path d="m3 7 2 2 4-4" /></symbol><symbol id="i-runs" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /> <path d="M3 3v5h5" /> <path d="M12 7v5l4 2" /></symbol><symbol id="i-tools" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.106-3.105c.32-.322.863-.22.983.218a6 6 0 0 1-8.259 7.057l-7.91 7.91a1 1 0 0 1-2.999-3l7.91-7.91a6 6 0 0 1 7.057-8.259c.438.12.54.662.219.984z" /></symbol><symbol id="i-settings" viewBox="0 0 24 24"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" /> <circle cx="12" cy="12" r="3" /></symbol><symbol id="i-about" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /> <path d="M12 16v-4" /> <path d="M12 8h.01" /></symbol><symbol id="i-quit" viewBox="0 0 24 24"><path d="M12 2v10" /> <path d="M18.4 6.6a9 9 0 1 1-12.77.04" /></symbol><symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 5h16" /> <path d="M4 12h16" /> <path d="M4 19h16" /></symbol><symbol id="i-collapse" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" /> <path d="M9 3v18" /> <path d="m16 15-3-3 3-3" /></symbol><symbol id="i-expand" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" /> <path d="M9 3v18" /> <path d="m14 9 3 3-3 3" /></symbol><symbol id="i-folder" viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" /></symbol><symbol id="i-folder-open" viewBox="0 0 24 24"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2" /></symbol><symbol id="i-play" viewBox="0 0 24 24"><path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z" /></symbol><symbol id="i-stop" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" /></symbol><symbol id="i-close" viewBox="0 0 24 24"><path d="M18 6 6 18" /> <path d="m6 6 12 12" /></symbol><symbol id="i-download" viewBox="0 0 24 24"><path d="M12 15V3" /> <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /> <path d="m7 10 5 5 5-5" /></symbol><symbol id="i-external" viewBox="0 0 24 24"><path d="M15 3h6v6" /> <path d="M10 14 21 3" /> <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /></symbol><symbol id="i-copy" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2" /> <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></symbol><symbol id="i-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34" /> <circle cx="11" cy="11" r="8" /></symbol><symbol id="i-chev-r" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" /></symbol><symbol id="i-chev-d" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" /></symbol><symbol id="i-chev-l" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6" /></symbol><symbol id="i-reset" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /> <path d="M3 3v5h5" /></symbol><symbol id="i-spinner" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></symbol><symbol id="i-tick" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></symbol><symbol id="i-arrow-r" viewBox="0 0 24 24"><path d="M5 12h14" /> <path d="m12 5 7 7-7 7" /></symbol><symbol id="i-bell" viewBox="0 0 24 24"><path d="M10.268 21a2 2 0 0 0 3.464 0" /> <path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" /></symbol><symbol id="i-drive" viewBox="0 0 24 24"><path d="M10 16h.01" /> <path d="M2.212 11.577a2 2 0 0 0-.212.896V18a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5.527a2 2 0 0 0-.212-.896L18.55 5.11A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" /> <path d="M21.946 12.013H2.054" /> <path d="M6 16h.01" /></symbol><symbol id="i-shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /> <path d="m9 12 2 2 4-4" /></symbol><symbol id="i-more" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1" /> <circle cx="19" cy="12" r="1" /> <circle cx="5" cy="12" r="1" /></symbol><symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /> <path d="M12 6v6l4 2" /></symbol><symbol id="i-filter" viewBox="0 0 24 24"><path d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z" /></symbol><symbol id="i-layers" viewBox="0 0 24 24"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z" /> <path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12" /> <path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17" /></symbol><symbol id="i-scan" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2" /> <path d="M17 3h2a2 2 0 0 1 2 2v2" /> <path d="M21 17v2a2 2 0 0 1-2 2h-2" /> <path d="M7 21H5a2 2 0 0 1-2-2v-2" /> <circle cx="12" cy="12" r="3" /> <path d="m16 16-1.9-1.9" /></symbol><symbol id="i-st-ok" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /> <path d="m16 9-5.5 5.5L8 12" /></symbol><symbol id="i-st-review" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" /> <path d="M12 9v4" /> <path d="M12 17h.01" /></symbol><symbol id="i-st-failed" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /> <path d="m15 9-6 6" /> <path d="m9 9 6 6" /></symbol><symbol id="i-st-unsupported" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /> <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /> <path d="M12 17h.01" /></symbol><symbol id="i-st-ignored" viewBox="0 0 24 24"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49" /> <path d="M14.084 14.158a3 3 0 0 1-4.242-4.242" /> <path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143" /> <path d="m2 2 20 20" /></symbol><symbol id="i-st-skipped" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /> <line x1="9" x2="15" y1="15" y2="9" /></symbol><symbol id="i-st-unavail" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /> <line x1="12" x2="12" y1="8" y2="12" /> <line x1="12" x2="12.01" y1="16" y2="16" /></symbol><symbol id="i-cat-image" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" ry="2" /> <circle cx="9" cy="9" r="2" /> <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" /></symbol><symbol id="i-cat-document" viewBox="0 0 24 24"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z" /> <path d="M14 2v5a1 1 0 0 0 1 1h5" /> <path d="M10 9H8" /> <path d="M16 13H8" /> <path d="M16 17H8" /></symbol><symbol id="i-cat-text" viewBox="0 0 24 24"><path d="M12 4v16" /> <path d="M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2" /> <path d="M9 20h6" /></symbol><symbol id="i-cat-html" viewBox="0 0 24 24"><path d="m16 18 6-6-6-6" /> <path d="m8 6-6 6 6 6" /></symbol><symbol id="i-cat-email" viewBox="0 0 24 24"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7" /> <rect x="2" y="4" width="20" height="16" rx="2" /></symbol><symbol id="i-cat-pdf" viewBox="0 0 24 24"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z" /> <path d="M14 2v5a1 1 0 0 0 1 1h5" /></symbol><symbol id="i-cat-video" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" /> <path d="M7 3v18" /> <path d="M3 7.5h4" /> <path d="M3 12h18" /> <path d="M3 16.5h4" /> <path d="M17 3v18" /> <path d="M17 7.5h4" /> <path d="M17 16.5h4" /></symbol><symbol id="i-cat-audio" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13" /> <circle cx="6" cy="18" r="3" /> <circle cx="18" cy="16" r="3" /></symbol><symbol id="i-cat-other" viewBox="0 0 24 24"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z" /> <path d="M12 17h.01" /> <path d="M9.1 9a3 3 0 0 1 5.82 1c0 2-3 3-3 3" /></symbol><symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /> <path d="M12 16v-4" /> <path d="M12 8h.01" /></symbol></svg>
+<div class="app" id="app">
+  <div class="scrim" data-act="drawer-close"></div>
+  <nav class="rail" id="rail" aria-label="Baleen"></nav>
+  <div class="main" id="main">
+    <div class="topbar-m"><button class="btn ghost icon" data-act="drawer-open" aria-label="Open navigation"><svg class="ic"><use href="#i-menu"/></svg></button><span class="wordmark" style="font-size:20px">Baleen</span></div>
+    <div id="bannerSlot"></div>
+    <div class="scroll" id="scroll"><div id="view"></div></div>
+    <div id="actionSlot"></div>
+    <aside class="inspector" id="inspector" aria-label="File details" tabindex="-1"></aside>
+  </div>
+</div>
+<div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-labelledby="mTitle"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div id="fullSlot"></div>
+<div class="sr" aria-live="polite" id="live"></div>
+
+<script>
+(function(){
+"use strict";
+/* ------------------------------------------------------------------ data */
+var WW_LOGO="data:image/png;base64,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";
+var SRC_SAMPLE="/Volumes/Archive/04 Events (2000–2005)";
+var OUT_SAMPLE="/Users/mia/Baleen output/04 Events";
+var CHECK_SAMPLE="/Volumes/Archive/03 Publications";
+var LABEL={ok:"OK",review:"Needs review",failed:"Failed",unsupported:"Unsupported",ignored:"Ignored",skipped:"Skipped",running:"Running"};
+var ORDER=["failed","review","unsupported","ok","ignored","skipped"];
+var REASON={
+ ENCODING_UNCERTAIN:["Text encoding not certain","Baleen couldn't tell how this text file is encoded, so it didn't guess. Choose an encoding under Convert → Options → Text encoding when unsure (the message suggests one), then run again. Finished files are skipped automatically."],
+ CHARSET_ERRORS:["Undecodable characters","Some characters in this e-mail couldn't be decoded and appear as �. The PDF was written; compare it with the original before relying on it."],
+ MULTI_FRAME_IMAGE:["Image has several frames","This image has more than one frame (for example an animated GIF). Decide how to keep it, for example by exporting the frames, then add the result to the source."],
+ NOT_PDFA:["PDF is not PDF/A","This PDF makes no PDF/A claim, and Baleen v1 doesn't convert PDFs. Convert it with a PDF/A-capable tool, or keep it as a noted exception."],
+ PDFA_INVALID:["Claims PDF/A, fails validation","veraPDF found problems (see the message). Re-create the PDF from its source if you can."],
+ SOURCE_INVALID:["Source file is damaged","This archival-format file doesn't fully decode. Look for another copy of it."],
+ VALIDATOR_MISSING:["Couldn't verify","The file was written but a checking tool is missing (see Tools). Fix it, then run Check on the output folder."],
+ TOOL_MISSING:["Converter missing","The program that converts this format isn't available. See Tools."],
+ EML_ATTACHMENTS_BLOCKED:["Attachments blocked","E-mail attachments are set to Block. Switch to Extract or List under Options to convert this e-mail."],
+ NAME_CLASH_UNRESOLVED:["Name clash","Two files would get the same output name even after adding their extensions. Rename one in a copy of the source."],
+ OUTPUT_OCCUPIED:["Output path taken","A file Baleen didn't produce already exists here. Move it away or choose another output folder."],
+ VERIFY_FAILED:["Output failed a check","The converted file didn't pass verification, so it wasn't saved. See the message; the source may be damaged."],
+ TIMEOUT:["Took too long","The converter exceeded its time limit. Try again; very long recordings may need the limit raised (advanced settings)."],
+ UNSUPPORTED_FORMAT:["Format not handled","Baleen v1 doesn't handle this format. It's listed so nothing goes missing."],
+ NOT_ARCHIVAL_FORMAT:["Not archival yet","This file is fine but not in an archival format. Run Convert to turn it into the format named in the message."],
+ SYSTEM_FILE:["System file","Operating-system clutter, skipped on purpose."],
+ CANCELLED:["Run was cancelled","Not processed because the run stopped. Run again to finish; completed files are skipped."]
+};
+function R(status,src,out,action,method,cat,reason,message,extra){return Object.assign({status:status,src:src,out:out,action:action,method:method,cat:cat,reason:reason||"",message:message||""},extra||{});}
+var LO="LibreOffice 26.8.1 → PDF/A-2b", FF="FFmpeg 7.1.1 · libx264 crf18 · aac 192k";
+var ROWS=[
+ R("failed","2003-12-28 Night market/clip0026.AVI","","convert",FF,"video","VERIFY_FAILED","V-AV-DUR: output 41.2 s, source 58.0 s (limit ±1.0 s).\nffmpeg: [mjpeg] error count: 37",{checks:[["V-AV-PROBE","pass"],["V-AV-DUR","fail","41.2 s vs 58.0 s"],["V-AV-DECODE","pass"]]}),
+ R("review","2004-07 Poetry evening/notes.txt","","convert","—","text","ENCODING_UNCERTAIN","Not valid UTF-8 and no BOM. Decodes cleanly as big5.",{checks:[]}),
+ R("review","2004-05-30 Band showcase/訪談.eml","2004-05-30 Band showcase/訪談_eml.pdf","convert",LO,"email","CHARSET_ERRORS","Declared charset big5; 3 bytes undecodable (shown as �).",{checks:[["V-PDF-OPEN","pass"],["V-PDFA","pass","2b"]]}),
+ R("review","2002-02 Folk session/flyer.gif","","convert","—","image","MULTI_FRAME_IMAGE","Animated GIF, 12 frames.",{checks:[]}),
+ R("review","00 Series overview/programme-2004.pdf","","check","—","pdf","NOT_PDFA","No pdfaid entry in XMP metadata.",{checks:[["V-PDF-OPEN","pass"],["V-PDFA","na"]]}),
+ R("review","2003-03 Duo guitars/set list.pdf","","check","—","pdf","NOT_PDFA","No pdfaid entry in XMP metadata.",{checks:[["V-PDF-OPEN","pass"],["V-PDFA","na"]]}),
+ R("unsupported","2004-02 Correspondence/meeting notes.msg","","none","—","other","UNSUPPORTED_FORMAT","Outlook .msg is not handled in v1.",{checks:[]}),
+ R("unsupported","2004-01 Mixed night/backup.zip","","none","—","other","UNSUPPORTED_FORMAT","Archives are not extracted in v1.",{checks:[]}),
+ R("ok","2001-09 Cello evening/DP2_0001.JPG","2001-09 Cello evening/DP2_0001.jpg","copy","verified JPEG · byte copy","image"),
+ R("ok","2001-09 Cello evening/DP2_0002.JPG","2001-09 Cello evening/DP2_0002.jpg","copy","verified JPEG · byte copy","image"),
+ R("ok","2003-11-01 Jazz night/DSCF0128.AVI","2003-11-01 Jazz night/DSCF0128.mp4","convert",FF,"video",null,null,{checks:[["V-AV-PROBE","pass"],["V-AV-DUR","pass","58.04 s vs 58.00 s"],["V-AV-DECODE","pass"]]}),
+ R("ok","2003-11-01 Jazz night/IMG_0007.JPG","2003-11-01 Jazz night/IMG_0007.jpg","copy","verified JPEG · byte copy","image"),
+ R("ok","2003-12-06 Sound art/score.doc","2003-12-06 Sound art/score.pdf","convert",LO,"document",null,null,{checks:[["V-PDF-OPEN","pass"],["V-PDFA","pass","2b"]]}),
+ R("ok","2003-12-06 Sound art/scan.bmp","2003-12-06 Sound art/scan.jpg","convert","Pillow · JPEG q95 4:4:4","image"),
+ R("ok","2004-01 Mixed night/dj/MOV00265.MPG","2004-01 Mixed night/dj/MOV00265.mp4","convert",FF,"video"),
+ R("ok","2004-01 Mixed night/talk/track 1.wma","2004-01 Mixed night/talk/track 1.m4a","convert","FFmpeg 7.1.1 · aac 192k","audio"),
+ R("ok","2004-04-11 Band showcase/訪談.doc","2004-04-11 Band showcase/訪談_doc.pdf","convert",LO,"document",null,"Renamed to avoid a clash with 訪談.eml."),
+ R("ok","2004-04-11 Band showcase/訪談.eml#photo.jpg","2004-04-11 Band showcase/訪談_eml_attachments/photo.jpg","copy","attachment · verified JPEG","image"),
+ R("ok","2004-05-02 Vinyl set/DJ notes.rtf","2004-05-02 Vinyl set/DJ notes.pdf","convert",LO,"document"),
+ R("ok","2004-05-08 Guqin/0508 profile.eml","2004-05-08 Guqin/0508 profile.pdf","convert","e-mail → HTML → "+LO,"email"),
+ R("ok","2004-05-08 Guqin/portrait.tif","2004-05-08 Guqin/portrait.tif","copy","verified TIFF · byte copy","image"),
+ R("ok","2005-01-15 New year session/MVI_2211.MOV","2005-01-15 New year session/MVI_2211.mp4","remux","FFmpeg 7.1.1 · stream copy (h264/aac)","video"),
+ R("ignored","2004-01 Mixed night/Thumbs.db","","none","—","other","SYSTEM_FILE",""),
+ R("ignored","2003-11-01 Jazz night/Thumbs.db","","none","—","other","SYSTEM_FILE",""),
+ R("ignored",".DS_Store","","none","—","other","SYSTEM_FILE","")
+];
+(function(){ // filler OK rows (JPEG copies)
+  var evs=["2001-09 Cello evening","2003-11-01 Jazz night","2003-12-06 Sound art","2004-04-11 Band showcase","2005-01-15 New year session"];
+  for(var i=0;i<34;i++){var e=evs[i%evs.length],n=("000"+(i+11)).slice(-4);ROWS.push(R("ok",e+"/IMG_"+n+".JPG",e+"/IMG_"+n+".jpg","copy","verified JPEG · byte copy","image"));}
+})();
+var CHECK_ROWS=[
+ R("review","2002 Catalogue/catalogue-final.doc","","check","—","document","NOT_ARCHIVAL_FORMAT","Convertible to PDF/A with Convert."),
+ R("review","2002 Catalogue/cover.png","","check","—","image","NOT_ARCHIVAL_FORMAT","Convertible to JPEG with Convert."),
+ R("review","2004 Zine/issue-3.pdf","","check","—","pdf","PDFA_INVALID","Claims PDF/A-1b. veraPDF: 6.2.11.4.1 font not embedded (2 occurrences)."),
+ R("ok","2004 Zine/issue-1.pdf","","check","veraPDF 1.28 · PDF/A-1b","pdf",null,null,{checks:[["V-PDF-OPEN","pass"],["V-PDFA","pass","1b"]]}),
+ R("ok","2004 Zine/issue-2.pdf","","check","veraPDF 1.28 · PDF/A-2b","pdf"),
+ R("ok","2002 Catalogue/spreads/p01.tif","","check","verified TIFF","image"),
+ R("ok","2002 Catalogue/spreads/p02.tif","","check","verified TIFF","image")
+];
+var CANCEL_ROWS=(function(){var a=[],ev="test batch/";for(var i=1;i<=24;i++){var n=("00"+i).slice(-2);a.push(i<=9?R("ok",ev+"scan_"+n+".bmp",ev+"scan_"+n+".jpg","convert","Pillow · JPEG q95 4:4:4","image"):R("skipped",ev+"scan_"+n+".bmp","","none","—","image","CANCELLED",""));}return a;})();
+var RUNS=[
+ {id:"20261005-143012",wf:"convert",src:SRC_SAMPLE,files:1670,res:{ok:1659,review:5,failed:1,unsupported:2,ignored:3,skipped:0},dur:"18m 42s",when:"Today 14:30",state:"done"},
+ {id:"20261005-110245",wf:"check",src:CHECK_SAMPLE,files:812,res:{ok:809,review:3,failed:0,unsupported:0,ignored:0,skipped:0},dur:"1m 05s",when:"Today 11:02",state:"done"},
+ {id:"20261004-162210",wf:"convert",src:"/Users/mia/Desktop/test batch",files:24,res:{ok:9,review:0,failed:0,unsupported:0,ignored:0,skipped:15},dur:"0m 20s",when:"Yesterday 16:22",state:"cancelled"},
+ {id:"20261002-093001",wf:"check",src:"/Volumes/Archive/02 Video",files:118,res:{ok:118,review:0,failed:0,unsupported:0,ignored:0,skipped:0},dur:"6m 51s",when:"2 Oct 09:30",state:"done"}
+];
+var TOOLS=[
+ {k:"libreoffice",n:"LibreOffice",role:"Documents, text, web pages and e-mail → PDF/A",v:"26.8.1",src:"bundled",p:"runtime/LibreOffice.app/Contents/MacOS/soffice"},
+ {k:"ffmpeg",n:"FFmpeg",role:"Audio and video conversion",v:"7.1.1",src:"bundled",p:"runtime/ffmpeg/ffmpeg"},
+ {k:"ffprobe",n:"FFprobe",role:"Audio and video inspection and checks",v:"7.1.1",src:"bundled",p:"runtime/ffmpeg/ffprobe"},
+ {k:"java",n:"Java runtime",role:"Runs veraPDF",v:"Temurin 21.0.8",src:"bundled",p:"runtime/jre/bin/java"},
+ {k:"verapdf",n:"veraPDF",role:"PDF/A validation",v:"1.28.2",src:"bundled",p:"runtime/verapdf/verapdf"}
+];
+var WORKFLOWS=[{id:"convert",name:"Convert",icon:"convert"},{id:"check",name:"Check",icon:"check"}];
+var MACHINE={cores:8,ramGb:16,workFreeGb:212,network:true};
+var RES_DEFAULTS={processor:"balanced",cores:4,memory:"auto",memGb:4,transfers:"auto",transfersN:4,lowPri:true,awake:true,workDir:"/Users/mia/Applications/Baleen-1.0.0-mac-arm64/data/work"};
+/* Mirrors spec §5.5 exactly — reference implementation of the budget rules */
+function resolve(r){
+  var c=MACHINE.cores, ram=MACHINE.ramGb, B;
+  if(r.processor==="gentle")B=Math.max(1,Math.floor(c/4));
+  else if(r.processor==="maximum")B=Math.max(1,c-1);
+  else if(r.processor==="custom")B=Math.min(c,Math.max(1,r.cores));
+  else B=Math.max(2,Math.floor(c/2));
+  B=Math.min(B,c);
+  var M=r.memory==="custom"?Math.min(ram-2,Math.max(1,r.memGb)):Math.max(1,Math.min(Math.round(ram*0.25),ram-4));
+  var T=r.transfers==="custom"?Math.min(16,Math.max(1,r.transfersN)):(MACHINE.network?4:8);
+  var K=Math.min(4,Math.max(1,Math.floor(B/2)),Math.max(1,Math.floor(M/1)));
+  var F=B>=8?2:1, th=Math.max(1,Math.floor(B/F));
+  return {B:B,M:M,T:T,K:K,F:F,threads:th,files:B};
+}
+var PROC_HELP={gentle:"Slowest. The computer stays fully responsive. Good during the working day.",balanced:"Recommended for most runs.",maximum:"Fastest. The computer may feel slow. Good for overnight runs.",custom:"Choose exactly how many cores Baleen may use."};
+var DEFAULTS={copy_existing:true,pdfa_level:"2b",txt_encoding:"auto",eml_attachments:"extract",hide_email_addresses:false,video_quality:"high",audio_container:"m4a"};
+/* options schema — the UI renders this; new options never need new markup */
+var SCHEMA=[
+ {group:"Documents",fields:[
+   {key:"pdfa_level",label:"PDF/A level",help:"For new PDFs. 2b suits most archives.",type:"seg",values:[["1b","1b"],["2b","2b"],["3b","3b"]]},
+   {key:"txt_encoding",label:"Text encoding when unsure",help:"Used only when a text file isn't clearly UTF-8. Auto flags it for review instead of guessing.",type:"select",values:[["auto","Auto (flag for review)"],["big5","Big5 (Traditional Chinese)"],["gb18030","GB18030 (Simplified Chinese)"],["shift_jis","Shift JIS (Japanese)"],["windows-1252","Windows-1252 (Western)"]]}]},
+ {group:"E-mail",fields:[
+   {key:"eml_attachments",label:"Attachments",help:"Extract saves and converts every attachment next to the e-mail's PDF.",type:"seg",values:[["extract","Extract"],["block","Block"],["list","List only"]]},
+   {key:"hide_email_addresses",label:"Hide e-mail addresses in PDFs",help:"For copies you plan to share. Display names are kept.",type:"switch"}]},
+ {group:"Audio & video",fields:[
+   {key:"video_quality",label:"Video quality when re-encoding",help:"High keeps more detail (CRF 18). Files that are already H.264 are never re-encoded.",type:"seg",values:[["high","High"],["standard","Standard"]]},
+   {key:"audio_container",label:"Audio-only output",help:"Same MPEG-4 format either way; .m4a tells players it's audio.",type:"seg",values:[["m4a",".m4a"],["mp4",".mp4"]]}]},
+ {group:"Files already archival",fields:[
+   {key:"copy_existing",label:"Also copy them to the output folder",help:"On: the output folder becomes the complete, verified set. Off: they're checked in place only.",type:"switch"}]}
+];
+
+/* ----------------------------------------------------------------- state */
+var S={route:"convert",runId:null,src:"",out:"",check:"",preview:"none",opts:JSON.parse(JSON.stringify(DEFAULTS)),
+  job:null,toolsMissing:false,runsEmpty:false,filter:null,q:"",sel:null,lost:false,notify:false,tabTitle:true,
+  userCollapsed:null,drawer:false,outInside:false,res:JSON.parse(JSON.stringify(RES_DEFAULTS))};
+var timer=null;
+
+/* --------------------------------------------------------------- helpers */
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+function ic(n,c){return '<svg class="ic '+(c||"")+'" aria-hidden="true"><use href="#i-'+n+'"/></svg>';}
+function fmt(n){return n.toLocaleString("en-US");}
+function badge(st,lg){var icn=st==="running"?'<svg class="ic spin" aria-hidden="true"><use href="#i-spinner"/></svg>':ic("st-"+st);return '<span class="badge '+st+(lg?" lg":"")+'">'+icn+LABEL[st]+'</span>';}
+function splitPath(p){var i=p.lastIndexOf("/");return i<0?["",p]:[p.slice(0,i+1),p.slice(i+1)];}
+function pathCell(p){if(!p)return '<span class="pathcell"><span class="none">—</span></span>';var s=splitPath(p);return '<span class="pathcell" title="'+esc(p)+'"><span class="dir">'+esc(s[0])+'</span><span class="name">'+esc(s[1])+'</span></span>';}
+function toolsOk(){return !S.toolsMissing;}
+function jobRunning(){return S.job&&S.job.status==="running";}
+function toast(t){var el=$("toast");el.innerHTML=ic("tick")+esc(t);el.classList.add("show");clearTimeout(el._t);el._t=setTimeout(function(){el.classList.remove("show");},2600);}
+function say(t){$("live").textContent=t;}
+
+/* ------------------------------------------------------------------ rail */
+function renderRail(){
+  var r=S.route, h='';
+  h+='<div class="rail-brand" aria-label="Baleen"><span class="wordmark">Baleen</span><span class="wm-short" aria-hidden="true">B</span><span class="rail-ver">v1.0</span></div>';
+  h+='<div class="rail-group"><div class="rail-label">Workflows</div>';
+  WORKFLOWS.forEach(function(w){h+=item(w.id,w.icon,w.name,r===w.id,"");});
+  h+='</div><div class="rail-group"><div class="rail-label">History</div>';
+  h+=item("runs","runs","Runs",r==="runs"||r==="run",'<span class="count">'+(S.runsEmpty?0:RUNS.length+(S.job&&S.job.fresh?1:0))+'</span>');
+  h+='</div><div class="rail-group"><div class="rail-label">System</div>';
+  h+=item("tools","tools","Tools",r==="tools",'<span class="dot'+(toolsOk()?"":" bad")+'" title="'+(toolsOk()?"All tools found":"A tool is missing")+'"></span>');
+  h+=item("settings","settings","Settings",r==="settings","");
+  h+=item("about","about","About",r==="about","");
+  h+='</div><div class="rail-foot">';
+  if(S.job&&S.job.status==="running"){var p=Math.round(S.job.done/S.job.total*100);
+    h+='<button class="rail-job" data-act="go" data-to="run" data-id="'+S.job.id+'" aria-label="View running job"><div class="row"><svg class="ic sm spin" aria-hidden="true"><use href="#i-spinner"/></svg><span class="txt">'+(S.job.wf==="convert"?"Converting":"Checking")+'</span><span class="pct">'+p+'%</span></div><div class="progress"><i style="width:'+p+'%"></i></div></button>';}
+  h+='<button class="rail-item" data-act="collapse" data-tip="'+(isCollapsed()?"Expand":"Collapse")+'" aria-label="'+(isCollapsed()?"Expand sidebar":"Collapse sidebar")+'">'+ic(isCollapsed()?"expand":"collapse")+'<span class="lbl">Collapse</span></button>';
+  h+='<button class="rail-item" data-act="quit" data-tip="Quit Baleen">'+ic("quit")+'<span class="lbl">Quit Baleen</span></button>';
+  h+='</div>';
+  $("rail").innerHTML=h;
+  function item(id,icon,label,active,extra){return '<a class="rail-item'+(active?" active":"")+'" href="#/'+id+'" data-act="go" data-to="'+id+'" data-tip="'+label+'"'+(active?' aria-current="page"':'')+'>'+ic(icon)+'<span class="lbl">'+label+'</span>'+extra+'</a>';}
+}
+function isCollapsed(){return S.userCollapsed!==null?S.userCollapsed:window.innerWidth<1280;}
+function applyCollapse(){$("app").classList.toggle("collapsed",isCollapsed());$("app").classList.toggle("drawer",S.drawer);}
+
+/* ----------------------------------------------------------------- views */
+function head(kicker,title,desc,actions,crumb,extra){
+  return (crumb?'<div class="crumb">'+crumb+'</div>':'')+'<div class="page-head"><div style="min-width:0"><div class="kicker">'+kicker+'</div><h1 class="page-title">'+title+'</h1><div class="rule"></div>'+(desc?'<p class="page-desc">'+desc+'</p>':'')+(extra||'')+'</div>'+(actions?'<div class="actions">'+actions+'</div>':'')+'</div>';
+}
+function toolsNotice(){if(toolsOk())return '';return '<div class="notice warn">'+ic("st-review")+'<div class="n-body"><div class="n-title">veraPDF isn\'t available</div>PDF/A can\'t be verified. New PDFs will still be written but marked <b>Needs review</b>.</div><div class="n-actions"><a class="btn secondary sm" href="#/tools" data-act="go" data-to="tools">Open Tools</a></div></div>';}
+function runningNotice(){if(!jobRunning())return '';return '<div class="notice info">'+ic("spinner","spin")+'<div class="n-body"><div class="n-title">A run is in progress</div>Baleen runs one job at a time. You can set up the next one meanwhile.</div><div class="n-actions"><a class="btn secondary sm" data-act="go" data-to="run" data-id="'+S.job.id+'" href="#/runs/'+S.job.id+'">View run</a></div></div>';}
+
+function folderField(id,label,help,val,state,browseLabel){
+  var cls=state&&state.err?" error":"";
+  var m="";
+  if(state&&state.err)m='<div class="msg err">'+ic("st-failed")+esc(state.err)+'</div>';
+  else if(state&&state.ok)m='<div class="msg ok">'+ic("st-ok")+esc(state.ok)+'</div>';
+  return '<div class="field'+cls+'"><label class="label" for="'+id+'">'+label+'</label><div class="help">'+help+'</div><div class="path"><div class="input-wrap">'+ic("folder")+'<input class="input" id="'+id+'" data-bind="'+id+'" value="'+esc(val)+'" placeholder="Paste a folder path, or choose Browse…" spellcheck="false" autocomplete="off"></div><button class="btn secondary" data-act="browse" data-for="'+id+'">'+ic("folder-open")+(browseLabel||"Browse…")+'</button></div>'+m+'</div>';
+}
+function srcState(){return S.src?{ok:"Readable · read-only for Baleen"}:null;}
+function outState(){if(!S.out)return null;if(S.outInside)return {err:"This folder is inside the source folder. Choose a folder outside it."};return {ok:"Writable · 24 GB free"};}
+function optControl(f){
+  var v=S.opts[f.key];
+  if(f.type==="seg")return '<div class="seg" role="group" aria-label="'+esc(f.label)+'">'+f.values.map(function(x){return '<button data-act="opt" data-key="'+f.key+'" data-val="'+x[0]+'" aria-pressed="'+(v===x[0])+'">'+esc(x[1])+'</button>';}).join("")+'</div>';
+  if(f.type==="switch")return '<button class="switch" role="switch" aria-checked="'+(!!v)+'" aria-label="'+esc(f.label)+'" data-act="opt" data-key="'+f.key+'" data-val="'+(!v)+'"></button>';
+  if(f.type==="select")return '<select class="select" data-opt="'+f.key+'" aria-label="'+esc(f.label)+'">'+f.values.map(function(x){return '<option value="'+x[0]+'"'+(v===x[0]?" selected":"")+'>'+esc(x[1])+'</option>';}).join("")+'</select>';
+  return '';
+}
+function optionsCard(){
+  var changed=Object.keys(DEFAULTS).some(function(k){return S.opts[k]!==DEFAULTS[k];});
+  var h='<section class="card" aria-labelledby="optT"><div class="card-head"><span class="step">2</span><span class="card-title" id="optT">Options</span><div class="right"><span class="preset">Preset <select class="select" disabled title="Presets arrive in v1.1" aria-label="Preset (coming in v1.1)"><option>'+(changed?"Default (modified)":"Default")+'</option></select><span class="v11">v1.1</span></span><button class="btn ghost sm" data-act="reset"'+(changed?"":" disabled")+'>'+ic("reset")+'Reset</button></div></div>';
+  SCHEMA.forEach(function(g){h+='<div class="opt-group"><div class="opt-group-title">'+g.group+'</div>';g.fields.forEach(function(f){h+='<div class="opt"><div><div class="label">'+f.label+'</div><div class="help">'+f.help+'</div></div><div>'+optControl(f)+'</div></div>';});h+='</div>';});
+  return h+'</section>';
+}
+function previewCard(){
+  var h='<section class="card" aria-labelledby="prvT"><div class="card-head"><span class="step">3</span><span class="card-title" id="prvT">Preview</span><span class="card-sub">Scans and plans without writing anything.</span>';
+  if(S.preview==="done"||S.preview==="stale")h+='<div class="right"><button class="btn ghost sm" data-act="preview">'+ic("reset")+'Refresh</button></div>';
+  h+='</div>';
+  var ready=S.src&&S.out&&!S.outInside;
+  if(S.preview==="none"){h+='<div class="empty" style="padding:24px 12px"><div class="empty-ic">'+ic("scan")+'</div><p style="margin-top:12px">'+(ready?"See what Baleen will do before anything is written.":"Choose both folders to preview.")+'</p><button class="btn secondary" data-act="preview"'+(ready?"":" disabled")+'>'+ic("scan")+'Run preview</button></div>';}
+  else if(S.preview==="running"){h+='<div style="display:grid;gap:10px"><div class="live-now">'+ic("spinner","spin")+'Scanning <span class="p">'+esc(SRC_SAMPLE)+'</span> · 1,204 files so far</div><div class="progress indet"><i></i></div></div>';}
+  else{
+    if(S.preview==="stale")h+='<div class="notice warn">'+ic("st-review")+'<div class="n-body"><div class="n-title">Preview is out of date</div>Folders or options changed since the last preview.</div><div class="n-actions"><button class="btn secondary sm" data-act="preview">Refresh</button></div></div>';
+    h+='<div class="stats"><div class="stat"><div class="s-label">Files found</div><div class="s-num">1,670</div></div><div class="stat"><div class="s-label">Convert</div><div class="s-num">63</div></div><div class="stat"><div class="s-label">Copy (already archival)</div><div class="s-num">1,602</div></div><div class="stat"><div class="s-label">Unsupported</div><div class="s-num">2</div></div><div class="stat"><div class="s-label">Ignored</div><div class="s-num">3</div></div></div>';
+    var cats=[["image","Images",1600],["video","Video",22],["document","Documents",23],["email","E-mail",14],["pdf","PDF",8],["audio","Audio",2],["text","Text",1]];
+    h+='<div class="bars">'+cats.map(function(c){return '<div class="bar-row"><span class="b-label">'+ic("cat-"+c[0])+c[1]+'</span><span class="bar"><i style="width:'+Math.max(1.5,c[2]/1600*100)+'%"></i></span><span class="b-num">'+fmt(c[2])+'</span></div>';}).join("")+'</div>';
+    h+='<details class="disclose"><summary>'+ic("chev-r","chev")+'Renamed to avoid clashes <span class="code">2</span></summary><ul class="maplist"><li><span>2004-04-11 Band showcase/訪談.doc</span>'+ic("arrow-r","sm")+'<span>訪談_doc.pdf</span></li><li><span>2004-04-11 Band showcase/訪談.eml</span>'+ic("arrow-r","sm")+'<span>訪談_eml.pdf</span></li></ul></details>';
+    h+='<details class="disclose"><summary>'+ic("chev-r","chev")+'Known before starting <span class="code">2 unsupported</span></summary><ul class="maplist"><li><span>2004-02 Correspondence/meeting notes.msg</span>'+ic("arrow-r","sm")+'<span>Unsupported format</span></li><li><span>2004-01 Mixed night/backup.zip</span>'+ic("arrow-r","sm")+'<span>Unsupported format</span></li></ul></details>';
+  }
+  return h+'</section>';
+}
+function viewConvert(){
+  var h=head("Workflow","Convert","Turn legacy files into archival formats: JPEG, TIFF, PDF/A, MP4 and M4A. Every result is verified. <b>Your source folder is never changed.</b>");
+  h+=runningNotice()+toolsNotice();
+  h+='<section class="card" aria-labelledby="fT"><div class="card-head"><span class="step">1</span><span class="card-title" id="fT">Folders</span></div>';
+  h+=folderField("src","Source folder","The folder to convert. Baleen only reads from it.",S.src,srcState());
+  h+=folderField("out","Output folder","Converted files and the report go here, in the same sub-folder structure. Must be outside the source folder.",S.out,outState());
+  h+='</section>'+optionsCard()+previewCard();
+  return h;
+}
+function convertBar(){
+  var ready=S.src&&S.out&&!S.outInside, run=jobRunning();
+  var st=run?ic("spinner","spin")+'Wait for the current run to finish before starting another.':!ready?ic("info")+'Choose a source and an output folder.':S.preview==="done"?ic("st-ok")+'<span>1,670 files · 63 to convert · preview up to date</span>':ic("info")+'Ready. A preview is optional but recommended.';
+  return '<div class="actionbar"><div class="status">'+st+'</div><div class="btns"><button class="btn secondary" data-act="preview"'+(ready&&!run?"":" disabled")+'>'+ic("scan")+'Preview</button><button class="btn primary" data-act="confirm"'+(ready&&!run?"":" disabled")+'>Start converting'+ic("arrow-r")+'</button></div></div>';
+}
+function viewCheck(){
+  var h=head("Workflow","Check","Verify a folder without changing it. Find files that aren't archival yet, and archival files that are damaged.");
+  h+=runningNotice()+toolsNotice();
+  h+='<section class="card"><div class="card-head"><span class="step">1</span><span class="card-title">Folder</span></div>'+folderField("check","Folder to check","Any folder, including a Baleen output folder. Nothing in it is changed.",S.check,S.check?{ok:"Readable"}:null)+'</section>';
+  h+='<section class="card flat"><div class="card-head"><span class="step">2</span><span class="card-title">What Baleen checks</span></div><ul class="checks">'+
+    [["cat-image","JPEG and TIFF","decode every frame fully"],["cat-pdf","PDF","PDF/A validation with veraPDF"],["cat-video","MP4 and M4A","probe, then decode the whole file"],["shield","Every file","SHA-256 recorded in the report"],["cat-other","Everything else","listed with the archival format it would convert to"]].map(function(x){return '<li>'+ic(x[0],"na")+'<span><b>'+x[1]+'</b> · '+x[2]+'</span></li>';}).join("")+'</ul></section>';
+  return h;
+}
+function checkBar(){var run=jobRunning();return '<div class="actionbar"><div class="status">'+(run?ic("spinner","spin")+'Wait for the current run to finish.':S.check?ic("st-ok")+'Ready to check. Nothing will be written to this folder.':ic("info")+'Choose a folder to check.')+'</div><div class="btns"><button class="btn primary" data-act="startcheck"'+(S.check&&!run?"":" disabled")+'>Start check'+ic("arrow-r")+'</button></div></div>';}
+
+function runById(id){
+  if(S.job&&S.job.id===id)return {id:id,wf:S.job.wf,src:S.job.src,out:S.job.out,live:true};
+  var r=RUNS.filter(function(x){return x.id===id;})[0]||RUNS[0];
+  return {id:r.id,wf:r.wf,src:r.src,out:r.wf==="convert"?OUT_SAMPLE:"",res:r.res,state:r.state,files:r.files,dur:r.dur,when:r.when};
+}
+function settingsChips(){var o=S.opts;return '<div class="chips"><span class="chip">PDF/A-'+o.pdfa_level+'</span><span class="chip">Text: '+o.txt_encoding+'</span><span class="chip">Attachments: '+o.eml_attachments+'</span><span class="chip">Video: '+o.video_quality+'</span><span class="chip">Audio: .'+o.audio_container+'</span><span class="chip">Copy archival: '+(o.copy_existing?"on":"off")+'</span>'+(o.hide_email_addresses?'<span class="chip">Addresses hidden</span>':'')+'</div>';}
+function viewRun(){
+  var r=runById(S.runId), live=r.live&&S.job, status, counts, total;
+  if(live){status=S.job.status;counts=S.job.counts;total=S.job.total;}
+  else{status=r.state;counts=r.res;total=r.files;}
+  var wfName=r.wf==="convert"?"Convert run":"Check run";
+  var pill=status==="running"?badge("running",true):status==="cancelled"?'<span class="badge skipped lg">'+ic("st-skipped")+'Cancelled</span>':status==="stopped"?'<span class="badge failed lg">'+ic("st-failed")+'Stopped</span>':(counts.failed+counts.review+counts.unsupported>0?'<span class="badge review lg">'+ic("st-review")+'Completed · '+(counts.failed+counts.review+counts.unsupported)+' to look at</span>':'<span class="badge ok lg">'+ic("st-ok")+'Completed</span>');
+  var meta='<div class="runmeta"><span class="item">'+ic("folder")+'<span class="p" title="'+esc(r.src)+'">'+esc(r.src)+'</span></span>'+(r.out?'<span class="item">'+ic("arrow-r")+'<span class="p" title="'+esc(r.out)+'">'+esc(r.out)+'</span></span>':'')+'<span class="item">'+ic("clock")+(live?(status==="running"?"Started 14:30":"14:30 · 18m 42s"):esc(r.when)+" · "+esc(r.dur))+'</span></div>'+(r.wf==="convert"?settingsChips():'');
+  var actions=status==="running"?'<button class="btn secondary" data-act="cancel">'+ic("stop")+'Cancel run</button>':(r.wf==="convert"?'<button class="btn secondary" data-act="toast" data-msg="Opened in Finder">'+ic("external")+'Open output folder</button>':'')+'<button class="btn secondary" data-act="toast" data-msg="Report downloaded">'+ic("download")+'Download report</button><button class="btn ghost icon" data-act="toast" data-msg="Run ID copied" aria-label="More actions">'+ic("more")+'</button>';
+  var h=head(r.wf==="convert"?"Run · Convert":"Run · Check",wfName+' '+pill,null,actions,'<a href="#/runs" data-act="go" data-to="runs">Runs</a>'+ic("chev-r","xs")+'<span class="mono">'+r.id+'</span>',meta);
+  if(status==="running"){
+    var p=Math.round(S.job.done/S.job.total*100), rp=resolve(S.res);
+    var curOpt=S.res.processor==="custom"?'<option value="custom" selected>Custom ('+S.res.cores+')</option>':'';
+    h+='<section class="card"><div class="live"><div class="live-top"><span class="live-big num">'+fmt(S.job.done)+' <small>of '+fmt(S.job.total)+' files</small></span><span class="live-pct">'+p+'%</span><span class="live-el">'+ic("clock","sm")+'Elapsed '+S.job.elapsed+'</span></div><div class="progress" role="progressbar" aria-label="Run progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+p+'"><i style="width:'+p+'%"></i></div>';
+    var inf=S.job.inflight.slice(0,Math.min(rp.B,6));
+    h+='<div><div class="kicker" style="margin:4px 0 2px">In progress ('+inf.length+')</div><ul class="inprog">'+inf.map(function(x){return '<li>'+ic(x.icon)+pathCell(x.src)+'<span class="code">'+x.act+'</span></li>';}).join("")+'</ul></div>';
+    h+='<div class="res-row"><span>Processor use</span><select class="select" data-runres aria-label="Processor use"><option value="gentle"'+(S.res.processor==="gentle"?" selected":"")+'>Gentle</option><option value="balanced"'+(S.res.processor==="balanced"?" selected":"")+'>Balanced</option><option value="maximum"'+(S.res.processor==="maximum"?" selected":"")+'>Maximum</option>'+curOpt+'</select><span>Using <b>'+rp.B+' of '+MACHINE.cores+'</b> cores · up to <b>'+rp.M+' GB</b> memory · <b>'+rp.T+'</b> transfers</span><a href="#/settings" data-act="go" data-to="settings" style="margin-left:auto">Resource settings</a></div>';
+    h+='</div></section>';
+    h+=tiles(counts,false);
+    h+='<section class="card"><div class="card-head"><span class="card-title">Latest</span><span class="card-sub">The full table appears when the run finishes.</span></div><ul class="activity">'+S.job.recent.map(function(x){return '<li>'+badge(x.status)+pathCell(x.src)+'<span class="faint" style="font-size:12.5px">'+x.action+'</span></li>';}).join("")+'</ul></section>';
+    return h;
+  }
+  if(status==="cancelled")h+='<div class="notice warn">'+ic("st-skipped")+'<div class="n-body"><div class="n-title">Run cancelled after '+fmt(counts.ok)+' of '+fmt(total)+' files</div>Everything finished so far is saved and verified. Start the same run again to finish; completed files are skipped.</div></div>';
+  if(status==="stopped")h+='<div class="notice alert">'+ic("st-failed")+'<div class="n-body"><div class="n-title">The run stopped: the output drive was disconnected</div>812 of 1,670 files were processed and the report was saved. Reconnect the drive and start the same run again; completed files are skipped. Details are in <span class="mono">data/logs/baleen.log</span>.</div></div>';
+  var issues=counts.failed+counts.review+counts.unsupported;
+  h+='<div class="headline">'+(issues?ic("st-review")+fmt(issues)+' of '+fmt(total)+' files need your attention':ic("st-ok")+'All '+fmt(total)+' files are OK')+'</div>';
+  h+=tiles(counts,true);
+  h+=table(r);
+  return h;
+}
+function tiles(c,interactive){
+  return '<div class="tiles" style="margin-bottom:16px">'+ORDER.map(function(s){var n=c[s]||0;var pressed=S.filter===s;return '<button class="tile '+s+(n?"":" zero")+'"'+(interactive?' data-act="filter" data-st="'+s+'" aria-pressed="'+pressed+'"':' tabindex="-1" aria-pressed="false"')+'><div class="t-label">'+ic("st-"+s)+LABEL[s]+'</div><div class="t-num">'+fmt(n)+'</div></button>';}).join("")+'</div>';
+}
+function currentRows(r){
+  var rows=(r.state==="cancelled"?CANCEL_ROWS:r.wf==="check"?CHECK_ROWS:ROWS).slice();
+  rows.sort(function(a,b){return ORDER.indexOf(a.status)-ORDER.indexOf(b.status);});
+  if(S.filter)rows=rows.filter(function(x){return x.status===S.filter;});
+  if(S.q)rows=rows.filter(function(x){return (x.src+" "+x.out).toLowerCase().indexOf(S.q.toLowerCase())>=0;});
+  return rows;
+}
+function table(r){
+  var rows=currentRows(r), total=r.files||(r.wf==="check"?812:1670);
+  var h='<section class="card tbl-card"><div class="toolbar"><label class="search">'+ic("search","sm")+'<input class="input" placeholder="Filter by path" data-bind="q" value="'+esc(S.q)+'" aria-label="Filter by path"></label>';
+  if(S.filter)h+='<span class="chip">'+ic("filter","xs")+LABEL[S.filter]+' <button class="btn ghost icon sm" style="height:20px;width:20px" data-act="filter" data-st="'+S.filter+'" aria-label="Clear filter">'+ic("close","xs")+'</button></span>';
+  h+='<span class="faint" style="font-size:12.5px">Problems first</span><div class="pager"><span class="num">1–'+Math.min(100,rows.length)+' of '+(S.filter||S.q?fmt(rows.length):fmt(total))+'</span><button class="btn ghost icon sm" disabled aria-label="Previous page">'+ic("chev-l","sm")+'</button><button class="btn ghost icon sm" aria-label="Next page"'+(S.filter||S.q?" disabled":"")+'>'+ic("chev-r","sm")+'</button></div></div>';
+  var compact=!!S.sel, showOut=!compact&&r.wf!=="check", showAct=!compact;
+  h+='<div class="tbl-scroll"><table class="data'+(compact?' compact':'')+'" aria-label="Results"><colgroup><col style="width:150px"><col>'+(showOut?'<col style="width:28%">':'')+(showAct?'<col style="width:96px">':'')+'<col style="width:'+(compact?170:190)+'px"></colgroup><thead><tr><th scope="col">Status</th><th scope="col">Source</th>'+(showOut?'<th scope="col">Output</th>':'')+(showAct?'<th scope="col">Action</th>':'')+'<th scope="col">Reason</th></tr></thead><tbody>';
+  if(!rows.length)h+='<tr><td colspan="'+(3+(showOut?1:0)+(showAct?1:0))+'" style="height:auto"><div class="empty" style="padding:28px">No files match this filter.</div></td></tr>';
+  rows.forEach(function(x,i){var key=r.wf+":"+x.src;h+='<tr tabindex="0" data-act="row" data-key="'+esc(key)+'"'+(S.sel===key?' class="sel" aria-selected="true"':'')+'><td>'+badge(x.status)+'</td><td>'+pathCell(x.src)+'</td>'+(showOut?'<td>'+pathCell(x.out)+'</td>':'')+(showAct?'<td class="muted">'+x.action+'</td>':'')+'<td>'+(x.reason?'<span class="code" title="'+esc((REASON[x.reason]||[""])[0])+'">'+x.reason+'</span>':'')+'</td></tr>';});
+  h+='</tbody></table></div></section>';
+  return h;
+}
+function findRow(key){var p=key.split(":"),wf=p.shift(),src=p.join(":");return ROWS.concat(CHECK_ROWS,CANCEL_ROWS).filter(function(x){return x.src===src;})[0];}
+function renderInspector(){
+  var el=$("inspector"),m=$("main");
+  if(!S.sel||(S.route!=="run")){el.classList.remove("open");m.classList.remove("docked");return;}
+  var x=findRow(S.sel); if(!x){el.classList.remove("open");return;}
+  var s=splitPath(x.src.split("#").pop()), dir=x.src.indexOf("#")>=0?x.src.split("#")[0]+" → attachment":splitPath(x.src)[0];
+  var rinfo=REASON[x.reason];
+  var h='<div class="insp-head"><div class="top">'+badge(x.status)+'<span class="faint" style="font-size:12px">'+x.cat+'</span><button class="btn ghost icon sm" data-act="closeinsp" aria-label="Close details (Esc)">'+ic("close","sm")+'</button></div><div class="insp-name">'+esc(s[1])+'</div><div class="insp-dir">'+esc(dir)+'</div></div><div class="insp-body">';
+  if(x.reason&&rinfo){h+='<div class="insp-sec"><h5>What happened</h5><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b>'+rinfo[0]+'</b><span class="code">'+x.reason+'</span></div>'+(x.message?'<div class="msgbox">'+esc(x.message)+'</div>':'')+'</div>';
+    if(x.status!=="ok"&&x.status!=="ignored")h+='<div class="insp-sec"><h5>What to do</h5><div class="help-box">'+rinfo[1]+'</div></div>';}
+  else if(x.message){h+='<div class="insp-sec"><h5>Note</h5><div class="msgbox">'+esc(x.message)+'</div></div>';}
+  h+='<div class="insp-sec"><h5>Action</h5><dl class="kv"><dt>Action</dt><dd>'+x.action+'</dd><dt>Method</dt><dd>'+esc(x.method)+'</dd></dl></div>';
+  h+='<div class="insp-sec"><h5>Source</h5><dl class="kv"><dt>Path</dt><dd class="mono" style="font-size:12px">'+esc(x.src)+'</dd><dt>Size</dt><dd class="num">4.82 MB</dd><dt>Modified</dt><dd>2004-05-30 22:41</dd><dt>SHA-256</dt><dd><span class="hash"><span>3f2a9c01e4b7d6a85f0c3e12b9a7d4c6e8f01a2b3c4d5e6f7a8b9c0d1e2f3a4b</span><button class="btn ghost icon sm" style="height:24px;width:24px" data-act="toast" data-msg="Hash copied" aria-label="Copy SHA-256">'+ic("copy","xs")+'</button></span></dd></dl></div>';
+  h+='<div class="insp-sec"><h5>Output</h5>'+(x.out?'<dl class="kv"><dt>Path</dt><dd class="mono" style="font-size:12px">'+esc(x.out)+'</dd><dt>Size</dt><dd class="num">3.10 MB</dd><dt>SHA-256</dt><dd><span class="hash"><span>9b1e77c2a0f4d3b6c58e2a1f0d9c8b7a6e5f4d3c2b1a09f8e7d6c5b4a3928170</span><button class="btn ghost icon sm" style="height:24px;width:24px" data-act="toast" data-msg="Hash copied" aria-label="Copy SHA-256">'+ic("copy","xs")+'</button></span></dd></dl>':'<p class="faint" style="margin:0;font-size:13px">No output was written'+(x.action==="check"?" (check only).":".")+'</p>')+'</div>';
+  var ch=x.checks||(x.status==="ok"&&x.cat==="image"?[["V-IMG","pass"],["V-HASH","pass"]]:[]);
+  h+='<div class="insp-sec"><h5>Checks</h5>'+(ch.length?'<ul class="checks">'+ch.map(function(c){var k={pass:["st-ok","pass","pass"],fail:["st-failed","fail","fail"],unav:["st-unavail","unav","unavailable"],na:["st-skipped","na","n/a"]}[c[1]];return '<li>'+ic(k[0],k[1])+'<span class="cid">'+c[0]+'</span><span>'+k[2]+(c[2]?' · <span class="faint">'+esc(c[2])+'</span>':'')+'</span></li>';}).join("")+'</ul>':'<p class="faint" style="margin:0;font-size:13px">No checks ran for this file.</p>')+'</div>';
+  h+='</div><div class="insp-foot"><button class="btn secondary sm" data-act="toast" data-msg="Revealed in Finder">'+ic("external")+'Reveal source</button>'+(x.out?'<button class="btn secondary sm" data-act="toast" data-msg="Revealed in Finder">'+ic("external")+'Reveal output</button>':'')+'<button class="btn ghost sm" data-act="toast" data-msg="Row copied">'+ic("copy")+'Copy row</button></div>';
+  el.innerHTML=h; el.classList.add("open"); m.classList.add("docked");
+}
+function viewRuns(){
+  var h=head("History","Runs","Every run keeps its report. Convert reports live in the output folder; Check reports live in Baleen's data folder.");
+  if(S.runsEmpty)return h+'<section class="card"><div class="empty"><div class="empty-ic">'+ic("runs")+'</div><h3>No runs yet</h3><p>Runs appear here when you start Convert or Check, and stay until you delete their reports.</p><a class="btn primary" href="#/convert" data-act="go" data-to="convert">Start with Convert'+ic("arrow-r")+'</a></div></section>';
+  var list=RUNS.slice(); if(S.job&&S.job.fresh)list.unshift({id:S.job.id,wf:S.job.wf,src:S.job.src,files:S.job.total,res:S.job.counts,dur:S.job.status==="running"?"—":"18m 42s",when:"Today 14:30",state:S.job.status});
+  h+='<section class="card tbl-card"><div class="toolbar"><div class="seg" role="group" aria-label="Workflow"><button aria-pressed="true">All</button><button aria-pressed="false">Convert</button><button aria-pressed="false">Check</button></div><label class="search">'+ic("search","sm")+'<input class="input" placeholder="Filter by folder" aria-label="Filter runs by folder"></label><span class="pager">'+list.length+' runs · the 100 most recent are kept</span></div><div class="tbl-scroll"><table class="data" aria-label="Runs"><colgroup><col style="width:150px"><col style="width:120px"><col><col style="width:90px"><col style="width:250px"><col style="width:96px"></colgroup><thead><tr><th>Started</th><th>Workflow</th><th>Folder</th><th>Files</th><th>Result</th><th>Duration</th></tr></thead><tbody>';
+  list.forEach(function(r){var c=r.res,t=r.files,iss=c.failed+c.review+c.unsupported;
+    var res=r.state==="running"?badge("running"):r.state==="cancelled"?'<span class="badge skipped">'+ic("st-skipped")+'Cancelled</span>':iss?'<span style="display:flex;gap:10px;align-items:center"><span class="stack">'+["ok","review","failed","unsupported"].map(function(s){return '<i class="s-'+s+'" style="width:'+(c[s]/t*100)+'%;min-width:'+(c[s]?3:0)+'px"></i>';}).join("")+'</span><span>'+iss+' to look at</span></span>':'<span class="badge ok">'+ic("st-ok")+'All OK</span>';
+    h+='<tr tabindex="0" data-act="go" data-to="run" data-id="'+r.id+'"><td>'+esc(r.when)+'</td><td><span style="display:flex;gap:8px;align-items:center">'+ic(r.wf)+(r.wf==="convert"?"Convert":"Check")+'</span></td><td>'+pathCell(r.src)+'</td><td class="num">'+fmt(t)+'</td><td>'+res+'</td><td class="num muted">'+r.dur+'</td></tr>';});
+  return h+'</tbody></table></div></section>';
+}
+function viewTools(){
+  var missing=S.toolsMissing;
+  var h=head("System","Tools","The programs Baleen uses to convert and check files. They ship inside the Baleen folder; nothing is installed on this computer.",'<button class="btn secondary" data-act="toast" data-msg="All tools re-checked">'+ic("reset")+'Check again</button>');
+  h+=missing?'<div class="notice warn">'+ic("st-review")+'<div class="n-body"><div class="n-title">1 tool is missing</div>Runs still work. Files that need the missing tool are marked <b>Needs review</b> instead of OK.</div></div>':'<div class="notice ok">'+ic("st-ok")+'<div class="n-body"><div class="n-title">All 5 tools found</div>Versions are recorded in every run report.</div></div>';
+  h+='<section class="card">'+TOOLS.map(function(t){var miss=missing&&t.k==="verapdf";
+    return '<div class="tool"><span class="st" style="color:'+(miss?'var(--bl-alert)':'var(--bl-ok-ink)')+'">'+ic(miss?"st-failed":"st-ok")+'</span><div><div class="t-name">'+t.n+'</div><div class="t-role">'+t.role+'</div></div><div class="t-ver">'+(miss?'<span class="badge failed">'+ic("st-failed")+'Missing</span>':esc(t.v)+' <span class="chip" style="margin-left:6px">'+t.src+'</span>')+'</div>'+(miss?'<div class="t-help help-box"><b>Affects:</b> PDF/A validation (V-PDFA). New PDFs are written but marked Needs review. <b>Fix:</b> use the complete Baleen download, or set <span class="code">BALEEN_VERAPDF</span> to a veraPDF install and restart.</div>':'<div class="t-path">'+esc(t.p)+'</div>')+'</div>';}).join("")+'</section>';
+  return h;
+}
+function kvSwitch(label,help,key){return '<div class="kvrow"><div><div class="label">'+label+'</div><div class="help">'+help+'</div></div><button class="switch" role="switch" aria-label="'+label+'" aria-checked="'+S[key]+'" data-act="pref" data-key="'+key+'"></button></div>';}
+function meter(B){var h='<span class="meter" role="img" aria-label="'+B+' of '+MACHINE.cores+' cores">';for(var i=0;i<MACHINE.cores;i++)h+='<i'+(i<B?' class="on"':'')+'></i>';return h+'</span>';}
+function stepper(key,val,min,max,label){return '<span class="stepper" role="group" aria-label="'+label+'"><button data-act="resstep" data-key="'+key+'" data-d="-1" aria-label="Fewer"'+(val<=min?" disabled":"")+'>−</button><output aria-live="polite">'+val+'</output><button data-act="resstep" data-key="'+key+'" data-d="1" aria-label="More"'+(val>=max?" disabled":"")+'>+</button></span>';}
+function resSeg(key,vals,cur){return '<div class="seg" role="group" aria-label="'+key+'">'+vals.map(function(x){return '<button data-act="res" data-key="'+key+'" data-val="'+x[0]+'" aria-pressed="'+(cur===x[0])+'">'+x[1]+'</button>';}).join("")+'</div>';}
+function planBox(){var p=resolve(S.res);
+  return '<div class="plan" aria-live="polite"><div class="plan-title">'+ic("info")+'With these settings, Baleen runs at most</div><ul>'+
+   '<li>'+ic("cat-image")+'<span><b>'+p.files+'</b> file tasks at once: copying, checking, images</span></li>'+
+   '<li>'+ic("cat-document")+'<span><b>'+p.K+'</b> document converter'+(p.K>1?'s':'')+' (LibreOffice)</span></li>'+
+   '<li>'+ic("cat-video")+'<span><b>'+p.F+'</b> video encoder'+(p.F>1?'s':'')+', '+(p.F>1?'each ':'')+'using <b>'+p.threads+'</b> core'+(p.threads>1?'s':'')+'</span></li>'+
+   '<li>'+ic("cat-pdf")+'<span>PDF/A checks in batches, one batch at a time</span></li>'+
+   '<li>'+ic("drive")+'<span><b>'+p.T+'</b> file transfers to and from '+(MACHINE.network?'network folders':'disks')+'</span></li>'+
+   '<li>'+ic("layers")+'<span>Up to <b>'+p.M+' GB</b> of memory reserved for converters</span></li>'+
+   '</ul><div class="foot">Together these never use more than '+p.B+' of '+MACHINE.cores+' cores. Changes apply right away, also to a run in progress (new tasks only).</div></div>';}
+function resourceCard(){
+  var r=S.res,p=resolve(r);
+  var h='<section class="card" aria-labelledby="resT"><div class="card-head"><span class="card-title" id="resT">Resource use</span><span class="card-sub">How much of this computer Baleen may use</span><div class="right"><button class="btn ghost sm" data-act="resreset"'+(JSON.stringify(r)===JSON.stringify(RES_DEFAULTS)?" disabled":"")+'>'+ic("reset")+'Defaults</button></div></div>';
+  h+='<div class="facts"><span class="chip">'+ic("settings")+MACHINE.cores+' processor cores</span><span class="chip">'+ic("layers")+MACHINE.ramGb+' GB memory</span><span class="chip">'+ic("drive")+'Work folder: '+MACHINE.workFreeGb+' GB free</span>'+(MACHINE.network?'<span class="chip">'+ic("folder")+'Folders on a network drive</span>':'')+'</div>';
+  h+='<div class="opt-group"><div class="opt-group-title">Speed</div>';
+  h+='<div class="opt"><div><div class="label">Processor use</div><div class="help">'+PROC_HELP[r.processor]+'</div></div><div>'+resSeg("processor",[["gentle","Gentle"],["balanced","Balanced"],["maximum","Maximum"],["custom","Custom"]],r.processor)+'</div><div class="sub">'+meter(p.B)+'<span class="meter-lbl">Uses '+p.B+' of '+MACHINE.cores+' cores</span>'+(r.processor==="custom"?stepper("cores",r.cores,1,MACHINE.cores,"Cores"):'')+'</div></div>';
+  h+='<div class="opt"><div><div class="label">Memory for converters</div><div class="help">Auto uses a quarter of this computer\'s memory. Each document converter reserves about 1 GB, so more memory lets more documents convert at once.</div></div><div>'+resSeg("memory",[["auto","Auto · "+resolve(Object.assign({},r,{memory:"auto"})).M+" GB"],["custom","Custom"]],r.memory)+'</div>'+(r.memory==="custom"?'<div class="sub"><input type="range" class="range" min="1" max="'+(MACHINE.ramGb-2)+'" step="1" value="'+r.memGb+'" data-res-range="memGb" aria-label="Memory for converters" aria-valuetext="'+r.memGb+' GB"><span class="meter-lbl">'+r.memGb+' GB</span><span class="help">of '+MACHINE.ramGb+' GB</span></div>':'')+'</div>';
+  h+='<div class="opt"><div><div class="label">File transfers at once</div><div class="help">How many files Baleen reads or writes at the same time. Lower this if colleagues notice the shared drive slowing down.</div></div><div>'+resSeg("transfers",[["auto","Auto · "+(MACHINE.network?4:8)],["custom","Custom"]],r.transfers)+'</div><div class="sub">'+(r.transfers==="custom"?stepper("transfersN",r.transfersN,1,16,"File transfers"):'<span class="help">Auto is 4 because your folders are on a network drive (8 for local disks).</span>')+'</div></div>';
+  h+='</div><div class="opt-group"><div class="opt-group-title">While running</div>';
+  h+='<div class="opt"><div><div class="label">Run at lower priority</div><div class="help">Your other apps get the processor first. Baleen still uses idle cores, so it only slows down while you\'re busy.</div></div><button class="switch" role="switch" aria-label="Run at lower priority" aria-checked="'+r.lowPri+'" data-act="restoggle" data-key="lowPri"></button></div>';
+  h+='<div class="opt"><div><div class="label">Keep this computer awake</div><div class="help">Prevents sleep while a run is in progress. Closing a laptop\'s lid can still put it to sleep.</div></div><button class="switch" role="switch" aria-label="Keep this computer awake" aria-checked="'+r.awake+'" data-act="restoggle" data-key="awake"></button></div>';
+  h+='</div><div class="opt-group"><div class="opt-group-title">Work folder</div><div class="field" style="margin-top:8px"><div class="help">Where Baleen converts files before copying them to the output. A fast local disk is best. Needs about twice the size of the largest file in progress, plus 1 GB.</div><div class="path"><div class="input-wrap">'+ic("folder")+'<input class="input" value="'+esc(r.workDir)+'" aria-label="Work folder" spellcheck="false"></div><button class="btn secondary" data-act="toast" data-msg="Opens the folder dialog">'+ic("folder-open")+'Browse…</button></div><div class="msg ok">'+ic("st-ok")+MACHINE.workFreeGb+' GB free · local disk</div></div></div>';
+  h+=planBox();
+  return h+'</section>';
+}
+function viewSettings(){
+  var h=head("System","Settings","Preferences for this Baleen folder. Workflow options live on each workflow's page.");
+  h+=resourceCard();
+  h+='<section class="card"><div class="card-head"><span class="card-title">When a run finishes</span></div>'+kvSwitch("Show a desktop notification","Your browser asks for permission the first time.","notify")+kvSwitch("Show progress in the browser tab","For example “48% · Convert · Baleen”.","tabTitle")+'</section>';
+  h+='<section class="card"><div class="card-head"><span class="card-title">Data</span></div><div class="kvrow"><div><div class="label">Baleen folder</div><div class="help mono" style="font-size:12.5px">/Users/mia/Applications/Baleen-1.0.0-mac-arm64</div></div><button class="btn secondary sm" data-act="toast" data-msg="Opened in Finder">'+ic("external")+'Open</button></div><div class="kvrow"><div><div class="label">Logs</div><div class="help">data/logs/baleen.log · stays on this computer</div></div><button class="btn secondary sm" data-act="toast" data-msg="Opened in Finder">'+ic("external")+'Open logs folder</button></div><div class="kvrow"><div><div class="label">Reset workflow options</div><div class="help">Restores every option to its default. Folders are kept.</div></div><button class="btn secondary sm" data-act="toast" data-msg="Options reset">'+ic("reset")+'Reset…</button></div></section>';
+  h+='<section class="card flat"><div class="card-head"><span class="card-title">Advanced</span><span class="card-sub">Read-only · set by environment variables at launch</span></div><dl class="kv" style="grid-template-columns:200px 1fr"><dt>Address</dt><dd class="mono">http://127.0.0.1:8765</dd><dt>Tool overrides</dt><dd>None</dd><dt>Timeouts</dt><dd>Document batch 60 s + 30 s per file · single document 300 s · PDF/A batch 300 s · Media ≥ 600 s</dd></dl></section>';
+  return h;
+}
+function viewAbout(){
+  var h=head("System","About","");
+  h+='<section class="card"><div class="about-hero"><div><div class="wordmark" style="font-size:34px">Baleen</div><div class="muted">Version 1.0.0 · Apache-2.0</div></div></div><p style="max-width:62ch">Baleen turns legacy archive files into archival formats and proves every one of them is sound. It runs entirely on this computer and never changes your source folder.</p><div class="ww-endorse"><span>by</span><img src="'+WW_LOGO+'" alt="Walking Whale"><span>Walking Whale Co., Ltd. · Taipei</span></div><div style="display:flex;gap:8px;margin-top:18px;flex-wrap:wrap"><a class="btn secondary sm" href="#" data-act="toast" data-msg="Opens github.com/…/walking-whale-baleen">'+ic("external")+'Project on GitHub</a><a class="btn secondary sm" href="#" data-act="toast" data-msg="Opens docs/baleen-spec.html">'+ic("cat-document")+'Specification</a><a class="btn ghost sm" href="#" data-act="toast" data-msg="Opens the issue tracker">Report a problem</a></div><p class="help" style="margin-top:10px">When reporting a problem, never attach archive files. Describe them instead.</p></section>';
+  h+='<section class="card"><div class="card-head"><span class="card-title">Third-party software</span><span class="card-sub">Shipped unmodified · full texts in THIRD_PARTY_NOTICES</span></div><div class="notices">'+[["LibreOffice 26.8.1","MPL-2.0"],["FFmpeg 7.1.1 (GPL build)","GPL-2.0-or-later"],["Eclipse Temurin 21.0.8","GPL-2.0 + CE"],["veraPDF 1.28.2","GPL-3.0+ / MPL-2.0"],["CPython 3.12","PSF-2.0"],["Pillow","MIT-CMU"],["pypdf","BSD-3-Clause"],["Starlette · uvicorn","BSD-3-Clause"],["Jinja2","BSD-3-Clause"],["htmx 2","0BSD"],["Lucide icons","ISC"],["Inter · IBM Plex Mono · Cormorant Garamond","OFL-1.1"]].map(function(x){return '<div><b>'+x[0]+'</b><br><span class="faint">'+x[1]+'</span></div>';}).join("")+'</div></section>';
+  return h;
+}
+function viewGallery(){
+  var h='<div class="gal">'+head("Reference","Components","Every component in its states, built from the same CSS the app uses.");
+  h+='<h2>Colour tokens</h2><div class="row">'+[["--ww-abyss","Abyss · text, primary"],["--ww-tidal","Tidal · secondary text, focus"],["--ww-biolum","Biolum · signal, OK"],["--ww-bone","Bone · lines, review"],["--ww-sediment","Sediment · review tint"],["--ww-surface-blue","Surface blue · info"],["--ww-wash","Mist · rail, headers"],["--ww-bg","Pearl · page"],["--bl-alert","Alert · FAILED only"],["--bl-ok-ink","OK ink · icons"],["--bl-review-ink","Review ink · icons"]].map(function(x){return '<div class="swatch"><i style="background:var('+x[0]+')"></i><div><code>'+x[0]+'</code><br>'+x[1]+'</div></div>';}).join("")+'</div>';
+  h+='<h2>Type</h2><div class="card"><div class="page-title" style="font-size:38px">Convert</div><div class="faint mono" style="font-size:11px;margin:4px 0 14px">Cormorant Garamond 600 · 38/1.02 · page titles &amp; wordmark only</div><div style="font-weight:600;font-size:16px">Card title · Inter 600 16</div><div style="font-size:14px">Body text · Inter 400 14/1.5 · the default for everything</div><div class="help">Help text · Inter 400 13 · Tidal</div><div class="mono" style="font-size:13px;margin-top:6px">/Volumes/Archive/04 Events · IBM Plex Mono 13 · paths, hashes, codes</div><div class="kicker" style="margin-top:8px">Kicker · Plex Mono 11 uppercase</div></div>';
+  h+='<h2>Buttons</h2><div class="row"><button class="btn primary">Start converting'+ic("arrow-r")+'</button><button class="btn secondary">'+ic("folder-open")+'Browse…</button><button class="btn ghost">'+ic("reset")+'Reset</button><button class="btn primary" disabled>Disabled</button><button class="btn secondary sm">'+ic("download")+'Small</button><button class="btn ghost icon" aria-label="More">'+ic("more")+'</button></div>';
+  h+='<h2>Folder field</h2><div class="card">'+folderField("g1","Source folder","Empty state.","",null)+folderField("g2","Source folder","Valid.",SRC_SAMPLE,{ok:"Readable · read-only for Baleen"})+folderField("g3","Output folder","Error.",SRC_SAMPLE+"/out",{err:"This folder is inside the source folder. Choose a folder outside it."})+'</div>';
+  h+='<h2>Option controls</h2><div class="card"><div class="opt"><div><div class="label">Segmented</div><div class="help">2–4 short choices</div></div><div class="seg"><button aria-pressed="false">1b</button><button aria-pressed="true">2b</button><button aria-pressed="false">3b</button></div></div><div class="opt"><div><div class="label">Switch</div><div class="help">On / off</div></div><button class="switch" role="switch" aria-checked="true" aria-label="Example"></button></div><div class="opt"><div><div class="label">Select</div><div class="help">5+ choices or long labels</div></div><select class="select"><option>Auto (flag for review)</option></select></div></div>';
+  h+='<h2>Status badges</h2><div class="row">'+["ok","review","failed","unsupported","ignored","skipped","running"].map(function(s){return badge(s);}).join("")+'</div><div class="row" style="margin-top:10px"><span class="code">ENCODING_UNCERTAIN</span><span class="code">VERIFY_FAILED</span><span class="chip">PDF/A-2b</span></div>';
+  h+='<h2>Stat tiles</h2>'+tiles({ok:1659,review:5,failed:1,unsupported:2,ignored:3,skipped:0},false);
+  h+='<h2>Core meter &amp; stepper</h2><div class="card"><div class="row">'+meter(4)+'<span class="meter-lbl">Uses 4 of 8 cores</span>'+stepper("g",6,1,8,"Example")+'<input type="range" class="range" min="1" max="14" value="6" aria-label="Example"></div></div>';
+  h+='<h2>Plan summary</h2>'+planBox();
+  h+='<h2>Progress</h2><div class="card" style="display:grid;gap:14px"><div class="progress"><i style="width:48%"></i></div><div class="progress indet"><i></i></div></div>';
+  h+='<h2>Notices</h2><div class="notice info">'+ic("info")+'<div class="n-body"><div class="n-title">Info</div>Neutral information.</div></div><div class="notice ok">'+ic("st-ok")+'<div class="n-body"><div class="n-title">Success</div>Something went right.</div></div><div class="notice warn">'+ic("st-review")+'<div class="n-body"><div class="n-title">Warning</div>Needs attention, nothing broken.</div></div><div class="notice alert">'+ic("st-failed")+'<div class="n-body"><div class="n-title">Alert</div>Something failed.</div></div>';
+  h+='<h2>Table rows</h2>'+table({wf:"convert",id:"x"}).replace('<tbody>','<tbody>');
+  h+='<h2>Empty state</h2><div class="card"><div class="empty"><div class="empty-ic">'+ic("runs")+'</div><h3>No runs yet</h3><p>Runs appear here when you start Convert or Check.</p><button class="btn primary">Start with Convert'+ic("arrow-r")+'</button></div></div>';
+  h+='<h2>Wordmark (interim, until the logo is designed)</h2><div class="row" style="gap:28px;align-items:baseline"><span class="wordmark">Baleen</span><span class="wordmark" style="font-size:34px">Baleen</span><span class="wordmark" style="font-size:24px">B</span><span class="faint" style="font-size:12px">Rail · About · collapsed rail</span></div>';
+  return h+'</div>';
+}
+function viewFull(kind){
+  if(kind==="stopped")return '<div class="full"><div class="box"><span class="wordmark">Baleen</span><h1>Baleen has stopped</h1><p>You can close this tab.</p><p>To start again, double-click <b>Start Baleen</b> in the Baleen folder.</p></div></div>';
+  return '<div class="full"><div class="box"><span class="wordmark">Baleen</span><h1>Open Baleen from its launcher</h1><p>For your safety, Baleen only answers the browser window it opened itself.</p><ol><li>Open the Baleen folder.</li><li>Double-click <b>Start Baleen</b>.</li><li>Use the browser tab that opens. If it doesn\'t, copy the address shown in the Baleen window.</li></ol></div></div>';
+}
+
+/* ----------------------------------------------------------------- render */
+function render(){
+  var full=S.route==="stopped"||S.route==="forbidden";
+  $("app").style.display=full?"none":"";
+  $("fullSlot").innerHTML=full?viewFull(S.route):"";
+  if(full)return;
+  applyCollapse(); renderRail();
+  $("bannerSlot").innerHTML=S.lost?'<div class="banner" role="alert">'+ic("st-failed")+'<span><b>Lost connection to Baleen.</b> Check that the Start Baleen window is still open.</span><button class="btn secondary sm" data-act="reconnect">Try again</button></div>':'';
+  var v="",bar="";
+  switch(S.route){
+    case "convert":v=viewConvert();bar=convertBar();break;
+    case "check":v=viewCheck();bar=checkBar();break;
+    case "run":v=viewRun();break;
+    case "runs":v=viewRuns();break;
+    case "tools":v=viewTools();break;
+    case "settings":v=viewSettings();break;
+    case "about":v=viewAbout();break;
+    case "components":v=viewGallery();break;
+  }
+  var wide=S.route==="run"||S.route==="runs"||S.route==="components";
+  $("view").innerHTML='<div class="page'+(wide?" wide":"")+'">'+v+'</div>';
+  $("actionSlot").innerHTML=bar;
+  renderInspector();
+  var t=jobRunning()&&S.tabTitle?Math.round(S.job.done/S.job.total*100)+"% · "+(S.job.wf==="convert"?"Convert":"Check")+" · Baleen":({convert:"Convert",check:"Check",run:"Run",runs:"Runs",tools:"Tools",settings:"Settings",about:"About",components:"Components"}[S.route]||"")+" · Baleen";
+  document.title=t;
+}
+function go(route,id,keepSel){S.route=route;if(id)S.runId=id;if(!keepSel){S.sel=null;S.filter=null;S.q="";}S.drawer=false;$("scroll").scrollTop=0;render();}
+
+/* ------------------------------------------------------------- job sim */
+var NOW=["2003-11-01 Jazz night/DSCF0128.AVI","2003-12-06 Sound art/score.doc","2004-04-11 Band showcase/IMG_0412.JPG","2004-05-08 Guqin/0508 profile.eml","2003-12-28 Night market/clip0061.AVI","2004-01 Mixed night/talk/track 1.wma"];
+var ACT=["transcoding","PDF/A export","verifying JPEG","e-mail → PDF/A","transcoding","AAC encode"];
+function newJob(wf,frozenAt){
+  var total=wf==="convert"?1670:812;
+  S.job={id:wf==="convert"?"20261005-151744":"20261005-152003",wf:wf,src:wf==="convert"?S.src||SRC_SAMPLE:S.check||CHECK_SAMPLE,out:wf==="convert"?S.out||OUT_SAMPLE:"",total:total,done:0,status:"running",fresh:true,
+    counts:{ok:0,review:0,failed:0,unsupported:0,ignored:0,skipped:0},cur:NOW[0],curAct:ACT[0],elapsed:"00:00",recent:[],inflight:[],t:0};
+  if(frozenAt)advance(frozenAt);
+}
+function advance(to){
+  var j=S.job; var final={ok:j.wf==="convert"?1659:809,review:j.wf==="convert"?5:3,failed:j.wf==="convert"?1:0,unsupported:j.wf==="convert"?2:0,ignored:j.wf==="convert"?3:0,skipped:0};
+  j.done=Math.min(j.total,to); var f=j.done/j.total;
+  ["review","failed","unsupported","ignored"].forEach(function(k){j.counts[k]=Math.floor(final[k]*Math.min(1,f*1.15));});
+  j.counts.ok=j.done-j.counts.review-j.counts.failed-j.counts.unsupported-j.counts.ignored;
+  var i=Math.floor(j.done/37)%NOW.length; j.cur=NOW[i]; j.curAct=j.wf==="convert"?ACT[i]:"checking";
+  var secs=Math.round(f*1122); j.elapsed=("0"+Math.floor(secs/60)).slice(-2)+":"+("0"+secs%60).slice(-2);
+  var LANES=[{icon:"cat-image",act:"verifying JPEG"},{icon:"cat-image",act:"hashing"},{icon:"cat-document",act:"PDF/A export"},{icon:"cat-video",act:"transcoding"},{icon:"cat-pdf",act:"PDF/A check"},{icon:"cat-email",act:"e-mail → PDF/A"},{icon:"cat-image",act:"publishing"}];
+  var nInf=6, base=Math.floor(j.done/23);
+  j.inflight=[]; if(j.done<j.total){for(var q=0;q<nInf;q++){var L=LANES[(base+q)%LANES.length], src=ROWS[(base*3+q*5)%ROWS.length].src; if(L.icon==="cat-video")src=NOW[4]; if(L.icon==="cat-document")src=NOW[1]; if(L.icon==="cat-email")src=NOW[3]; j.inflight.push({icon:L.icon,act:L.act,src:src});}}
+  j.recent=ROWS.filter(function(x){return x.status==="ok";}).slice(0,6).map(function(x,k){return ROWS[(Math.floor(j.done/11)+k*3)%ROWS.length];}).slice(0,6);
+  if(j.done>=j.total){j.status="done";j.counts=final;}
+}
+function startJob(wf){
+  newJob(wf); go("run",S.job.id); say("Run started");
+  clearInterval(timer);
+  timer=setInterval(function(){
+    if(!S.job||S.job.status!=="running"){clearInterval(timer);return;}
+    advance(S.job.done+Math.ceil(S.job.total/90));
+    if(S.job.status==="done"){clearInterval(timer);toast("Run finished · "+(S.job.counts.failed+S.job.counts.review+S.job.counts.unsupported)+" files to look at");say("Run finished");}
+    if(S.route==="run"&&S.runId===S.job.id){render();}else{renderRail();}
+  },140);
+}
+
+/* -------------------------------------------------------------- modals */
+function openModal(html){$("modal").innerHTML=html;$("overlay").classList.add("open");setTimeout(function(){var b=$("modal").querySelector("[data-autofocus]")||$("modal").querySelector(".btn.primary");if(b)b.focus();},30);}
+function closeModal(){$("overlay").classList.remove("open");}
+function confirmHtml(){
+  return '<h2 id="mTitle">Start converting?</h2><p>Baleen will convert and verify every file, then write a report.</p><dl class="route"><dt>From</dt><dd>'+esc(S.src||SRC_SAMPLE)+'</dd><dt>To</dt><dd>'+esc(S.out||OUT_SAMPLE)+'</dd><dt>Files</dt><dd style="font-family:var(--font-ui)">1,670 · 63 to convert · 1,602 to copy</dd></dl>'+settingsChips()+'<div class="safe">'+ic("shield")+'Your source folder will not be changed.</div><div class="m-foot"><button class="btn secondary" data-act="closemodal">Cancel</button><button class="btn primary" data-act="start">Start converting'+ic("arrow-r")+'</button></div>';
+}
+function cancelHtml(){return '<h2 id="mTitle">Cancel this run?</h2><p>Baleen starts nothing new and finishes the files in progress, then stops. Everything finished so far stays saved and verified. Start the same run again later to finish; completed files are skipped.</p><div class="m-foot"><button class="btn secondary" data-act="closemodal" data-autofocus>Keep running</button><button class="btn primary" data-act="docancel">Cancel run</button></div>';}
+function quitHtml(){return '<h2 id="mTitle">Quit Baleen?</h2>'+(jobRunning()?'<div class="notice warn" style="margin:12px 0 0">'+ic("st-review")+'<div class="n-body">A run is in progress. Baleen finishes the files in progress, saves the report, then quits.</div></div>':'<p>Baleen stops and this tab can be closed. Your settings and reports are kept.</p>')+'<div class="m-foot"><button class="btn secondary" data-act="closemodal" data-autofocus>Stay</button><button class="btn primary" data-act="doquit">'+ic("quit")+'Quit</button></div>';}
+
+/* --------------------------------------------------------------- events */
+document.addEventListener("click",function(e){
+  var t=e.target.closest("[data-act]"); if(!t)return;
+  var a=t.getAttribute("data-act");
+  if(t.tagName==="A"||a==="go")e.preventDefault();
+  switch(a){
+    case "go":go(t.getAttribute("data-to"),t.getAttribute("data-id"));break;
+    case "collapse":S.userCollapsed=!isCollapsed();render();break;
+    case "drawer-open":S.drawer=true;applyCollapse();break;
+    case "drawer-close":S.drawer=false;applyCollapse();break;
+    case "browse":(function(){var f=t.getAttribute("data-for");setTimeout(function(){if(f==="src"){S.src=SRC_SAMPLE;}else if(f==="out"){S.out=OUT_SAMPLE;S.outInside=false;}else if(f==="check"){S.check=CHECK_SAMPLE;}if(S.preview==="done")S.preview="stale";render();},250);})();break;
+    case "opt":(function(){var k=t.getAttribute("data-key"),v=t.getAttribute("data-val");S.opts[k]=v==="true"?true:v==="false"?false:v;if(S.preview==="done")S.preview="stale";render();})();break;
+    case "reset":S.opts=JSON.parse(JSON.stringify(DEFAULTS));if(S.preview==="done")S.preview="stale";render();break;
+    case "preview":S.preview="running";render();setTimeout(function(){S.preview="done";render();say("Preview ready: 1,670 files, 63 to convert");},900);break;
+    case "confirm":openModal(confirmHtml());break;
+    case "start":closeModal();startJob("convert");break;
+    case "startcheck":startJob("check");break;
+    case "cancel":openModal(cancelHtml());break;
+    case "docancel":closeModal();clearInterval(timer);S.job.status="cancelled";S.job.counts.skipped=S.job.total-S.job.done;render();break;
+    case "closemodal":closeModal();break;
+    case "quit":openModal(quitHtml());break;
+    case "doquit":closeModal();clearInterval(timer);go("stopped");break;
+    case "filter":(function(){var s=t.getAttribute("data-st");S.filter=S.filter===s?null:s;render();})();break;
+    case "row":S.sel=t.getAttribute("data-key");render();var insp=$("inspector");break;
+    case "closeinsp":closeInsp();break;
+    case "pref":(function(){var k=t.getAttribute("data-key");S[k]=!S[k];render();if(k==="notify"&&S[k])toast("The browser will ask for permission");})();break;
+    case "res":(function(){var k=t.getAttribute("data-key"),v=t.getAttribute("data-val");S.res[k]=v;if(k==="processor"&&v==="custom")S.res.cores=resolve(Object.assign({},S.res,{processor:"balanced"})).B;render();})();break;
+    case "resstep":(function(){var k=t.getAttribute("data-key"),d=+t.getAttribute("data-d"),max=k==="cores"?MACHINE.cores:16;S.res[k]=Math.min(max,Math.max(1,S.res[k]+d));render();})();break;
+    case "restoggle":(function(){var k=t.getAttribute("data-key");S.res[k]=!S.res[k];render();})();break;
+    case "resreset":S.res=JSON.parse(JSON.stringify(RES_DEFAULTS));render();toast("Resource use reset to defaults");break;
+    case "reconnect":S.lost=false;render();toast("Reconnected");break;
+    case "toast":toast(t.getAttribute("data-msg"));break;
+  }
+});
+function closeInsp(){var key=S.sel;S.sel=null;render();if(key){var r=document.querySelector('tr[data-key="'+CSS.escape(key)+'"]');if(r)r.focus();}}
+document.addEventListener("input",function(e){
+  var b=e.target.getAttribute("data-bind");
+  if(b==="src"||b==="out"||b==="check"){S[b]=e.target.value;if(b==="out")S.outInside=!!(S.src&&S.out.indexOf(S.src+"/")===0);if(S.preview==="done")S.preview="stale";}
+  var rr=e.target.getAttribute("data-res-range"); if(rr){S.res[rr]=+e.target.value;var keep=rr;render();var el=document.querySelector('[data-res-range="'+keep+'"]');if(el)el.focus();return;}
+  if(b==="q"){S.q=e.target.value;var pos=e.target.selectionStart;render();var q=document.querySelector('[data-bind="q"]');if(q){q.focus();q.setSelectionRange(pos,pos);}}
+});
+document.addEventListener("change",function(e){
+  if(e.target.hasAttribute("data-runres")){S.res.processor=e.target.value;render();toast("Applies to new tasks right away");return;}
+  var k=e.target.getAttribute("data-opt"); if(k){S.opts[k]=e.target.value;if(S.preview==="done")S.preview="stale";render();}
+  var b=e.target.getAttribute("data-bind"); if(b==="src"||b==="out"||b==="check")render();
+});
+document.addEventListener("keydown",function(e){
+  if(e.key==="Escape"){if($("overlay").classList.contains("open")){closeModal();return;}if(S.sel){closeInsp();return;}if(S.drawer){S.drawer=false;applyCollapse();}}
+  var tr=e.target.closest&&e.target.closest("tr[data-act]");
+  if(tr&&(e.key==="ArrowDown"||e.key==="ArrowUp")){e.preventDefault();var n=e.key==="ArrowDown"?tr.nextElementSibling:tr.previousElementSibling;if(n){n.focus();if(S.sel&&n.getAttribute("data-key")){S.sel=n.getAttribute("data-key");renderInspector();document.querySelectorAll("tr.sel").forEach(function(x){x.classList.remove("sel");});n.classList.add("sel");}}}
+  if(tr&&e.key==="Enter"){tr.click();}
+});
+window.addEventListener("resize",function(){applyCollapse();renderRail();});
+
+/* --------------------------------------------------------- demo states */
+function demo(name){
+  clearInterval(timer); if(name.indexOf("settings")!==0)S.res=JSON.parse(JSON.stringify(RES_DEFAULTS)); closeModal(); S.lost=false; S.toolsMissing=false; S.runsEmpty=false; S.sel=null; S.filter=null; S.q="";
+  var filled=function(){S.src=SRC_SAMPLE;S.out=OUT_SAMPLE;S.outInside=false;};
+  switch(name){
+    case "convert-empty":S.src="";S.out="";S.preview="none";S.job=null;go("convert");break;
+    case "convert-error":S.src=SRC_SAMPLE;S.out=SRC_SAMPLE+"/converted";S.outInside=true;S.preview="none";S.job=null;go("convert");break;
+    case "convert-ready":filled();S.preview="done";S.job=null;go("convert");break;
+    case "convert-stale":filled();S.preview="stale";S.opts.pdfa_level="1b";S.job=null;go("convert");break;
+    case "convert-tools":filled();S.preview="none";S.toolsMissing=true;S.job=null;go("convert");break;
+    case "confirm":filled();S.preview="done";S.job=null;go("convert");openModal(confirmHtml());break;
+    case "run-running":filled();newJob("convert",812);go("run",S.job.id);break;
+    case "run-done":filled();newJob("convert",1670);go("run",S.job.id);break;
+    case "run-filtered":filled();newJob("convert",1670);go("run",S.job.id);S.filter="review";render();break;
+    case "run-inspector":filled();newJob("convert",1670);S.runId=S.job.id;S.route="run";S.sel="convert:2004-07 Poetry evening/notes.txt";render();break;
+    case "run-inspector-ok":filled();newJob("convert",1670);S.runId=S.job.id;S.route="run";S.sel="convert:2003-11-01 Jazz night/DSCF0128.AVI";render();break;
+    case "run-cancelled":S.job=null;go("run","20261004-162210");break;
+    case "run-stopped":filled();newJob("convert",812);S.job.status="stopped";go("run",S.job.id);break;
+    case "check":S.check=CHECK_SAMPLE;S.job=null;go("check");break;
+    case "check-done":S.check=CHECK_SAMPLE;S.job=null;go("run","20261005-110245");break;
+    case "runs":S.job=null;go("runs");break;
+    case "runs-empty":S.job=null;S.runsEmpty=true;go("runs");break;
+    case "tools":S.job=null;go("tools");break;
+    case "tools-missing":S.job=null;S.toolsMissing=true;go("tools");break;
+    case "settings":S.job=null;S.res=JSON.parse(JSON.stringify(RES_DEFAULTS));go("settings");break;
+    case "settings-custom":S.job=null;S.res=JSON.parse(JSON.stringify(RES_DEFAULTS));S.res.processor="custom";S.res.cores=6;S.res.memory="custom";S.res.memGb=6;S.res.transfers="custom";S.res.transfersN=2;go("settings");break;
+    case "about":S.job=null;go("about");break;
+    case "quit":S.job=null;go("convert");openModal(quitHtml());break;
+    case "stopped":S.job=null;go("stopped");break;
+    case "lost":filled();newJob("convert",812);S.lost=true;go("run",S.job.id);break;
+    case "forbidden":go("forbidden");break;
+    case "components":S.job=null;go("components");break;
+    case "collapsed":filled();S.preview="done";S.job=null;S.userCollapsed=true;go("convert");break;
+    case "live":filled();S.preview="done";S.job=null;S.userCollapsed=null;go("convert");break;
+  }
+}
+window.baleenProto={demo:demo,state:S};
+window.addEventListener("message",function(e){if(e.data&&typeof e.data.baleenDemo==="string")demo(e.data.baleenDemo);});
+var hashDemo=(location.hash.match(/demo=([\w-]+)/)||[])[1];
+var start=hashDemo||((window.name&&window.name.indexOf("demo:")===0)?window.name.slice(5):"convert-empty");
+demo(start);
+})();
+</script>
+</body>
+</html>
