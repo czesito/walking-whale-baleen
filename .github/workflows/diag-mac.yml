@@ -30,10 +30,8 @@ jobs:
       - name: Fonts on this runner
         run: |
           sw_vers
-          system_profiler SPFontsDataType | grep -iE "pingfang|hiragino|heiti|songti|arial unicode" | sort | uniq -c | head -60
-          system_profiler -json SPFontsDataType > "$RUNNER_TEMP/fonts.json"
-          "$HOST_PY" .github/diag/mac_text.py fonts "$RUNNER_TEMP/fonts.json"
-          ls -la /System/Library/Fonts | grep -iE "pingfang|hiragino|heiti|songti|stheiti" || true
+          # (round 1 printed system_profiler SPFontsDataType; round 2 only lists the files)
+          ls -la /System/Library/Fonts /System/Library/Fonts/Supplemental | grep -iE "pingfang|hiragino|heiti|songti|stheiti|arial unicode" || true
           ls /System/Library/AssetsV2 2>/dev/null | head -20 || true
           find /System/Library/AssetsV2 -iname "*pingfang*" 2>/dev/null | head -10 || true
 

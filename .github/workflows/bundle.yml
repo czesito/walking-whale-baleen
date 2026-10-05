@@ -5,6 +5,7 @@ name: bundle
 on:
   push:
     tags: ["v*"]
+    branches: [diag-mac]   # diag-mac branch only: re-run the mac smoke test with the font fix
   workflow_dispatch:
 
 permissions:
