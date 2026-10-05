@@ -600,11 +600,23 @@ def check_ansi_path(label: str, path: Path) -> None:
         pass
 
 
+def rmtree_force(path: Path) -> None:
+    """shutil.rmtree that also removes read-only files (git pack files on Windows)."""
+    import stat
+
+    def onexc(func, p, _exc):  # noqa: ANN001
+        os.chmod(p, stat.S_IWRITE)
+        func(p)
+
+    if path.exists():
+        shutil.rmtree(path, onexc=onexc)
+
+
 def prepare_work(work: Path) -> None:
     if work.exists():
         if not (work / WORK_MARKER).is_file() and any(work.iterdir()):
             raise BuildError(f"work folder {work} is not empty and was not created by this script")
-        shutil.rmtree(work)
+        rmtree_force(work)
     work.mkdir(parents=True)
     (work / WORK_MARKER).write_text("scratch space for scripts/build_bundle.py; safe to delete\n", encoding="utf-8")
 
