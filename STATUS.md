@@ -2,6 +2,12 @@
 
 Status of v0.1.0 against Specification v1.2 and Design v1.1, as of 2026-10-06.
 
+**Pre-release:** [v0.1.0](https://github.com/czesito/walking-whale-baleen/releases/tag/v0.1.0), tag on
+commit 47738f5. All gates passed before tagging: the full local suite; `test.yml` green on ubuntu, windows
+and macOS; `bundle.yml` green for win-x64 and mac-arm64. The release holds both zips (built by
+`bundle.yml` on the tag), `SHA256SUMS`, and the FFmpeg 9.0.2 / x264 r3223 / zlib 1.3.2 sources with
+their build script and configuration.
+
 ## Summary
 
 - **Everything is built.** The whole v1 pipeline works on real tools: images, documents, plain text,
