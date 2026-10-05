@@ -149,6 +149,28 @@ approved documents was edited. Accept, amend or reject them in a new spec revisi
    files that are really TypeScript sources fail probing (FAILED `SOURCE_UNREADABLE`). The spec lists
    `.ts` as video, so this is expected but worth a note in the docs.
 
+### DR-51 (proposed, images/text/HTML/PDF): from workstream (a)
+
+1. **HTML images.** Headless LibreOffice fetches linked images but never renders them. Baleen therefore
+   inlines relative images as `data:` URIs, read-only and only from inside the source root. Any other
+   reference becomes placeholder text (§6.4, R-05).
+2. **V-TEXT.** Characters are compared as an NFKC multiset, not a plain count. A count alone passes
+   mojibake, which was verified.
+3. **Encodings.** big5 → cp950 and shift_jis → cp932 (the Windows supersets); a UTF-32 BOM counts as
+   certain. HTML charset labels follow WHATWG. A declared charset that fails to decode falls back to the
+   §6.3 rules.
+4. **Check mode.** Text files are NOT_ARCHIVAL_FORMAT without applying the encoding rules.
+   MULTI_FRAME_IMAGE is reported in both modes.
+5. **Grey ICC.** Greyscale images with a GRAY ICC profile become greyscale JPEGs, so the kept ICC stays
+   valid.
+6. **veraPDF.** Every file is staged under an ASCII name in a batch folder (R-02). A veraPDF PARSE error
+   means fail. A job without a result means unavailable (VALIDATOR_ERROR). The batch timeout is
+   `verapdf_timeout_s` + 30 s per extra file.
+7. **Incomplete claims.** An incomplete PDF/A claim (part without conformance) is PDFA_INVALID at plan
+   time.
+8. **Known limit.** Pillow reads 16-bit colour PNGs as 8 bits per channel. Such files go to TIFF with a
+   message.
+
 ## Risks R-01…R-14: findings on this machine
 
 *(more pending)*
