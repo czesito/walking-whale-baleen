@@ -132,6 +132,23 @@ approved documents was edited. Accept, amend or reject them in a new spec revisi
 - **Why.** No system settings may be changed (the UTF-8 option is a system setting). Source names are
   never changed (§7.2), so staging a copy is the only safe route.
 
+### DR-50 (proposed, media): from workstream (c)
+
+1. **Timeout.** max(600 s, 10 × duration) is too short for grainy 720p sources at 1 thread (measured: 30 s
+   of grainy 720p took 390 s at `-threads 1`, so clips over about 46 s would TIMEOUT). Proposal: scale the
+   limit with pixel rate and thread count, e.g. max(600 s, 10 × duration × max(1, pixels/921,600) ×
+   max(1, 4/threads)).
+2. **Per-stream copy.** Copy decisions are made per stream. An AVCHD clip keeps its H.264 video and only
+   its AC-3 audio is re-encoded to AAC (action `convert`). This follows DR-12 ("avoid generation loss").
+3. **Interlacing and range.** Interlaced sources stay interlaced (§6.7). Transcodes are tagged TV range,
+   because FFmpeg 9 otherwise keeps MJPEG's full range.
+4. **V-AV-DUR.** When FFprobe only estimates the duration (e.g. a VBR MP3 without a Xing header, probed as
+   20.05 s for 6.03 s), the duration is taken from an exact packet count.
+5. **Check mode.** `.m4a` and audio-only `.mp4` are accepted whatever `audio_container` says.
+6. **No streams.** Playlist and still-image containers are UNSUPPORTED `NO_MEDIA_STREAMS`. MPEG-TS `.ts`
+   files that are really TypeScript sources fail probing (FAILED `SOURCE_UNREADABLE`). The spec lists
+   `.ts` as video, so this is expected but worth a note in the docs.
+
 ## Risks R-01…R-14: findings on this machine
 
 *(more pending)*
