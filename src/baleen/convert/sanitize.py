@@ -15,9 +15,16 @@ from __future__ import annotations
 
 import html
 import re
+from collections.abc import Callable
 from html.parser import HTMLParser
 
-REMOTE = re.compile(r"^\s*(?:https?:|ftp:|//)", re.I)
+# Remote = fetched over a network: http(s), ftp, protocol-relative //, UNC \\host\share,
+# and file://host/... with a host other than localhost (SMB on Windows).
+REMOTE = re.compile(
+    r"^\s*(?:https?:|ftp:|//|\\\\|file:(?://|\\\\)(?!localhost[/\\]|/|\\)[^/\\\s]+)", re.I
+)
+# Absolute local references: file:..., C:\ or C:/, and root paths.
+LOCAL_ABS = re.compile(r"^\s*(?:file:|[a-z]:[\\/]|/)", re.I)
 CSS_URL = re.compile(r"url\(\s*(['\"]?)(.*?)\1\s*\)", re.I | re.S)
 CSS_IMPORT = re.compile(r"@import\s+(?:url\()?\s*(['\"]?)([^'\")\s;]+)\1\s*\)?[^;]*;?", re.I)
 
@@ -34,18 +41,30 @@ def placeholder(url: str) -> str:
 
 
 def is_remote(url: str | None) -> bool:
+    """True for URLs that would be fetched over a network (see REMOTE)."""
     return bool(url) and bool(REMOTE.match(url or ""))
 
 
-def _clean_css(css: str, notes: list[str]) -> str:
+def blocker(allow_local: bool) -> Callable[[str | None], bool]:
+    """Predicate for references to neutralise: remote ones always; absolute local ones when not allowed."""
+
+    def blocked(url: str | None) -> bool:
+        if is_remote(url):
+            return True
+        return not allow_local and bool(url) and bool(LOCAL_ABS.match(url or ""))
+
+    return blocked
+
+
+def _clean_css(css: str, notes: list[str], blocked: Callable[[str | None], bool] = is_remote) -> str:
     def imp(m: re.Match[str]) -> str:
-        if is_remote(m.group(2)):
+        if blocked(m.group(2)):
             notes.append(m.group(2))
             return ""
         return m.group(0)
 
     def url(m: re.Match[str]) -> str:
-        if is_remote(m.group(2)):
+        if blocked(m.group(2)):
             notes.append(m.group(2))
             return "none"
         return m.group(0)
@@ -54,8 +73,9 @@ def _clean_css(css: str, notes: list[str]) -> str:
 
 
 class _Sanitiser(HTMLParser):
-    def __init__(self) -> None:
+    def __init__(self, allow_local: bool = True) -> None:
         super().__init__(convert_charrefs=False)
+        self.blocked = blocker(allow_local)
         self.out: list[str] = []
         self.skip_depth = 0
         self.skip_tag = ""
@@ -81,21 +101,21 @@ class _Sanitiser(HTMLParser):
                     continue
                 kept.append(f'{k}="{html.escape(v, quote=True)}"')
                 continue
-            if k == "href" and tag in ("link",) and is_remote(v):
+            if k == "href" and tag in ("link",) and self.blocked(v):
                 notes.append(v)
                 continue
-            if k in URL_ATTRS and is_remote(v):
+            if k in URL_ATTRS and self.blocked(v):
                 notes.append(v)
                 continue
             if k == "srcset":
                 cands = [c.strip() for c in v.split(",") if c.strip()]
-                local = [c for c in cands if not is_remote(c.split()[0])]
-                notes += [c.split()[0] for c in cands if is_remote(c.split()[0])]
+                local = [c for c in cands if not self.blocked(c.split()[0])]
+                notes += [c.split()[0] for c in cands if self.blocked(c.split()[0])]
                 if local:
                     kept.append(f'srcset="{html.escape(", ".join(local), quote=True)}"')
                 continue
             if k == "style":
-                v = _clean_css(v, notes)
+                v = _clean_css(v, notes, self.blocked)
             if v.strip().lower().startswith(("javascript:", "vbscript:")):
                 continue
             kept.append(f'{k}="{html.escape(v, quote=True)}"')
@@ -123,7 +143,7 @@ class _Sanitiser(HTMLParser):
             self.saw_head = True
         a, notes = self._attrs(tag, attrs)
         if tag in ("img", "input", "video", "audio", "source", "track") and notes and not any(
-                k.lower() in ("src", "srcset") and not is_remote(v) for k, v in attrs if v):
+                k.lower() in ("src", "srcset") and not self.blocked(v) for k, v in attrs if v):
             # The element itself only shows the remote resource: replace it by the text.
             self._emit_notes(notes)
             return
@@ -161,7 +181,7 @@ class _Sanitiser(HTMLParser):
         if self.skip_depth:
             return
         if self.in_style:
-            data = _clean_css(data, self.head_notes)
+            data = _clean_css(data, self.head_notes, self.blocked)
         self.out.append(data)
 
     def handle_entityref(self, name: str) -> None:
@@ -183,11 +203,20 @@ class _Sanitiser(HTMLParser):
         return
 
 
-def sanitize_html(markup: str, *, base_href: str | None = None, title: str | None = None) -> str:
-    """Return a sanitised HTML document. `base_href` is a file URI of the source folder (ending '/')."""
-    p = _Sanitiser()
+def sanitize_html(markup: str, *, base_href: str | None = None, title: str | None = None,
+                  allow_local: bool = True) -> str:
+    r"""Return a sanitised HTML document. `base_href` is a file URI of the source folder (ending '/').
+
+    allow_local=False (e-mail bodies): absolute local references (file:, C:\, /) become placeholder
+    text too, so a message can never pull files from this computer into its PDF.
+    """
+    p = _Sanitiser(allow_local)
     p.feed(markup)
     p.close()
+    return _assemble(p, base_href, title)
+
+
+def _assemble(p: _Sanitiser, base_href: str | None, title: str | None) -> str:
     body = "".join(p.out)
     notes_html = ""
     if p.head_notes:
