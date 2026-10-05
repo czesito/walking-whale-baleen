@@ -51,7 +51,7 @@ from .model import (
     format_checks,
     join_reasons,
 )
-from .paths import free_bytes, is_network_path, join_rel, long_path, overlap, real
+from .paths import free_bytes, is_network_path, is_within, join_rel, long_path, overlap, real
 from .plan import Planner
 from .report import (
     ResumeIndex,
@@ -322,9 +322,17 @@ class Engine:
             else:
                 reports_dir = str(self.home.reports_dir)
             os.makedirs(long_path(reports_dir), exist_ok=True)
+            if spec.mode == Mode.CONVERT and spec.output_root and not (
+                    is_within(real(reports_dir), real(spec.output_root), resolve=False)
+                    and not is_within(real(reports_dir), real(spec.source_root), resolve=False)):
+                raise RootError("The _baleen folder in the output folder is a link that leads elsewhere. "
+                                "Remove the link and try again.")
             run_id = new_run_id([reports_dir, str(self.home.reports_dir)], taken=self.index.ids())
             job = Job(run_id, spec, reports_dir=reports_dir)
             self._job = job
+        # Marks this run as live, so crash recovery in another Baleen process leaves it alone (5.6).
+        runlock = fsops.OutputLock(os.path.join(reports_dir, f".run-{run_id}.lock"))
+        runlock.acquire()
         lock: fsops.OutputLock | None = None
         if spec.mode == Mode.CONVERT:
             lock = fsops.OutputLock(os.path.join(reports_dir, ".lock"))
@@ -333,6 +341,7 @@ class Engine:
             except fsops.LockHeld as e:
                 with self._lock:
                     self._job = None
+                runlock.release()
                 raise RootError(str(e)) from e
             if lock.warning:
                 job.warnings.append(lock.warning)
@@ -342,11 +351,11 @@ class Engine:
                 log.exception("recovery failed in %s", reports_dir)
         prefs_fn = prefs or self.store.app
         if background:
-            t = threading.Thread(target=self._run_job, args=(job, work_dir, prefs_fn, lock), daemon=True,
-                                 name=f"baleen-job-{run_id}")
+            t = threading.Thread(target=self._run_job, args=(job, work_dir, prefs_fn, lock, runlock),
+                                 daemon=True, name=f"baleen-job-{run_id}")
             t.start()
         else:
-            self._run_job(job, work_dir, prefs_fn, lock)
+            self._run_job(job, work_dir, prefs_fn, lock, runlock)
         return job
 
     def cancel(self) -> bool:
@@ -371,7 +380,7 @@ class Engine:
                 fn(job)
 
     def _run_job(self, job: Job, work_dir: str, prefs: Callable[[], dict[str, Any]],
-                 lock: fsops.OutputLock | None) -> None:
+                 lock: fsops.OutputLock | None, runlock: fsops.OutputLock | None = None) -> None:
         spec = job.spec
         unsubscribe: Callable[[], None] | None = None
         work_root = os.path.join(work_dir, job.id)
@@ -427,10 +436,15 @@ class Engine:
                 job.state = JobState.RUNNING
                 self._notify(job)
 
-                ex = _Execution(self, job, run, plan)
-                ex.start()
-                ex.wait()
-                sched.close()
+                if job.cancel_requested:
+                    # Cancelled while scanning or planning (§5.6): nothing is executed; every planned
+                    # item is reported SKIPPED CANCELLED by the finaliser.
+                    sched.close()
+                else:
+                    ex = _Execution(self, job, run, plan)
+                    ex.start()
+                    ex.wait()
+                    sched.close()
                 job.state = JobState.FINISHING
                 self._finalise(job, work_root)
         except ScanError as e:
@@ -455,6 +469,8 @@ class Engine:
                 unsubscribe()
             if lock is not None:
                 lock.release()
+            if runlock is not None:
+                runlock.release()
             job.finished_mono = job.finished_mono or time.monotonic()
             job.finished_at = job.finished_at or now_iso()
             with self._lock:
@@ -593,9 +609,23 @@ class Engine:
                 continue
             if os.path.exists(long_path(os.path.join(reports_dir, report_name(run_id)))):
                 continue
+            if fsops.OutputLock(os.path.join(reports_dir, f".run-{run_id}.lock")).held_by_live_process():
+                continue  # still running in another Baleen process
             try:
                 j = Journal.open(os.path.join(reports_dir, name))
                 meta = j.meta()
+                out_root = meta.get("output_root")
+                # Publish intents: an output renamed into place just before a crash is reported if it
+                # is complete (same SHA-256), so it never becomes an unexplained file (AC-08).
+                for r in j.intents():
+                    if out_root and r.output_path and r.n not in j.finished_ns():
+                        fpath = join_rel(out_root, r.output_path)
+                        try:
+                            if os.path.isfile(long_path(fpath)) and sha256_file(fpath)[0] == r.output_sha256:
+                                j.commit(r)
+                        except OSError:
+                            pass
+                    j.drop_intent(r.n)
                 done = j.finished_ns()
                 for it in j.plan_items():
                     if it.materialise and it.n not in done:
@@ -631,6 +661,8 @@ class Engine:
                 work = self.home.resolve_work_dir(
                     ((meta.get("settings") or {}).get("app") or {}).get("work_dir", "data/work"))
                 shutil.rmtree(long_path(os.path.join(str(work), run_id)), ignore_errors=True)
+                with contextlib.suppress(OSError):
+                    os.unlink(long_path(os.path.join(reports_dir, f".run-{run_id}.lock")))
                 fixed.append(run_id)
             except Exception:
                 log.exception("couldn't recover run %s in %s", run_id, reports_dir)
@@ -696,6 +728,8 @@ class _Execution:
         self.sched = job.scheduler
         assert self.sched is not None
         self.out_root = job.spec.output_root
+        self.out_real = real(self.out_root) if self.out_root else ""
+        self.src_real = real(job.spec.source_root)
         self.resume = ResumeIndex(os.path.join(self.out_root, "_baleen")) if self.out_root else None
         self.items: dict[int, WorkItem] = {}
         self.children: dict[int, list[int]] = {}
@@ -734,6 +768,8 @@ class _Execution:
         for it in mats:
             if it.parent is not None:
                 continue  # launched by the parent's stage step
+            if self.job.cancel_requested or self.job.stop_reason:
+                break  # never-launched items are reported SKIPPED by the finaliser
             self._launch(self.items[it.n])
 
     def wait(self) -> None:
@@ -866,6 +902,13 @@ class _Execution:
     def _existing_output(self, ctx: TaskContext, wi: WorkItem, final: str, source: str | None) -> None:
         """§7.5: the final path exists. Resume if a prior report proves it is ours; else OUTPUT_OCCUPIED."""
         it = wi.plan
+        if not os.path.isfile(long_path(final)) or os.path.islink(long_path(final)):
+            # A folder, link or device at the output path: never ours, never touched (P2).
+            wi.reasons.append("OUTPUT_OCCUPIED")
+            wi.messages.append(f"{it.output_path} already exists and is not a file Baleen produced.")
+            wi.done = True
+            self._stage_children_then(wi, lambda c: self._report(wi), ctx)
+            return
         try:
             with ctx.transfer():
                 if source is not None:
@@ -1050,13 +1093,26 @@ class _Execution:
         self._submit(wi, Lane.FILES, "publish", self._publish_step, step=3, action="saving")
 
     def _publish_step(self, ctx: TaskContext, wi: WorkItem) -> None:
-        """P5: .part on the output volume, V-HASH read-back, exclusive atomic rename, mtime."""
+        """P5: .part on the output volume, V-HASH read-back, exclusive atomic rename, mtime.
+
+        P1/SEC-7: nothing is created through a link (symlink or junction) that leads outside the
+        output root or into the source; a publish intent is journaled just before the rename so a
+        crash between rename and commit cannot leave an unreported output (AC-08).
+        """
         assert self.out_root is not None and wi.result_path and wi.plan.output_path
         it = wi.plan
         staging = os.path.join(self.out_root, ".baleen-staging", self.run.run_id)
         part = os.path.join(staging, f"{it.n}.part")
         final = join_rel(self.out_root, it.output_path)
+        journal = self.job.journal
+        assert journal is not None
         try:
+            for folder in (staging, os.path.dirname(final)):
+                if not self._safe_output_dir(folder):
+                    wi.fail("OUTPUT_OCCUPIED", f"{os.path.relpath(folder, self.out_root)} leads outside the output "
+                            "folder through a link; nothing was written there.")
+                    self._report(wi)
+                    return
             os.makedirs(long_path(staging), exist_ok=True)
             with ctx.transfer():
                 local_sha, size = copy_with_hash(wi.result_path, part)
@@ -1069,9 +1125,20 @@ class _Execution:
                 self._report(wi)
                 return
             os.makedirs(long_path(os.path.dirname(final)), exist_ok=True)
+            if not self._safe_output_dir(os.path.dirname(final)):  # re-check after creating
+                _unlink(part)
+                wi.checks.pop()
+                wi.fail("OUTPUT_OCCUPIED", "The output folder leads outside the output root through a link.")
+                self._report(wi)
+                return
+            wi.extra["published"] = {"path": it.output_path, "size": size, "sha256": local_sha}
+            wi.done = True
+            journal.add_intent(self._result(wi))
             try:
                 fsops.rename_noreplace(part, final)
             except FileExistsError:
+                journal.drop_intent(it.n)
+                del wi.extra["published"]
                 _unlink(part)
                 wi.checks.pop()
                 wi.fail("OUTPUT_OCCUPIED", f"{it.output_path} appeared while Baleen was working.")
@@ -1080,17 +1147,31 @@ class _Execution:
             if it.mtime_ns is not None:
                 with contextlib.suppress(OSError):
                     os.utime(long_path(final), ns=(time.time_ns(), it.mtime_ns))
-            wi.extra["published"] = {"path": it.output_path, "size": size, "sha256": local_sha}
-            wi.done = True
             self._report(wi)
+            journal.drop_intent(it.n)
         except OSError as e:
             _unlink(part)
+            with contextlib.suppress(Exception):
+                journal.drop_intent(it.n)
+            wi.extra.pop("published", None)
             if not os.path.isdir(long_path(self.out_root)):
                 self._stop(f"The output folder is no longer available ({self.out_root}).")
                 wi.fail("VERIFY_FAILED", "The output folder disappeared while saving.")
             else:
                 wi.fail("VERIFY_FAILED", f"Couldn't save the output: {e.strerror or e}")
             self._report(wi)
+
+    def _safe_output_dir(self, folder: str) -> bool:
+        """The nearest existing ancestor of `folder` resolves inside the output root, not the source."""
+        assert self.out_root is not None
+        p = folder
+        while not os.path.lexists(long_path(p)):
+            parent = os.path.dirname(p)
+            if parent == p:
+                return False
+            p = parent
+        r = real(p)
+        return is_within(r, self.out_real, resolve=False) and not is_within(r, self.src_real, resolve=False)
 
     def _stop(self, reason: str) -> None:
         """A fatal condition mid-run (UI-R7): stop dispatching; remaining items are INTERRUPTED."""
@@ -1119,6 +1200,14 @@ class _Execution:
         with self._cond:
             self._pending -= 1
             self._cond.notify_all()
+        # An e-mail that failed before releasing its attachments (SOURCE_CHANGED, SOURCE_UNREADABLE,
+        # NO_WORK_SPACE …): its attachments cannot be extracted, and say so (P9).
+        failed = [c for c in wi.reasons if REASONS[c].status == Status.FAILED]
+        for c in wi.children:
+            if c.n not in job.started_items and c.n not in job.finished_items and failed:
+                job.started_items.add(c.n)
+                c.fail(failed[0], "The e-mail containing this attachment could not be processed.")
+                self._report(c)
 
     def _result(self, wi: WorkItem) -> ItemResult:
         it = wi.plan
@@ -1173,8 +1262,13 @@ def _unlink(p: str) -> None:
         os.unlink(long_path(p))
 
 
-def load_run_results(reports_dir: str, run_id: str) -> tuple[Journal | None, list[ItemResult]]:
-    """For UI-R8: open (or rebuild from the CSV) the journal of a finished run."""
+def load_run_results(reports_dir: str, run_id: str,
+                     cache_dir: str | None = None) -> tuple[Journal | None, list[ItemResult]]:
+    """For UI-R8: open (or rebuild from the CSV) the journal of a finished run.
+
+    A rebuilt journal goes to `cache_dir` (Baleen's data folder), never into the output folder:
+    viewing a page must not write there (SEC-5).
+    """
     jpath = os.path.join(reports_dir, journal_name(run_id))
     if os.path.exists(jpath):
         j = Journal.open(jpath)
@@ -1182,6 +1276,11 @@ def load_run_results(reports_dir: str, run_id: str) -> tuple[Journal | None, lis
     csv_path = os.path.join(reports_dir, report_name(run_id))
     if os.path.exists(csv_path):
         rows = read_csv(csv_path)
+        if cache_dir:
+            os.makedirs(cache_dir, exist_ok=True)
+            jpath = os.path.join(cache_dir, journal_name(run_id))
+            if os.path.exists(jpath):
+                return Journal.open(jpath), rows
         try:
             j = Journal.rebuild_from_rows(jpath, {"run_id": run_id, "rebuilt_from_csv": True}, rows)
             return j, rows

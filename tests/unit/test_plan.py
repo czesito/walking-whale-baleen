@@ -216,3 +216,15 @@ def test_tool_missing_nested_emails_still_release_attachments(tmp_path, monkeypa
     assert by["m.eml"].reasons == ["TOOL_MISSING"] and by["m.eml#fwd.eml"].reasons == ["TOOL_MISSING"]
     photo = by["m.eml#fwd.eml#photo.jpg"]
     assert photo.materialise and not photo.final and photo.output_path == "m_attachments/fwd_attachments/photo.jpg"
+
+
+def test_attachment_folder_clashes_with_a_source_folder(tmp_path) -> None:  # noqa: ANN001
+    """Review finding: `mail.eml#photo.jpg` and the source file `mail_attachments/photo.jpg` share one
+    output folder, so the clash rule must see both (§7.3)."""
+    plan = plan_for(tmp_path, {"mail.eml": b"ATTACH:photo.jpg\n", "mail_attachments/photo.jpg": b"x"})
+    out = outputs(plan)
+    a, b = out["mail.eml#photo.jpg"], out["mail_attachments/photo.jpg"]
+    by = {it.source_path: it for it in plan.items}
+    assert a != b or by["mail.eml#photo.jpg"].reasons == ["NAME_CLASH_UNRESOLVED"]
+    assert by["mail.eml#photo.jpg"].reasons == ["NAME_CLASH_UNRESOLVED"]
+    assert by["mail_attachments/photo.jpg"].reasons == ["NAME_CLASH_UNRESOLVED"]

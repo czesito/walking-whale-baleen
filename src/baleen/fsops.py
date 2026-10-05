@@ -143,6 +143,15 @@ class OutputLock:
         except (OSError, ValueError):
             return None
 
+    def held_by_live_process(self) -> bool:
+        """True if the lock file exists and its owner may still be running (or can't be checked)."""
+        other = self._read()
+        if other is None:
+            return os.path.exists(long_path(self.path))
+        if other.get("hostname") != socket.gethostname():
+            return True  # another machine: liveness cannot be checked
+        return pid_alive(int(other.get("pid", 0) or 0))
+
     def release(self) -> None:
         try:
             os.unlink(long_path(self.path))

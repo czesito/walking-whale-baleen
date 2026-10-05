@@ -132,7 +132,10 @@ def test_golden(group: str, profile: str, fixtures_root: Path, tmp_path: Path) -
     out = tmp_path / "out"
     job = run_profile(src, out, profile, tmp_path / "home")
     assert snapshot(src) == before, "AC-01: the source tree changed"
-    report = {r.source_path: r for r in read_csv(job.report_path())}
+    all_rows = read_csv(job.report_path())
+    report = {r.source_path: r for r in all_rows}
+    # AC-02: every item exactly once (a dict alone would hide duplicates).
+    assert len(report) == len(all_rows), "AC-02: a source_path appears more than once in the report"
 
     problems: list[str] = []
     for exp in runnable:

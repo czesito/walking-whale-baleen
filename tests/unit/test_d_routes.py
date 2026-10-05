@@ -299,7 +299,9 @@ def test_run_page_survives_a_restart(env, monkeypatch: pytest.MonkeyPatch) -> No
     fresh = harness.build_ctx(tmp, PORT, monkeypatch)
     html = page(harness.client(fresh), f"/runs/{run_id}").text
     assert "Completed · 8 to look at" in html and "PDF/A-2b" in html
-    assert Path(entry.journal_path).exists()
+    # Rebuilt in Baleen's own data folder: viewing a page never writes into the output (SEC-5).
+    assert not Path(entry.journal_path).exists()
+    assert (fresh.home.data_dir / "cache" / "journals" / Path(entry.journal_path).name).exists()
 
 
 def test_unknown_run_and_page(env) -> None:  # noqa: ANN001

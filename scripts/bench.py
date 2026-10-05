@@ -117,6 +117,13 @@ def run_once(source: str, profile: str, low_priority: bool, workdir: Path, mode:
         res["resolved"] = r.get("resolved")
         res["peak_reserved"] = r.get("peak")
         res["counts"] = (run_json.get("counts") or {}).get("by_status")
+    keep = workdir / "kept" / f"{profile}-{'lp' if low_priority else 'np'}-{mode}"
+    if rdir.exists():
+        keep.mkdir(parents=True, exist_ok=True)
+        for f in rdir.glob("*"):
+            if f.suffix in (".json", ".csv", ".sqlite"):
+                shutil.copy2(f, keep / f.name)
+        res["kept"] = str(keep)
     shutil.rmtree(out, ignore_errors=True)
     return res
 

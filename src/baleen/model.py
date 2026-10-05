@@ -322,6 +322,7 @@ class ScanEntry:
     mtime_ns: int | None
     is_dir: bool = False
     ignore: str | None = None  # "SYSTEM_FILE" | "SYMLINK" | None
+    error: str | None = None  # unreadable folder: reported FAILED SOURCE_UNREADABLE
 
     @property
     def name(self) -> str:

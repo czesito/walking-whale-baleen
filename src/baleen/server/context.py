@@ -231,7 +231,7 @@ class ServerContext:
                 self._journals.move_to_end(run_id)
                 return j
         try:
-            j, _rows = load_run_results(reports_dir, run_id)
+            j, _rows = load_run_results(reports_dir, run_id, str(self.home.data_dir / "cache" / "journals"))
         except Exception:
             log.exception("couldn't open the journal of run %s", run_id)
             return None

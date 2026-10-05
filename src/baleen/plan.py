@@ -102,6 +102,11 @@ class Planner:
             item.reasons = [e.ignore]
             item.final = True
             return _Node(item)
+        if e.error:
+            item.reasons = ["SOURCE_UNREADABLE"]
+            item.message = e.error
+            item.final = True
+            return _Node(item)
         fmt = formats.lookup(ext_l)
         if fmt is None:
             item.reasons = ["UNSUPPORTED_FORMAT"]
@@ -147,6 +152,11 @@ class Planner:
     def _apply_probe(self, nd: _Node) -> None:
         pr, it = nd.probe, nd.item
         if pr is None:
+            # Probing stopped (the run was cancelled while planning): the item must never look
+            # runnable with a guessed route or action.
+            it.reasons = ["CANCELLED"]
+            it.action = Action.NONE
+            it.final = True
             return
         it.category = pr.category
         it.target_ext = pr.target_ext
@@ -252,26 +262,41 @@ class Planner:
     # ------------------------------------------------------------------ output names (§7)
 
     def _assign_outputs(self, flat: list[_Node]) -> None:
-        # Attachments' folders depend on the parent's final name, so resolve directories in
-        # order of depth: an attachment folder is always deeper than its e-mail's folder.
-        pending = [nd for nd in flat if nd.item.parent is None]
-        while pending:
-            groups: dict[str, list[_Node]] = {}
-            for nd in pending:
-                groups.setdefault(fold_key(nd.item.out_dir), []).append(nd)
-            for _key, members in sorted(groups.items(), key=lambda kv: kv[0].count("/")):
+        """Output names (§7). Folders are resolved in order of depth. Source files are known up
+        front; an e-mail's attachments join their folder (`<final stem>_attachments`, always one
+        level deeper) once the e-mail's name is final. So every member of a folder, whether a source
+        file or an attachment, takes part in the same clash computation (§7.3)."""
+        dirs: dict[str, list[_Node]] = {}
+        depth_of: dict[str, int] = {}
+
+        def add(nd: _Node) -> None:
+            key = fold_key(nd.item.out_dir)
+            dirs.setdefault(key, []).append(nd)
+            depth_of[key] = nd.item.out_dir.count("/") + (1 if nd.item.out_dir else 0)
+
+        for nd in flat:
+            if nd.item.parent is None:
+                add(nd)
+        done: set[str] = set()
+        while True:
+            pending = [k for k in dirs if k not in done]
+            if not pending:
+                break
+            depth = min(depth_of[k] for k in pending)
+            for key in sorted(k for k in pending if depth_of[k] == depth):
+                members = dirs[key]
                 self._resolve_dir(members)
-            nxt: list[_Node] = []
-            for nd in pending:
-                if nd.children:
-                    base_stem = split_name(nd.item.output_path.rsplit("/", 1)[-1])[0] if nd.item.output_path else (
-                        split_name(nd.item.source_path.rsplit("#", 1)[-1].rsplit("/", 1)[-1])[0])
-                    folder = f"{base_stem}_attachments"
+                done.add(key)
+                for nd in members:
+                    if not nd.children:
+                        continue
+                    name = (nd.item.output_path.rsplit("/", 1)[-1] if nd.item.output_path
+                            else nd.item.source_path.rsplit("#", 1)[-1].rsplit("/", 1)[-1])
+                    folder = f"{split_name(name)[0]}_attachments"
                     out_dir = f"{nd.item.out_dir}/{folder}" if nd.item.out_dir else folder
                     for ch in nd.children:
                         ch.item.out_dir = out_dir
-                        nxt.append(ch)
-            pending = nxt
+                        add(ch)
 
     def _resolve_dir(self, members: list[_Node]) -> None:
         """Clash rule (§7.3, DR-05) for every item planned into one output directory."""

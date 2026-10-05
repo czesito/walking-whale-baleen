@@ -22,6 +22,8 @@ SYSTEM_FILE_NAMES = frozenset({".ds_store", "icon\r", "thumbs.db", "ehthumbs.db"
 SYSTEM_DIR_NAMES = frozenset({
     "$recycle.bin", ".trashes", ".spotlight-v100", ".fseventsd", "@eadir", "#recycle",
     ".@__thumb", "_baleen", ".baleen-staging",
+    # Proposed DR-55: Windows' per-volume system folder (always access-denied at a drive root).
+    "system volume information",
 })
 
 
@@ -79,7 +81,12 @@ def scan(root: str, *, on_progress: Callable[[int], None] | None = None,
             with os.scandir(abs_dir) as it:
                 entries = list(it)
         except OSError as e:
-            raise ScanError(f"Couldn't read folder {rel_dir or '.'}: {e.strerror or e}") from e
+            if not rel_dir:
+                raise ScanError(f"Couldn't read the folder: {e.strerror or e}") from e
+            # One unreadable subfolder never stops the run (P6): it becomes a FAILED row (P9).
+            yield ScanEntry(rel_dir, None, None, is_dir=True, ignore=None,
+                            error=f"Couldn't read this folder: {e.strerror or e}")
+            return
         entries.sort(key=lambda e: (fold_key(e.name), e.name))
         for e in entries:
             if should_stop and should_stop():

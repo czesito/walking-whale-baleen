@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS results (
 CREATE INDEX IF NOT EXISTS results_rank ON results(rank, n);
 CREATE INDEX IF NOT EXISTS results_status ON results(status, n);
 CREATE INDEX IF NOT EXISTS results_seq ON results(finished_seq);
+CREATE TABLE IF NOT EXISTS intents (n INTEGER PRIMARY KEY, data TEXT NOT NULL);
 """
 
 _RESULT_COLS = list(CSV_COLUMNS)
@@ -91,7 +92,7 @@ class Journal:
         if self._conn is None:
             conn = sqlite3.connect(self.path, check_same_thread=False, timeout=30)
             conn.executescript(SCHEMA)
-            conn.execute("PRAGMA synchronous=NORMAL")
+            conn.execute("PRAGMA synchronous=FULL")  # each committed item survives power loss
             self._conn = conn
         return self._conn
 
@@ -130,6 +131,29 @@ class Journal:
             values = [getattr(r, c) for c in _RESULT_COLS]
             conn.execute(_INSERT_SQL, [r.n, *values, rank, search, self._seq, r.finished_at])
             conn.commit()
+
+    # ---- publish intents (P5 crash window): written just before the atomic rename
+
+    def add_intent(self, r: ItemResult) -> None:
+        conn = self._writer()
+        with self._lock:
+            conn.execute("INSERT OR REPLACE INTO intents(n, data) VALUES (?, ?)",
+                         (r.n, json.dumps(r.__dict__, ensure_ascii=False)))
+            conn.commit()
+
+    def drop_intent(self, n: int) -> None:
+        conn = self._writer()
+        with self._lock:
+            conn.execute("DELETE FROM intents WHERE n = ?", (n,))
+            conn.commit()
+
+    def intents(self) -> list[ItemResult]:
+        with self._read() as c:
+            try:
+                rows = c.execute("SELECT data FROM intents ORDER BY n").fetchall()
+            except sqlite3.OperationalError:
+                return []
+            return [ItemResult(**json.loads(row["data"])) for row in rows]
 
     def set_meta(self, key: str, value: Any) -> None:
         conn = self._writer()

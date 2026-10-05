@@ -160,7 +160,6 @@ def test_ac08_crash_safe(kind: str, tmp_path: Path) -> None:
     proc._forget(child)  # type: ignore[attr-defined]
     if not killed:
         pytest.skip(f"the run finished before {kind} could be caught running")
-    assert not (out / "_baleen" / ".lock").exists() or True  # a stale lock is allowed; the re-run replaces it
     # No partial files under final names: whatever exists now must be complete (checked after the re-run).
     first = _outputs(out)
 
