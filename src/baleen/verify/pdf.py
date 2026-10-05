@@ -226,7 +226,7 @@ def _env(run: Any) -> dict[str, str]:
     # detected (bundled) Java, never whatever is on PATH.
     java = run.tools.path("java")
     if java:
-        env["JAVACMD"] = java
+        env.setdefault("JAVACMD", java)  # tools_env sets it too
     env["JAVA_OPTS"] = "-Xmx1g"  # §5.5: the PDF/A lane reserves 1 GB for its JVM
     return env
 
