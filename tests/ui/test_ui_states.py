@@ -85,6 +85,7 @@ def until(page: Any, js: str, timeout: float = 10.0) -> None:
     deadline = time.monotonic() + timeout
     while True:
         if page.evaluate(js):
+            page.wait_for_timeout(60)  # let htmx settle what it just swapped in
             return
         if time.monotonic() > deadline:
             raise TimeoutError(js)
@@ -101,6 +102,13 @@ def wait_for(predicate: Any, timeout: float = 10.0) -> None:
 
 def settle(page: Any, ms: int = 250) -> None:
     page.wait_for_timeout(ms)
+
+
+def ready(page: Any, selector: str) -> None:
+    """Wait for a swapped-in element and for htmx to process it: htmx attaches its listeners in the
+    settle step (20 ms after the swap), and a test can act faster than any person."""
+    page.wait_for_selector(selector)
+    settle(page, 120)
 
 
 def go(w: World, path: str) -> None:
@@ -175,14 +183,14 @@ def test_w23_settings_custom(w: World) -> None:
     app = w.h.ctx.store.app
     page.click("#res-processor_use-custom")
     wait_for(lambda: app()["processor_use"] == "custom")
-    page.wait_for_selector("#res-processor_cores-up")
+    ready(page, "#res-processor_cores-up")
     page.click("#res-processor_cores-up")
     page.click("#res-processor_cores-up")  # quick presses both count
     wait_for(lambda: app()["processor_cores"] == 6)
     until(page, "document.querySelector('.meter-lbl').textContent === 'Uses 6 of 8 cores'")
     page.click("#res-memory_limit-custom")
     wait_for(lambda: app()["memory_limit"] == "custom")
-    page.wait_for_selector("#res-memory")
+    ready(page, "#res-memory")
     page.focus("#res-memory")  # the slider moves ±1 GB with the arrow keys (design §06)
     page.keyboard.press("ArrowRight")
     page.keyboard.press("ArrowRight")
@@ -191,7 +199,7 @@ def test_w23_settings_custom(w: World) -> None:
     until(page, "document.getElementById('res-memory-lbl').textContent === '6 GB'")
     page.click("#res-transfer_slots-custom")
     wait_for(lambda: app()["transfer_slots"] == "custom")
-    page.wait_for_selector("#res-transfer_count-down")
+    ready(page, "#res-transfer_count-down")
     for n in (3, 2):
         page.click("#res-transfer_count-down")
         wait_for(lambda n=n: app()["transfer_count"] == n)
@@ -373,6 +381,7 @@ def test_w08b_filtered(w: World) -> None:
     page = w.page
     page.click("#tile-review")
     until(page, "document.getElementById('tile-review').getAttribute('aria-pressed') === 'true'")
+    settle(page, 120)
     rows = page.locator("#results-table tbody tr")
     assert rows.count() == 5
     assert "status=review" in page.url
@@ -409,6 +418,7 @@ def test_w09b_inspector_ok_video(w: World) -> None:
     page = w.page
     page.click("#tile-review")  # clear the filter
     until(page, "document.getElementById('tile-review').getAttribute('aria-pressed') === 'false'")
+    ready(page, "#rows-q")
     page.fill("#rows-q", "DSCF0128")
     until(page, "document.querySelectorAll('#results-table tbody tr[data-n]').length === 1")
     page.locator("#results-table tbody tr[data-n]").first.click()

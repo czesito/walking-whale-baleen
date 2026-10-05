@@ -38,6 +38,7 @@ def until(page: Any, js: str, timeout: float = 15.0) -> None:
         if time.monotonic() > deadline:
             raise TimeoutError(js)
         time.sleep(0.05)
+    page.wait_for_timeout(60)  # let htmx settle (attach listeners to) what it just swapped in
 
 
 def tab_to(page: Any, target: str, *, back: bool = False, limit: int = 160) -> None:

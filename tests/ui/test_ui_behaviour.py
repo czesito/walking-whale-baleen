@@ -51,6 +51,7 @@ def until(page: Any, js: str, timeout: float = 20.0) -> None:
         if time.monotonic() > deadline:
             raise TimeoutError(js)
         time.sleep(0.05)
+    page.wait_for_timeout(60)  # let htmx settle (attach listeners to) what it just swapped in
 
 
 def test_browse_waiting_state(bh) -> None:  # noqa: ANN001
