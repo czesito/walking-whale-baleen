@@ -303,7 +303,83 @@ def tool_env(home: Home, java_home: str | None = None) -> dict[str, str]:
         # The veraPDF launchers pick the JVM from JAVACMD (verapdf.bat ignores JAVA_HOME and
         # would otherwise fall back to "java" on PATH).
         env["JAVACMD"] = os.path.join(java_home, "bin", f"java{EXE}")
+    if IS_MAC:
+        env["FONTCONFIG_FILE"] = str(ensure_fontconfig(home))
     return env
+
+
+# --------------------------------------------------------------------------- macOS fonts (DR-15)
+
+# Headless LibreOffice on macOS renders through its fontconfig-based backend, and the fontconfig it
+# bundles has no configuration that lists the system font folders: it sees only LibreOffice's own
+# fonts, so CJK text falls back to a font without those glyphs and the PDF loses the text (found
+# on a macOS runner: only LiberationMono was embedded). Baleen points FONTCONFIG_FILE at a config
+# of its own in data/ (written on first use, cache in data/ too, AC-11) listing the system folders.
+
+# Appended to every pattern, so missing glyphs fall back to macOS system fonts that cover CJK.
+MAC_FALLBACK_FAMILIES: tuple[str, ...] = (
+    "PingFang TC", "PingFang HK", "PingFang SC", "Heiti TC", "Heiti SC", "Hiragino Sans",
+    "Apple SD Gothic Neo", "Arial Unicode MS",
+)
+_MAC_SYSTEM_FONT_DIRS: tuple[str, ...] = ("/System/Library/Fonts", "/System/Library/Fonts/Supplemental",
+                                          "/Library/Fonts")
+_MAC_ASSET_FONT_GLOB = "/System/Library/AssetsV2/com_apple_MobileAsset_Font*"
+
+
+def mac_font_dirs(home: Home) -> list[str]:
+    """Folders for the macOS fontconfig config: LibreOffice's own fonts, then the system's."""
+    dirs: list[str] = []
+    for app in (home.runtime_dir / "LibreOffice.app", Path("/Applications/LibreOffice.app")):
+        res = app / "Contents" / "Resources"
+        for sub in ("fonts", "resource/common/fonts"):
+            if (res / sub).is_dir():
+                dirs.append(str(res / sub))
+        if dirs:
+            break
+    dirs += list(_MAC_SYSTEM_FONT_DIRS)
+    dirs.append(str(Path.home() / "Library" / "Fonts"))
+    import glob
+
+    dirs += sorted(glob.glob(_MAC_ASSET_FONT_GLOB))  # fonts macOS downloads on demand (CJK faces)
+    return dirs
+
+
+def fontconfig_xml(dirs: list[str], cache_dir: str) -> str:
+    from xml.sax.saxutils import escape
+
+    lines = [
+        '<?xml version="1.0"?>',
+        '<!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">',
+        "<!-- Written by Baleen (tools.py) for LibreOffice on macOS; regenerated when it differs. -->",
+        "<fontconfig>",
+        *(f"  <dir>{escape(d)}</dir>" for d in dirs),
+        f"  <cachedir>{escape(cache_dir)}</cachedir>",
+        '  <match target="pattern">',
+        '    <edit name="family" mode="append_last">',
+        *(f"      <string>{escape(f)}</string>" for f in MAC_FALLBACK_FAMILIES),
+        "    </edit>",
+        "  </match>",
+        "</fontconfig>",
+    ]
+    return "\n".join(lines) + "\n"
+
+
+def ensure_fontconfig(home: Home) -> Path:
+    """data/fontconfig/fonts.conf for the current machine (rewritten only when it changes)."""
+    folder = home.data_dir / "fontconfig"
+    cache = folder / "cache"
+    cache.mkdir(parents=True, exist_ok=True)
+    conf = folder / "fonts.conf"
+    text = fontconfig_xml(mac_font_dirs(home), str(cache))
+    try:
+        if conf.read_text(encoding="utf-8") == text:
+            return conf
+    except OSError:
+        pass
+    tmp = conf.with_name(f"fonts.conf.{os.getpid()}.tmp")
+    tmp.write_text(text, encoding="utf-8")
+    os.replace(tmp, conf)
+    return conf
 
 
 # --------------------------------------------------------------------------- detection
