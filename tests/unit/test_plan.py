@@ -177,3 +177,19 @@ def test_path_too_long(tmp_path) -> None:  # noqa: ANN001
     plan = Planner(ctx, str(tmp_path / "src"), str(tmp_path / "out")).build(entries)
     for it in plan.items:
         assert "PATH_TOO_LONG" in it.reasons  # x*250 + "_bmp.jpg" = 258 code units
+
+
+def test_written_reasons_do_not_decide_at_plan_time(tmp_path, monkeypatch) -> None:  # noqa: ANN001
+    class Charset(NameOnly):
+        def probe(self, ctx, src):  # noqa: ANN001, ANN202
+            p = super().probe(ctx, src)
+            p.reasons = ["CHARSET_ERRORS"]
+            return p
+
+    reg = dict(base._registry)
+    reg["text"] = Charset("text")
+    monkeypatch.setattr(base, "_registry", reg)
+    plan = plan_for(tmp_path, {"a.txt": b"x", "b.zip": b""})
+    by = {it.source_path: it for it in plan.items}
+    assert not by["a.txt"].final and by["a.txt"].reasons == ["CHARSET_ERRORS"]
+    assert by["b.zip"].final

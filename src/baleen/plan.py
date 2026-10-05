@@ -16,7 +16,7 @@ from typing import Any
 from . import osutil
 from .convert import formats
 from .convert.base import ChildSpec, ProbeContext, SourceRef, get_route
-from .model import Action, Category, Mode, Plan, PlanItem, Probe, ScanEntry
+from .model import REASONS, Action, Category, Mode, Plan, PlanItem, Probe, ScanEntry, Status
 from .paths import any_component_too_long, fold_key, join_rel
 
 MAX_EMAIL_DEPTH = 3  # §6.5: nested message/rfc822 processed to depth 3
@@ -159,7 +159,9 @@ class Planner:
         it.data = dict(pr.data)
         if pr.route:
             it.route = pr.route
-        it.final = pr.final or bool(pr.reasons)
+        # Only reasons that mean "nothing will be written" decide an item at plan time; a
+        # reason like CHARSET_ERRORS (written: yes) is carried into the run instead.
+        it.final = pr.final or any(decides_at_plan_time(c) for c in pr.reasons)
 
         if self.mode == Mode.CHECK:
             if not it.final and it.action in (Action.CONVERT, Action.REMUX):
@@ -319,6 +321,11 @@ class Planner:
             it.action = Action.CHECK if self.mode == Mode.CHECK else it.action
         if it.reasons and "UNSUPPORTED_FORMAT" in it.reasons:
             it.action = Action.NONE
+
+
+def decides_at_plan_time(code: str) -> bool:
+    r = REASONS[code]
+    return r.status in (Status.UNSUPPORTED, Status.IGNORED, Status.SKIPPED) or r.written == "no"
 
 
 def output_abs(output_root: str, item: PlanItem) -> str | None:

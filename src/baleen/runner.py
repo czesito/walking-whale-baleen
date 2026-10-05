@@ -712,7 +712,9 @@ class _Execution:
         wi = WorkItem(
             plan=it, run=self.run, work_dir=os.path.join(self.run.work_root, str(it.n)),
             source_abs=it.abs_path, check_only=check_only, category=it.category, action=it.action,
-            method=it.method, source_format=it.source_format, reasons=[], notes=list(it.notes),
+            method=it.method, source_format=it.source_format, notes=list(it.notes),
+            # Plan-time reasons of items that still run (e.g. CHARSET_ERRORS) stay on the item.
+            reasons=[] if it.final else list(it.reasons),
         )
         if it.message:
             wi.messages.append(it.message)
