@@ -236,8 +236,13 @@ approved documents was edited. Accept, amend or reject them in a new spec revisi
   system's. CJK text was therefore drawn with Liberation fonts that have no CJK glyphs, and V-TEXT
   correctly failed it (TEXT_LOSS: 4.5 % of a CJK text file's characters present).
 - **Decision.** On macOS, Baleen points `FONTCONFIG_FILE` at a generated `data/fontconfig/fonts.conf`.
-  It adds the macOS system font folders, and its cache stays inside `data/` (AC-11). This keeps DR-15
-  (system fonts only; no bundled Noto).
+  It adds the macOS system font folders and puts the macOS CJK families last as a fallback. Its cache
+  stays inside `data/` (AC-11). This keeps DR-15 (system fonts only; no bundled Noto).
+- **Verified on a macOS runner (diagnostic run 37347702596).**
+  - LibreOffice loads the file, and CJK text is embedded as STHeiti TC (TrueType).
+  - V-TEXT and V-PDFA pass at 2b and at 1b for the smoke text, pure CJK text and Big5 text.
+  - Because the fallback is TrueType, the PDF/A-1b concern of DR-52 does not arise on macOS with system
+    fonts.
 
 ## Risks R-01…R-14: findings on this machine
 
