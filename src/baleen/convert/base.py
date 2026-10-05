@@ -290,22 +290,27 @@ def all_routes() -> dict[str, Route]:
 
 
 _loaded = False
+_load_lock = threading.Lock()  # separate from _lock: register() takes _lock during the imports
 
 
 def _load_builtin() -> None:
-    """Import the built-in route modules once; each registers itself."""
+    """Import the built-in route modules once; each registers itself.
+
+    `_loaded` is set only after every import finished, so a concurrent caller (parallel plan-time
+    probes) waits for the registry instead of finding it half-filled.
+    """
     global _loaded
     if _loaded:
         return
-    with _lock:
+    with _load_lock:
         if _loaded:
             return
-        _loaded = True
-    import importlib
+        import importlib
 
-    for mod in ("image", "document", "text", "html", "email", "pdf", "media"):
-        try:
-            importlib.import_module(f"baleen.convert.{mod}")
-        except ModuleNotFoundError as e:
-            if e.name != f"baleen.convert.{mod}":
-                raise
+        for mod in ("image", "document", "text", "html", "email", "pdf", "media"):
+            try:
+                importlib.import_module(f"baleen.convert.{mod}")
+            except ModuleNotFoundError as e:
+                if e.name != f"baleen.convert.{mod}":
+                    raise
+        _loaded = True
