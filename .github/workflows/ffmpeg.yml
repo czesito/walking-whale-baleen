@@ -7,6 +7,15 @@ name: ffmpeg
 on:
   workflow_call:
   workflow_dispatch:
+  # workflow_dispatch only works once this file is on the default branch; until then (and for later
+  # changes to the build) pushes to the ffmpeg-build branch run it.
+  push:
+    branches: [ffmpeg-build]
+    paths:
+      - scripts/build_ffmpeg.sh
+      - scripts/check_ffmpeg.py
+      - scripts/runtimes.json
+      - .github/workflows/ffmpeg.yml
 
 permissions:
   contents: read
