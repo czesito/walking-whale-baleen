@@ -27,6 +27,11 @@ DOWNLOAD = {
            f"LibreOffice_{VERSION}_Linux_x86-64_deb.tar.gz",
     # Vendor checksum: <url>.sha256 on downloadarchive.documentfoundation.org
     "sha256": "d0a6031a3837e48f9854e6d2da6489b9fadbd814afa4741fa32a197741663a22",
+    # The same file (identical vendor SHA-256) on the mirror network; the archive host often stalls.
+    "mirrors": [
+        "https://download.documentfoundation.org/libreoffice/stable/26.8.0/deb/x86_64/"
+        "LibreOffice_26.8.0_Linux_x86-64_deb.tar.gz",
+    ],
 }
 
 
