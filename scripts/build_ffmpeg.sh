@@ -176,7 +176,9 @@ FF_CONFIGURE=(
     --prefix="$PREFIX" --pkg-config-flags=--static --extra-version=baleen
     --enable-gpl --enable-libx264 --enable-static --disable-shared
     --disable-autodetect --enable-zlib
-    --disable-network --disable-doc --disable-ffplay --disable-avdevice --disable-debug
+    --disable-network --disable-doc --disable-ffplay --disable-debug
+    # libavdevice keeps only the lavfi input, for test patterns in fixtures and checks; no capture devices.
+    --disable-indevs --enable-indev=lavfi --disable-outdevs
     --extra-cflags="-I$PREFIX/include" --extra-ldflags="-L$PREFIX/lib"
     "${FF_TARGET[@]}"
 )

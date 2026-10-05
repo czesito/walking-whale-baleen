@@ -1,6 +1,6 @@
 """Check an FFmpeg build against what Baleen needs and is allowed to ship (spec §6.7, §15).
 
-    python scripts/check_ffmpeg.py DIR     # DIR holds ffmpeg[.exe] and ffprobe[.exe]
+    python scripts/check_ffmpeg.py DIR [TMPDIR]   # DIR holds ffmpeg[.exe] and ffprobe[.exe]
 
 Fails (exit 1) unless:
   - `ffmpeg -L` says GPL version 2 or later, and the configuration has --enable-gpl and --enable-libx264
@@ -70,7 +70,7 @@ def names(listing: str) -> set[str]:
 
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
-    if len(argv) != 1:
+    if len(argv) not in (1, 2):
         print(__doc__)
         return 2
     d = Path(argv[0])
@@ -115,17 +115,23 @@ def main(argv: list[str] | None = None) -> int:
     print(f"  legacy extras present: {len(EXTRA_DECODERS) - len(extra_missing)}/{len(EXTRA_DECODERS)}"
           + (f" (absent: {' '.join(extra_missing)})" if extra_missing else ""))
 
-    with tempfile.TemporaryDirectory() as tmp:
+    if "lavfi" not in dmx:
+        problems.append("the lavfi input is missing (test patterns for fixtures and this check)")
+    with tempfile.TemporaryDirectory(dir=argv[1] if len(argv) > 1 else None) as tmp:
         mp4 = str(Path(tmp) / "check.mp4")
-        run([ffmpeg, "-hide_banner", "-loglevel", "error", "-f", "lavfi", "-i", "testsrc2=size=320x240:rate=25:duration=2",
-             "-f", "lavfi", "-i", "sine=frequency=440:duration=2", "-c:v", "libx264", "-pix_fmt", "yuv420p",
-             "-c:a", "aac", "-b:a", "128k", "-shortest", "-movflags", "+faststart", "-y", mp4])
+        cmd = [ffmpeg, "-hide_banner", "-loglevel", "error", "-f", "lavfi", "-i", "testsrc2=size=320x240:rate=25:duration=2",
+               "-f", "lavfi", "-i", "sine=frequency=440:duration=2", "-c:v", "libx264", "-pix_fmt", "yuv420p",
+               "-c:a", "aac", "-b:a", "128k", "-shortest", "-movflags", "+faststart", "-y", mp4]
+        print("\ntest encode: " + " ".join(cmd[1:]))
+        enc_run = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
+        if enc_run.returncode != 0 or enc_run.stderr.strip():
+            print(f"  encoder exit {enc_run.returncode}\n  " + "\n  ".join(enc_run.stderr.strip().splitlines()[-20:]))
         probe = run([ffprobe, "-v", "error", "-show_entries", "stream=codec_name", "-of", "csv=p=0", mp4])
         codecs = sorted(set(probe.split()))
         decode = subprocess.run([ffmpeg, "-hide_banner", "-v", "error", "-xerror", "-i", mp4, "-f", "null", "-"],
                                 capture_output=True, text=True)
         sei = re.search(rb"x264 - core \d+(?: r\d+ [0-9a-f]+)?", Path(mp4).read_bytes()) if Path(mp4).exists() else None
-    print(f"\ntest encode: streams {codecs}, decode exit {decode.returncode}, "
+    print(f"  result: streams {codecs}, decode exit {decode.returncode}, "
           f"{sei.group(0).decode() if sei else 'no x264 SEI'}")
     if codecs != ["aac", "h264"]:
         problems.append(f"test encode produced {codecs}, expected aac + h264")

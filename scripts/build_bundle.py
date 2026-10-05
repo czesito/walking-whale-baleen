@@ -462,7 +462,7 @@ def install_ffmpeg(ctx: Ctx, entry: dict[str, Any], files: list[Path]) -> dict[s
         sys.path.insert(0, str(REPO / "scripts"))
         import check_ffmpeg
 
-        if check_ffmpeg.main([str(dest)]) != 0:
+        if check_ffmpeg.main([str(dest), str(ctx.tmp)]) != 0:
             raise BuildError("the FFmpeg build fails scripts/check_ffmpeg.py")
     return {
         **source,
