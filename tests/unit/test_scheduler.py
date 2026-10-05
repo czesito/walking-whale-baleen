@@ -329,3 +329,29 @@ def test_multi_token_task_is_not_starved_by_file_tasks() -> None:
     s.cancel_queued()
     s.close()
     assert 1.5 < started["media"] < 5.0  # waited for the aging threshold, then got all four tokens
+
+
+def test_batches_form_with_bound_method_handlers() -> None:
+    """Regression: the runner's handlers are bound methods, a new object on every access, so
+    batch companions must be matched with ==, not `is` (DR-35 batching never happened)."""
+    b = Budget(B=4, M=8, T=4, K=1, F=1, threads=4)
+    s = Scheduler(lambda: b, low_priority=lambda: False)
+    seen: list[list[int]] = []
+
+    class Runner:
+        def handler(self, ctx, payloads):  # noqa: ANN001, ANN201
+            seen.append(list(payloads))
+            return payloads
+
+    r = Runner()
+    gate = threading.Event()
+    s.submit(Task(lane=Lane.DOCUMENTS, order=(-1,), fn=lambda ctx: gate.wait(5)))
+    time.sleep(0.05)
+    tasks = [Task(lane=Lane.DOCUMENTS, order=(n,), batch_fn=r.handler, payload=n, batch_key="k") for n in range(8)]
+    for t in tasks:
+        s.submit(t)
+    gate.set()
+    for t in tasks:
+        t.future.result(timeout=10)
+    s.close()
+    assert seen == [list(range(8))]

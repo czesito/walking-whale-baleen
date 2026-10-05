@@ -423,7 +423,8 @@ class Scheduler:
         if head.batch_fn is None:
             return [head], None
         pol = self._batch[lane]
-        group = [t for t in q if t.batch_key == head.batch_key and t.batch_fn is head.batch_fn]
+        # == not "is": bound methods (the runner's batch handlers) are new objects on every access.
+        group = [t for t in q if t.batch_key == head.batch_key and t.batch_fn == head.batch_fn]
         group = group[: pol.max_size]
         if len(group) < pol.max_size and pol.wait_s > 0:
             waited = now - head.enqueued

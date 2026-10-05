@@ -292,8 +292,12 @@ def tool_env(home: Home, java_home: str | None = None) -> dict[str, str]:
     # so a Baleen folder with spaces still starts Java.
     env["JAVA_TOOL_OPTIONS"] = (
         f'-Djava.util.prefs.userRoot="{javadir}" -Djava.util.prefs.systemRoot="{javadir}" '
-        f'-Djava.io.tmpdir="{tmp}" -XX:-UsePerfData'
+        f'-Djava.io.tmpdir="{tmp}" -XX:-UsePerfData '
+        # AC-15: a veraPDF JVM holds one processor token; keep its GC and JIT threads to one CPU.
+        "-XX:ActiveProcessorCount=1 -XX:+UseSerialGC -XX:TieredStopAtLevel=1"
     )
+    # AC-15: each LibreOffice instance holds one token; cap its internal thread pool to match.
+    env["MAX_CONCURRENCY"] = "1"
     if java_home:
         env["JAVA_HOME"] = java_home
         # The veraPDF launchers pick the JVM from JAVACMD (verapdf.bat ignores JAVA_HOME and
