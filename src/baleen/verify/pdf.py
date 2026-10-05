@@ -222,9 +222,12 @@ def _unavailable(flavour: str, message: str, tool_missing: bool = False) -> Chec
 
 def _env(run: Any) -> dict[str, str]:
     env = dict(run.tools_env())
-    # §5.5: the PDF/A lane reserves 1 GB for its JVM.
-    opts = env.get("JAVA_TOOL_OPTIONS", "")
-    env["JAVA_TOOL_OPTIONS"] = (opts + " -Xmx1g").strip()
+    # The veraPDF launcher runs "java" from PATH unless JAVACMD is set: always use the
+    # detected (bundled) Java, never whatever is on PATH.
+    java = run.tools.path("java")
+    if java:
+        env["JAVACMD"] = java
+    env["JAVA_OPTS"] = "-Xmx1g"  # §5.5: the PDF/A lane reserves 1 GB for its JVM
     return env
 
 
