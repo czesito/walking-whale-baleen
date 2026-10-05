@@ -221,6 +221,24 @@ approved documents was edited. Accept, amend or reject them in a new spec revisi
 6. **Damaged OLE files.** These are forced to their own import filter. Otherwise LibreOffice converts them
    as plain text into garbage PDFs (R-12).
 
+### DR-55 (proposed): "System Volume Information" is a system folder
+
+- **Decision.** Add Windows' per-volume `System Volume Information` folder to the §5.2 system list
+  (IGNORED SYSTEM_FILE, not entered).
+- **Why.** It is access-denied at every drive root. Without this rule, a drive root as source would give
+  a FAILED row every time. Any other unreadable subfolder is now one FAILED `SOURCE_UNREADABLE` row,
+  and the run continues (P6, P9).
+
+### DR-56 (proposed): macOS headless LibreOffice needs a fontconfig file for system fonts
+
+- **Finding.** Found by the macOS CI smoke test (bundle.yml) and a diagnostic run. Headless LibreOffice
+  on macOS uses its fontconfig-based backend, which sees only LibreOffice's bundled fonts, never the
+  system's. CJK text was therefore drawn with Liberation fonts that have no CJK glyphs, and V-TEXT
+  correctly failed it (TEXT_LOSS: 4.5 % of a CJK text file's characters present).
+- **Decision.** On macOS, Baleen points `FONTCONFIG_FILE` at a generated `data/fontconfig/fonts.conf`.
+  It adds the macOS system font folders, and its cache stays inside `data/` (AC-11). This keeps DR-15
+  (system fonts only; no bundled Noto).
+
 ## Risks R-01…R-14: findings on this machine
 
 *(more pending)*
