@@ -298,7 +298,10 @@ def install_python(ctx: Ctx, entry: dict[str, Any], files: list[Path]) -> dict[s
     pip_check = run([py, "-I", "-m", "pip", "check"], env=env, capture=True, check=False)
     if pip_check.returncode != 0:
         log("  warning  pip check reports:\n" + pip_check.stdout.strip())
+    stdlib = dest / "Lib" if ctx.is_windows else next(iter(sorted((dest / "lib").glob("python3.*"))), dest / "lib")
+    bytecode = precompile(ctx, py, [stdlib], "python")
     return {
+        "bytecode": bytecode,
         "python_version": pyver,
         "executable": rel(ctx, py),
         "baleen": {"version": baleen_ver, "wheel": wheel.name, "wheel_sha256": sha256_file(wheel), **git_info()},
@@ -306,6 +309,27 @@ def install_python(ctx: Ctx, entry: dict[str, Any], files: list[Path]) -> dict[s
         "requirements_lock_sha256": sha256_file(REQUIREMENTS_LOCK),
         "pip_check": pip_check.stdout.strip(),
     }
+
+
+def precompile(ctx: Ctx, python: Path, dirs: list[Path], label: str) -> dict[str, Any]:
+    """Write .pyc files for `dirs` with unchecked-hash invalidation (PEP 552).
+
+    runtime/ is read-only at run time (§14.2). An interpreter that finds no valid .pyc writes one next
+    to the source; LibreOffice's embedded Python did exactly that during the smoke test. Timestamp-based
+    .pyc files would also go stale after unzipping, because zip stores times with 2-second precision.
+    Unchecked-hash .pyc files are used as they are, so nothing is written or recompiled at run time."""
+    dirs = [d for d in dirs if d.is_dir()]
+    if not dirs:
+        return {"compiled": False}
+    # Serial on purpose: parallel workers race with the interpreter's own imports on Windows (os.replace
+    # of an open .pyc fails), and LibreOffice's Python cannot spawn workers at all.
+    r = run([python, "-I", "-m", "compileall", "-q", "-f", "--invalidation-mode", "unchecked-hash", *dirs],
+            env=ctx.child_env(), capture=True, check=False, timeout=3600)
+    if r.returncode != 0:
+        # A few test or legacy files in third-party trees may not compile; the rest is still written.
+        log(f"  warning  {label}: compileall reported errors (exit {r.returncode}):\n{(r.stdout or '')[-1500:]}")
+    return {"compiled": True, "invalidation_mode": "unchecked-hash", "dirs": [rel(ctx, d) for d in dirs],
+            "compileall_exit": r.returncode}
 
 
 def build_baleen_wheel(ctx: Ctx, py: Path, env: dict[str, str]) -> Path:
@@ -393,10 +417,24 @@ def install_ffmpeg(ctx: Ctx, entry: dict[str, Any], files: list[Path]) -> dict[s
 def install_libreoffice(ctx: Ctx, entry: dict[str, Any], files: list[Path]) -> dict[str, Any]:
     rule = entry["install"]["rule"]
     if rule == "msi-admin":
-        return _libreoffice_msi(ctx, files[0])
-    if rule == "dmg-ditto":
-        return _libreoffice_dmg(ctx, files[0], entry["install"]["app"])
-    raise BuildError(f"unknown LibreOffice install rule {rule}")
+        details = _libreoffice_msi(ctx, files[0])
+        program = (ctx.runtime / details["soffice"]).parent
+        lo_python, dirs = program / "python.exe", [program.parent]  # program/ and share/extensions/*/pythonpath
+    elif rule == "dmg-ditto":
+        details = _libreoffice_dmg(ctx, files[0], entry["install"]["app"])
+        contents = (ctx.runtime / details["soffice"]).parent.parent
+        found = sorted(contents.glob("Frameworks/LibreOfficePython.framework/Versions/*/bin/python3*"))
+        lo_python = next((p for p in found if p.is_file() and os.access(p, os.X_OK)), contents / "MacOS" / "python")
+        dirs = [contents / "Resources", contents / "Frameworks"]
+    else:
+        raise BuildError(f"unknown LibreOffice install rule {rule}")
+    # LibreOffice's embedded Python (pyuno) would otherwise write __pycache__ into runtime/ at run time.
+    if lo_python.is_file():
+        details["bytecode"] = precompile(ctx, lo_python, dirs, "LibreOffice Python")
+    else:
+        log(f"  warning  LibreOffice's Python not found at {lo_python}; its .pyc files are not precompiled")
+        details["bytecode"] = {"compiled": False}
+    return details
 
 
 def _libreoffice_msi(ctx: Ctx, msi: Path) -> dict[str, Any]:
@@ -602,15 +640,20 @@ def check_ansi_path(label: str, path: Path) -> None:
 
 
 def rmtree_force(path: Path) -> None:
-    """shutil.rmtree that also removes read-only files (git pack files on Windows)."""
+    """shutil.rmtree that also removes read-only files (git pack files on Windows) and paths longer
+    than MAX_PATH (LibreOffice profiles under a deep data/ folder), via the \\\\?\\ prefix."""
     import stat
 
     def onexc(func, p, _exc):  # noqa: ANN001
         os.chmod(p, stat.S_IWRITE)
         func(p)
 
-    if path.exists():
-        shutil.rmtree(path, onexc=onexc)
+    if not path.exists():
+        return
+    target = str(path.resolve())
+    if sys.platform == "win32" and not target.startswith("\\\\?\\"):
+        target = "\\\\?\\UNC\\" + target[2:] if target.startswith("\\\\") else "\\\\?\\" + target
+    shutil.rmtree(target, onexc=onexc)
 
 
 def prepare_work(work: Path) -> None:
@@ -1006,7 +1049,7 @@ def smoke_test(bundle: Path, work: Path, expected: Path | None = SMOKE_EXPECTED)
     env = smoke_env(bundle)
     smoke = work / "smoke"
     if smoke.exists():
-        shutil.rmtree(smoke)
+        rmtree_force(smoke)
     smoke.mkdir(parents=True)
 
     doc = subprocess.run([str(py), "-m", "baleen", "doctor", "--json"], env=env, cwd=bundle, capture_output=True,
@@ -1055,7 +1098,7 @@ def smoke_test(bundle: Path, work: Path, expected: Path | None = SMOKE_EXPECTED)
     after = tree_state(bundle)
     changed = sorted(p for p in set(before) | set(after) if before.get(p) != after.get(p))
     problems += [f"the run changed {p} inside the bundle (runtime/ must stay read-only)" for p in changed[:20]]
-    shutil.rmtree(bundle / "data", ignore_errors=True)
+    rmtree_force(bundle / "data")
     if problems:
         raise BuildError("smoke test failed:\n  " + "\n  ".join(problems))
     counts: dict[str, int] = {}
@@ -1166,7 +1209,7 @@ def main(argv: list[str] | None = None) -> int:
             prepare_work(work)
             smoke_test(ns.smoke_only.resolve(), work, ns.smoke_expected.resolve())
             if not ns.keep_work:
-                shutil.rmtree(work, ignore_errors=True)
+                rmtree_force(work)
             log(f"\nSmoke test passed in {time.monotonic() - started:.0f} s")
             return 0
         if not ns.platform:
@@ -1186,7 +1229,7 @@ def main(argv: list[str] | None = None) -> int:
         if not ns.runtime_only and bundle.exists():
             if not ns.clean:
                 raise BuildError(f"{bundle} exists; pass --clean to replace it")
-            shutil.rmtree(bundle)
+            rmtree_force(bundle)
             zip_path.unlink(missing_ok=True)
         prepare_work(work)
         pins = json.loads(RUNTIMES_JSON.read_text(encoding="utf-8"))
@@ -1202,7 +1245,7 @@ def main(argv: list[str] | None = None) -> int:
                 smoke_test(bundle, work, ns.smoke_expected.resolve())
             make_zip(bundle, zip_path)
         if not ns.keep_work:
-            shutil.rmtree(work, ignore_errors=True)
+            rmtree_force(work)
     except BuildError as e:
         log(f"\nBUILD FAILED: {e}")
         return 1
