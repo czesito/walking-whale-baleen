@@ -1,0 +1,378 @@
+{
+  "schema_version": 1,
+  "pinned_on": "2026-10-05",
+  "about": [
+    "Pinned third-party runtimes for the Baleen bundle (spec §14.6). build_bundle.py reads this file.",
+    "Each platform entry: version, downloads (file, url, optional mirrors, sha256, checksum_source, checksum_url), archive type, install rule, sources.",
+    "checksum_source 'vendor' means the SHA-256 was copied from the vendor's published checksum file at checksum_url;",
+    "'pinned-at-review' means the vendor publishes no SHA-256, so it was computed from the download when the pin was made and must be reviewed in the PR.",
+    "'none' is used only for source archives that are generated on demand (their identity is a git commit, not a file hash)."
+  ],
+  "components": {
+    "python": {
+      "name": "CPython (python-build-standalone, install_only)",
+      "dest": "python",
+      "license": "PSF-2.0",
+      "license_note": "Plus the licences of the libraries bundled by python-build-standalone (OpenSSL Apache-2.0, SQLite public domain, libffi MIT, zlib, bzip2, xz, mpdecimal, Tcl/Tk). License files ship inside runtime/python.",
+      "homepage": "https://github.com/astral-sh/python-build-standalone",
+      "platforms": {
+        "win-x64": {
+          "version": "3.12.15",
+          "build": "20261003",
+          "downloads": [
+            {
+              "file": "cpython-3.12.15+20261003-x86_64-pc-windows-msvc-install_only.tar.gz",
+              "url": "https://github.com/astral-sh/python-build-standalone/releases/download/20261003/cpython-3.12.15%2B20261003-x86_64-pc-windows-msvc-install_only.tar.gz",
+              "sha256": "4b6f0beebbb695a0f3ea237b8c3eaa5bd424f47a7bc25b2fbe3a43390c770f08",
+              "checksum_source": "vendor",
+              "checksum_url": "https://github.com/astral-sh/python-build-standalone/releases/download/20261003/SHA256SUMS"
+            }
+          ],
+          "archive": "tar.gz",
+          "install": {"rule": "python-install-only", "strip_prefix": "python/"}
+        },
+        "mac-arm64": {
+          "version": "3.12.15",
+          "build": "20261003",
+          "downloads": [
+            {
+              "file": "cpython-3.12.15+20261003-aarch64-apple-darwin-install_only.tar.gz",
+              "url": "https://github.com/astral-sh/python-build-standalone/releases/download/20261003/cpython-3.12.15%2B20261003-aarch64-apple-darwin-install_only.tar.gz",
+              "sha256": "316a463172740e71d8dca1f2730784e325f3f720941137b5d674d5801a632213",
+              "checksum_source": "vendor",
+              "checksum_url": "https://github.com/astral-sh/python-build-standalone/releases/download/20261003/SHA256SUMS"
+            }
+          ],
+          "archive": "tar.gz",
+          "install": {"rule": "python-install-only", "strip_prefix": "python/"}
+        },
+        "mac-x64": {
+          "version": "3.12.15",
+          "build": "20261003",
+          "downloads": [
+            {
+              "file": "cpython-3.12.15+20261003-x86_64-apple-darwin-install_only.tar.gz",
+              "url": "https://github.com/astral-sh/python-build-standalone/releases/download/20261003/cpython-3.12.15%2B20261003-x86_64-apple-darwin-install_only.tar.gz",
+              "sha256": "a8fd7a91852f19b6d959793ef41fad048631ccb2a334a9ecdf573255298f7978",
+              "checksum_source": "vendor",
+              "checksum_url": "https://github.com/astral-sh/python-build-standalone/releases/download/20261003/SHA256SUMS"
+            }
+          ],
+          "archive": "tar.gz",
+          "install": {"rule": "python-install-only", "strip_prefix": "python/"}
+        }
+      },
+      "sources": [
+        {"what": "python-build-standalone build recipes", "url": "https://github.com/astral-sh/python-build-standalone/tree/20261003"},
+        {"what": "CPython 3.12.15", "url": "https://www.python.org/ftp/python/3.12.15/Python-3.12.15.tar.xz"}
+      ]
+    },
+
+    "ffmpeg": {
+      "name": "FFmpeg + FFprobe (static GPL build with libx264)",
+      "dest": "ffmpeg",
+      "license": "GPL-3.0-or-later",
+      "license_note": "Both pinned builds are configured with --enable-gpl --enable-version3, so the binaries are GPL-3.0-or-later (not GPL-2.0-or-later as §4 assumed). `ffmpeg -L` confirms; build_bundle.py records it in VERSIONS.json.",
+      "homepage": "https://ffmpeg.org/",
+      "selection": [
+        "win-x64: Gyan.dev 'essentials' release build 9.0.2. Built from the exact FFmpeg tag n9.0.2 (commit 946fcce07b), permanent version-tagged URL on GitHub (GyanD/codexffmpeg tag 9.0.2), vendor SHA-256 on gyan.dev, and the x264 revision is stated in the bundled README.txt (x264 v0.165.3223) and in the encoder SEI (core 165 r3223 0480cb0).",
+        "BtbN FFmpeg-Builds was rejected: its win64-gpl zips are rolling autobuilds of release branches plus extra commits (e.g. n9.0.2-22-g46d8f462ee), their autobuild releases are pruned, and the URL names change daily.",
+        "The essentials build was chosen over the full build: about half the size and fewer statically linked libraries, which shrinks the GPL source set (§15, R-08) while keeping libx264 and AAC.",
+        "mac-arm64 / mac-x64: martin-riedl.de 9.0.2 release builds. Permanent timestamped URLs, vendor .sha256 per file, versions.txt per build listing every library. x264 is listed only as 0.165.x there, so build_bundle.py reads the exact revision from the encoder SEI and records it in VERSIONS.json."
+      ],
+      "platforms": {
+        "win-x64": {
+          "version": "9.0.2",
+          "build": "9.0.2-essentials_build-www.gyan.dev",
+          "downloads": [
+            {
+              "file": "ffmpeg-9.0.2-essentials_build.zip",
+              "url": "https://github.com/GyanD/codexffmpeg/releases/download/9.0.2/ffmpeg-9.0.2-essentials_build.zip",
+              "mirrors": ["https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-9.0.2-essentials_build.zip"],
+              "sha256": "60f467265b1e312373dbcd92200c2618a74850f98d3d078e94296bb3fa2047ba",
+              "checksum_source": "vendor",
+              "checksum_url": "https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-9.0.2-essentials_build.zip.sha256"
+            }
+          ],
+          "archive": "zip",
+          "install": {"rule": "copy-binaries", "binaries": ["ffmpeg.exe", "ffprobe.exe"]},
+          "x264": {"core": 165, "revision": 3223, "commit": "0480cb05fa188d37ae87e8f4fd8f1aea3711f7ee"},
+          "gpl_sources": [
+            {
+              "what": "FFmpeg 9.0.2 (tag n9.0.2, commit 946fcce07b6dcd0331c8cc609192aeff5e1924f8)",
+              "file": "ffmpeg-9.0.2.tar.xz",
+              "url": "https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz",
+              "sha256": "8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e",
+              "checksum_source": "pinned-at-review",
+              "checksum_url": "https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz.asc"
+            },
+            {
+              "what": "x264 r3223 (commit 0480cb05fa188d37ae87e8f4fd8f1aea3711f7ee)",
+              "file": "x264-0480cb05fa188d37ae87e8f4fd8f1aea3711f7ee.tar.bz2",
+              "url": "https://code.videolan.org/videolan/x264/-/archive/0480cb05fa188d37ae87e8f4fd8f1aea3711f7ee/x264-0480cb05fa188d37ae87e8f4fd8f1aea3711f7ee.tar.bz2",
+              "sha256": null,
+              "checksum_source": "none"
+            }
+          ],
+          "gpl_sources_note": "The build also links other GPL/LGPL libraries statically (README.txt in the archive lists each with its version, e.g. x265, libvidstab, xvid, rubberband). See STATUS/R-08: §15 names only FFmpeg and x264."
+        },
+        "mac-arm64": {
+          "version": "9.0.2",
+          "build": "martin-riedl.de 1789931890_9.0.2",
+          "downloads": [
+            {
+              "file": "ffmpeg-9.0.2-mac-arm64-martin-riedl-1789931890-ffmpeg.zip",
+              "url": "https://ffmpeg.martin-riedl.de/download/macos/arm64/1789931890_9.0.2/ffmpeg.zip",
+              "sha256": "c8ed4c4e6978a03c485edbfe4e0a5dc2380f8a30bba5150531b31b094492d924",
+              "checksum_source": "vendor",
+              "checksum_url": "https://ffmpeg.martin-riedl.de/download/macos/arm64/1789931890_9.0.2/ffmpeg.zip.sha256"
+            },
+            {
+              "file": "ffmpeg-9.0.2-mac-arm64-martin-riedl-1789931890-ffprobe.zip",
+              "url": "https://ffmpeg.martin-riedl.de/download/macos/arm64/1789931890_9.0.2/ffprobe.zip",
+              "sha256": "fcbe839537485eaee7a7a8bc5cbc0f90d53617e80943e8a5b2e31cb851197ea6",
+              "checksum_source": "vendor",
+              "checksum_url": "https://ffmpeg.martin-riedl.de/download/macos/arm64/1789931890_9.0.2/ffprobe.zip.sha256"
+            }
+          ],
+          "archive": "zip",
+          "install": {"rule": "copy-binaries", "binaries": ["ffmpeg", "ffprobe"]},
+          "build_info_url": "https://ffmpeg.martin-riedl.de/download/macos/arm64/1789931890_9.0.2/versions.txt",
+          "x264": {"core": 165, "revision": null, "commit": null, "note": "versions.txt says 0.165.x; build_bundle.py records the exact revision from the encoder SEI"},
+          "gpl_sources": [
+            {
+              "what": "FFmpeg 9.0.2",
+              "file": "ffmpeg-9.0.2.tar.xz",
+              "url": "https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz",
+              "sha256": "8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e",
+              "checksum_source": "pinned-at-review",
+              "checksum_url": "https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz.asc"
+            }
+          ]
+        },
+        "mac-x64": {
+          "version": "9.0.2",
+          "build": "martin-riedl.de 1789931006_9.0.2",
+          "downloads": [
+            {
+              "file": "ffmpeg-9.0.2-mac-x64-martin-riedl-1789931006-ffmpeg.zip",
+              "url": "https://ffmpeg.martin-riedl.de/download/macos/amd64/1789931006_9.0.2/ffmpeg.zip",
+              "sha256": "7c6b4125b191cbf773832dc51f424cf2b6bb7da43007d1e066f95909e47cacd4",
+              "checksum_source": "vendor",
+              "checksum_url": "https://ffmpeg.martin-riedl.de/download/macos/amd64/1789931006_9.0.2/ffmpeg.zip.sha256"
+            },
+            {
+              "file": "ffmpeg-9.0.2-mac-x64-martin-riedl-1789931006-ffprobe.zip",
+              "url": "https://ffmpeg.martin-riedl.de/download/macos/amd64/1789931006_9.0.2/ffprobe.zip",
+              "sha256": "2322438ed2f6319a691291b247d09c69dcaa3a982460d1f269a7e1af335cfdfd",
+              "checksum_source": "vendor",
+              "checksum_url": "https://ffmpeg.martin-riedl.de/download/macos/amd64/1789931006_9.0.2/ffprobe.zip.sha256"
+            }
+          ],
+          "archive": "zip",
+          "install": {"rule": "copy-binaries", "binaries": ["ffmpeg", "ffprobe"]},
+          "build_info_url": "https://ffmpeg.martin-riedl.de/download/macos/amd64/1789931006_9.0.2/versions.txt",
+          "x264": {"core": 165, "revision": null, "commit": null, "note": "versions.txt says 0.165.x; build_bundle.py records the exact revision from the encoder SEI"},
+          "gpl_sources": [
+            {
+              "what": "FFmpeg 9.0.2",
+              "file": "ffmpeg-9.0.2.tar.xz",
+              "url": "https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz",
+              "sha256": "8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e",
+              "checksum_source": "pinned-at-review",
+              "checksum_url": "https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz.asc"
+            }
+          ]
+        }
+      },
+      "sources": [
+        {"what": "FFmpeg release sources", "url": "https://ffmpeg.org/releases/"},
+        {"what": "x264 sources", "url": "https://code.videolan.org/videolan/x264"}
+      ]
+    },
+
+    "libreoffice": {
+      "name": "LibreOffice",
+      "dest": "libreoffice",
+      "license": "MPL-2.0",
+      "license_note": "Shipped unmodified with its own license files (LICENSE.html, CREDITS, NOTICE inside the install tree). Some parts carry other open-source licences listed there.",
+      "homepage": "https://www.libreoffice.org/",
+      "selection": [
+        "26.8.0 (build 26.8.0.3, the 26.8.0 final) is the newest release whose final build is on downloadarchive.documentfoundation.org: 26.8.1 is on the live mirrors but not archived yet.",
+        "26.2.x (the 'still' branch) reaches end of life late in 2026, so the bundle tracks 26.8. Bump to 26.8.1 or later once it is archived."
+      ],
+      "platforms": {
+        "win-x64": {
+          "version": "26.8.0.3",
+          "downloads": [
+            {
+              "file": "LibreOffice_26.8.0.3_Win_x86-64.msi",
+              "url": "https://downloadarchive.documentfoundation.org/libreoffice/old/26.8.0.3/win/x86_64/LibreOffice_26.8.0.3_Win_x86-64.msi",
+              "sha256": "4aa6c6e1895f4055104effcb556bd3362d20c6ad707c149543304f395ef9db95",
+              "checksum_source": "vendor",
+              "checksum_url": "https://downloadarchive.documentfoundation.org/libreoffice/old/26.8.0.3/win/x86_64/LibreOffice_26.8.0.3_Win_x86-64.msi.sha256"
+            }
+          ],
+          "archive": "msi",
+          "install": {"rule": "msi-admin"}
+        },
+        "mac-arm64": {
+          "version": "26.8.0.3",
+          "downloads": [
+            {
+              "file": "LibreOffice_26.8.0.3_MacOS_aarch64.dmg",
+              "url": "https://downloadarchive.documentfoundation.org/libreoffice/old/26.8.0.3/mac/aarch64/LibreOffice_26.8.0.3_MacOS_aarch64.dmg",
+              "sha256": "8858d8058da4f862f47559486814e65efc27294da67c5e4bb56b006b1ee59f89",
+              "checksum_source": "vendor",
+              "checksum_url": "https://downloadarchive.documentfoundation.org/libreoffice/old/26.8.0.3/mac/aarch64/LibreOffice_26.8.0.3_MacOS_aarch64.dmg.sha256"
+            }
+          ],
+          "archive": "dmg",
+          "install": {"rule": "dmg-ditto", "app": "LibreOffice.app"}
+        },
+        "mac-x64": {
+          "version": "26.8.0.3",
+          "downloads": [
+            {
+              "file": "LibreOffice_26.8.0.3_MacOS_x86-64.dmg",
+              "url": "https://downloadarchive.documentfoundation.org/libreoffice/old/26.8.0.3/mac/x86_64/LibreOffice_26.8.0.3_MacOS_x86-64.dmg",
+              "sha256": "2dcbce4894e01bc1ecd594658e2cbda70ff7bfcd0b310f35d38887797172d09e",
+              "checksum_source": "vendor",
+              "checksum_url": "https://downloadarchive.documentfoundation.org/libreoffice/old/26.8.0.3/mac/x86_64/LibreOffice_26.8.0.3_MacOS_x86-64.dmg.sha256"
+            }
+          ],
+          "archive": "dmg",
+          "install": {"rule": "dmg-ditto", "app": "LibreOffice.app"}
+        }
+      },
+      "sources": [
+        {
+          "what": "LibreOffice 26.8.0.3 core sources",
+          "file": "libreoffice-26.8.0.3.tar.xz",
+          "url": "https://downloadarchive.documentfoundation.org/libreoffice/old/26.8.0.3/src/libreoffice-26.8.0.3.tar.xz",
+          "sha256": "42116e256933aa575974e420ffa04f7cd7096f4b7ca5d0907ddeaf2a07f68f94",
+          "checksum_source": "vendor",
+          "checksum_url": "https://downloadarchive.documentfoundation.org/libreoffice/old/26.8.0.3/src/libreoffice-26.8.0.3.tar.xz.sha256"
+        }
+      ]
+    },
+
+    "jre": {
+      "name": "Eclipse Temurin JRE 21",
+      "dest": "jre",
+      "license": "GPL-2.0-only WITH Classpath-exception-2.0",
+      "license_note": "Ships its own legal/ directory, NOTICE and release file inside runtime/jre.",
+      "homepage": "https://adoptium.net/",
+      "platforms": {
+        "win-x64": {
+          "version": "21.0.12.1+1",
+          "downloads": [
+            {
+              "file": "OpenJDK21U-jre_x64_windows_hotspot_21.0.12.1_1.zip",
+              "url": "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.12.1%2B1/OpenJDK21U-jre_x64_windows_hotspot_21.0.12.1_1.zip",
+              "sha256": "d35f31e712f0fcf6ac5a093edc90204fbff22f720ba3950bd09d331d5e621636",
+              "checksum_source": "vendor",
+              "checksum_url": "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.12.1%2B1/OpenJDK21U-jre_x64_windows_hotspot_21.0.12.1_1.zip.sha256.txt"
+            }
+          ],
+          "archive": "zip",
+          "install": {"rule": "jre-normalise"}
+        },
+        "mac-arm64": {
+          "version": "21.0.12.1+1",
+          "downloads": [
+            {
+              "file": "OpenJDK21U-jre_aarch64_mac_hotspot_21.0.12.1_1.tar.gz",
+              "url": "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.12.1%2B1/OpenJDK21U-jre_aarch64_mac_hotspot_21.0.12.1_1.tar.gz",
+              "sha256": "dec50fc6f9fcd4fe3ae8cabf5a5fa68f6afc48841f7698e468e9aa5d54beed84",
+              "checksum_source": "vendor",
+              "checksum_url": "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.12.1%2B1/OpenJDK21U-jre_aarch64_mac_hotspot_21.0.12.1_1.tar.gz.sha256.txt"
+            }
+          ],
+          "archive": "tar.gz",
+          "install": {"rule": "jre-normalise"}
+        },
+        "mac-x64": {
+          "version": "21.0.12.1+1",
+          "downloads": [
+            {
+              "file": "OpenJDK21U-jre_x64_mac_hotspot_21.0.12.1_1.tar.gz",
+              "url": "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.12.1%2B1/OpenJDK21U-jre_x64_mac_hotspot_21.0.12.1_1.tar.gz",
+              "sha256": "6717ec641fd9ce0bb209ca083ee23b42202ac68cb6fcc5753496e0e4a0f41989",
+              "checksum_source": "vendor",
+              "checksum_url": "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.12.1%2B1/OpenJDK21U-jre_x64_mac_hotspot_21.0.12.1_1.tar.gz.sha256.txt"
+            }
+          ],
+          "archive": "tar.gz",
+          "install": {"rule": "jre-normalise"}
+        }
+      },
+      "sources": [
+        {
+          "what": "Temurin 21.0.12.1+1 sources",
+          "file": "OpenJDK21U-jdk-sources_21.0.12.1_1.tar.gz",
+          "url": "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.12.1%2B1/OpenJDK21U-jdk-sources_21.0.12.1_1.tar.gz",
+          "sha256": "573057d03584ae793fb7ec9a14c76d826d9187a53efeefd99da47403a5308234",
+          "checksum_source": "vendor",
+          "checksum_url": "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.12.1%2B1/OpenJDK21U-jdk-sources_21.0.12.1_1.tar.gz.sha256.txt"
+        }
+      ]
+    },
+
+    "verapdf": {
+      "name": "veraPDF (Greenfield CLI)",
+      "dest": "verapdf",
+      "license": "GPL-3.0-or-later OR MPL-2.0",
+      "license_note": "Dual licensed; the release is signed (.asc, key 13DD102B4DD69354D12DE5A83184863278B17FE7) but no SHA-256 is published.",
+      "homepage": "https://verapdf.org/",
+      "platforms": {
+        "win-x64": {
+          "version": "1.30.2",
+          "downloads": [
+            {
+              "file": "verapdf-greenfield-1.30.2-installer.zip",
+              "url": "https://software.verapdf.org/releases/1.30/verapdf-greenfield-1.30.2-installer.zip",
+              "sha256": "6cc6341cb1af644044054b81f00a6590a7918abb18f762243de115258bcad838",
+              "checksum_source": "pinned-at-review",
+              "checksum_url": "https://software.verapdf.org/releases/1.30/verapdf-greenfield-1.30.2-installer.zip.asc"
+            }
+          ],
+          "archive": "zip",
+          "install": {"rule": "izpack-auto", "template": "scripts/verapdf-auto-install.xml"}
+        },
+        "mac-arm64": {
+          "version": "1.30.2",
+          "downloads": [
+            {
+              "file": "verapdf-greenfield-1.30.2-installer.zip",
+              "url": "https://software.verapdf.org/releases/1.30/verapdf-greenfield-1.30.2-installer.zip",
+              "sha256": "6cc6341cb1af644044054b81f00a6590a7918abb18f762243de115258bcad838",
+              "checksum_source": "pinned-at-review",
+              "checksum_url": "https://software.verapdf.org/releases/1.30/verapdf-greenfield-1.30.2-installer.zip.asc"
+            }
+          ],
+          "archive": "zip",
+          "install": {"rule": "izpack-auto", "template": "scripts/verapdf-auto-install.xml"}
+        },
+        "mac-x64": {
+          "version": "1.30.2",
+          "downloads": [
+            {
+              "file": "verapdf-greenfield-1.30.2-installer.zip",
+              "url": "https://software.verapdf.org/releases/1.30/verapdf-greenfield-1.30.2-installer.zip",
+              "sha256": "6cc6341cb1af644044054b81f00a6590a7918abb18f762243de115258bcad838",
+              "checksum_source": "pinned-at-review",
+              "checksum_url": "https://software.verapdf.org/releases/1.30/verapdf-greenfield-1.30.2-installer.zip.asc"
+            }
+          ],
+          "archive": "zip",
+          "install": {"rule": "izpack-auto", "template": "scripts/verapdf-auto-install.xml"}
+        }
+      },
+      "sources": [
+        {"what": "veraPDF apps (Greenfield CLI) v1.30.2", "url": "https://github.com/veraPDF/veraPDF-apps/tree/v1.30.2"},
+        {"what": "veraPDF library and validation", "url": "https://github.com/veraPDF"}
+      ]
+    }
+  }
+}
