@@ -245,11 +245,13 @@ class TextRoute(Route):
         work.pdfa = (pdf, pdfa_level(work))
 
     def _source_chars(self, work: WorkItem) -> collections.Counter[str] | None:
-        """The source's characters, decoded in place (read-only) for a §7.5 re-check."""
-        if not work.source_abs:
+        """The source's characters for a §7.5 re-check: the source read in place (read-only), or
+        for an e-mail attachment its staged copy."""
+        path = work.source_abs or work.staged
+        if not path:
             return None
         try:
-            return visible_chars(normalise_text(read_file(work.source_abs).decode(str(work.plan.data["codec"]))))
+            return visible_chars(normalise_text(read_file(path).decode(str(work.plan.data["codec"]))))
         except (OSError, KeyError, UnicodeDecodeError, LookupError):
             return None
 

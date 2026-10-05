@@ -190,6 +190,15 @@ def test_resume_compares_with_source_in_place(home, tmp_path: Path, monkeypatch)
     assert wi.pdfa == (wi.existing_output, "2b")
 
 
+def test_resume_of_an_attachment_uses_its_staged_copy(home, tmp_path: Path, monkeypatch) -> None:  # noqa: ANN001
+    wi = _work(home, tmp_path, CJK.encode())  # staged copy exists, as the e-mail stages it
+    wi.source_abs = None
+    wi.resume, wi.existing_output = True, _fake_pdf(tmp_path)
+    monkeypatch.setattr(vpdf, "extract_text", lambda p: CJK)
+    ROUTE.check_existing(FakeTaskContext(), wi)
+    assert [c.report_form() for c in wi.checks] == ["V-PDF-OPEN=pass", "V-TEXT=pass"]
+
+
 # --------------------------------------------------------------------------- V-TEXT
 
 
