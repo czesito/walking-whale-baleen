@@ -84,7 +84,10 @@ jobs:
           for ipt in iptables ip6tables; do
             $ipt -A OUTPUT -o lo -p udp --dport 53 -j REJECT
             $ipt -A OUTPUT -o lo -p tcp --dport 53 -j REJECT
-            $ipt -A OUTPUT ! -o lo -j REJECT
+            # Count only packets sent by the test user's processes (Baleen and its tools). The kernel's
+            # own ICMPv6 router solicitations / MLD reports on egress0 are dropped without counting.
+            $ipt -A OUTPUT ! -o lo -m owner --uid-owner "$RUN_AS" -j REJECT
+            $ipt -A OUTPUT ! -o lo -j DROP
           done
           sudo -u "$RUN_AS" --preserve-env=PATH,HOME,BALEEN_REQUIRE_TOOLS,BALEEN_VERAPDF,BALEEN_SOFFICE,PYTHONIOENCODING \
             .venv/bin/python -m pytest tests/integration -q -p no:cacheprovider
