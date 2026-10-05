@@ -1,0 +1,11 @@
+{# Options card (UI-C2, D-05, D-06): rendered from the workflow's settings schema, grouped. The
+   preset slot is shown disabled, reading "Default" or "Default (modified)", tagged v1.1 (DR-30). #}
+{% from "partials/icon.html" import icon %}
+{% from "partials/option_row.html" import option_row %}
+<section class="card" aria-labelledby="optT" id="options-card"{% if oob %} hx-swap-oob="true"{% endif %}><div class="card-head"><span class="step">{{ steps.options }}</span><span class="card-title" id="optT">Options</span>
+<div class="right"><span class="preset">Preset <select class="select" disabled title="Presets arrive in v1.1" aria-label="Preset (coming in v1.1)"><option>{{ 'Default (modified)' if modified else 'Default' }}</option></select><span class="v11">v1.1</span></span>
+<button type="button" class="btn ghost sm" id="opt-reset"{% if not modified %} disabled{% endif %} hx-post="/api/settings" hx-vals='{{ {"ui": "options:" ~ wf.id, "reset": "workflow"}|tojson }}' hx-target="#options-card" hx-swap="outerHTML">{{ icon('reset') }}Reset</button></div></div>
+{% for g in wf.options %}<div class="opt-group"><div class="opt-group-title">{{ g.group }}</div>
+{% for f in g.fields %}{{ option_row(wf.id, f, options[f.key]) }}
+{% endfor %}</div>
+{% endfor %}</section>

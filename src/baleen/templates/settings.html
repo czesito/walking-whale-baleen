@@ -1,0 +1,22 @@
+{# Settings (UI-S1 order, W-16, W-23): Resource use (UI-S2) · When a run finishes · Data ·
+   Advanced (read-only). Changes save immediately and apply live. #}
+{% extends "base.html" %}
+{% from "partials/icon.html" import icon %}
+{% block page %}
+<div class="page-head"><div class="ph-main"><div class="kicker">System</div><h1 class="page-title">Settings</h1><div class="rule"></div>
+<p class="page-desc">Preferences for this Baleen folder. Workflow options live on each workflow's page.</p></div></div>
+{% include "_resource.html" %}
+{% include "_prefs.html" %}
+<section class="card"><div class="card-head"><span class="card-title">Data</span></div>
+<div class="kvrow"><div><div class="label">Baleen folder</div><div class="help mono fs-125">{{ home_path }}</div></div><button type="button" class="btn secondary sm" id="data-open-home" hx-post="/api/open" hx-vals='{"what": "data"}' hx-swap="none">{{ icon('external') }}Open</button></div>
+<div class="kvrow"><div><div class="label">Logs</div><div class="help">{{ log_short }} · stays on this computer</div></div><button type="button" class="btn secondary sm" id="data-open-logs" hx-post="/api/open" hx-vals='{"what": "logs"}' hx-swap="none">{{ icon('external') }}Open logs folder</button></div>
+<div class="kvrow"><div><div class="label">Reset workflow options</div><div class="help">Restores every option to its default. Folders are kept.</div></div><button type="button" class="btn secondary sm" id="data-reset" data-act="dialog" data-template="tpl-reset">{{ icon('reset') }}Reset…</button></div>
+</section>
+<section class="card flat"><div class="card-head"><span class="card-title">Advanced</span><span class="card-sub">Read-only · set by environment variables at launch</span></div>
+<dl class="kv kv-wide"><dt>Address</dt><dd class="mono">{{ address }}</dd><dt>Tool overrides</dt><dd>{% if overrides %}{% for k, v in overrides %}<span class="mono">{{ k }}</span> = <span class="mono">{{ v }}</span>{% if not loop.last %}<br>{% endif %}{% endfor %}{% else %}None{% endif %}</dd>
+<dt>Timeouts</dt><dd>Document batch 60 s + 30 s per file · single document {{ adv.lo_timeout_s }} s · PDF/A batch {{ adv.verapdf_timeout_s }} s · Media ≥ {{ adv.av_timeout_min_s }} s</dd></dl></section>
+{% endblock %}
+{% block templates %}
+<template id="tpl-reset"><h2 id="mTitle">Reset workflow options?</h2><p>Restores every option to its default. Folders are kept.</p>
+<div class="m-foot"><button type="button" class="btn secondary" id="reset-cancel" data-act="closemodal" data-autofocus>Cancel</button><button type="button" class="btn primary" id="reset-confirm" hx-post="/api/settings" hx-vals='{"ui": "reset", "reset": "workflow"}' hx-swap="none">{{ icon('reset') }}Reset</button></div></template>
+{% endblock %}

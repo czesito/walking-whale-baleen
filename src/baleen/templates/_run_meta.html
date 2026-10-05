@@ -1,0 +1,6 @@
+{# Run meta (UI-R1): source → output, start time and duration, settings chips (Convert). #}
+{% from "partials/icon.html" import icon %}
+<div id="run-meta"{% if oob %} hx-swap-oob="true"{% endif %}><div class="runmeta"><span class="item">{{ icon('folder') }}<span class="p" title="{{ run.source_root }}">{{ run.source_root }}</span></span>
+{%- if run.output_root %}<span class="item">{{ icon('arrow-r') }}<span class="p" title="{{ run.output_root }}">{{ run.output_root }}</span></span>{% endif -%}
+<span class="item">{{ icon('clock') }}{% if run.live %}Started {{ clock_time(run.started_at) }}{% else %}{{ when(run.started_at) }} · {{ duration(run.elapsed_s) }}{% endif %}</span></div>
+{% if chips %}<div class="chips">{% for c in chips %}<span class="chip">{{ c }}</span>{% endfor %}</div>{% endif %}</div>

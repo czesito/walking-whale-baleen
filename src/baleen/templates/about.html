@@ -1,0 +1,14 @@
+{# About (UI-A1, W-17): wordmark (the logo once designed), version and licence; "by Walking Whale"
+   with the WW logo, the only in-app endorsement (design §04); links; third-party software. #}
+{% extends "base.html" %}
+{% from "partials/icon.html" import icon %}
+{% block page %}
+<div class="page-head"><div class="ph-main"><div class="kicker">System</div><h1 class="page-title">About</h1><div class="rule"></div></div></div>
+<section class="card"><div class="about-hero"><div><div class="wordmark wm-about">Baleen</div><div class="muted">Version {{ version }} · Apache-2.0</div></div></div>
+<p class="about-p">Baleen turns legacy archive files into archival formats and proves every one of them is sound. It runs entirely on this computer and never changes your source folder.</p>
+<div class="ww-endorse"><span>by</span><img src="{{ static('brand/walking-whale.png') }}" alt="Walking Whale"><span>Walking Whale Co., Ltd. · Taipei</span></div>
+<div class="about-links"><a class="btn secondary sm" href="{{ links.project }}" target="_blank" rel="noopener noreferrer">{{ icon('external') }}Project on GitHub</a><a class="btn secondary sm" href="{{ links.spec }}" target="_blank" rel="noopener noreferrer">{{ icon('cat-document') }}Specification</a><a class="btn ghost sm" href="{{ links.issues }}" target="_blank" rel="noopener noreferrer">Report a problem</a></div>
+<p class="help about-note">When reporting a problem, never attach archive files. Describe them instead.</p></section>
+<section class="card"><div class="card-head"><span class="card-title">Third-party software</span><span class="card-sub">Shipped unmodified · full texts in THIRD_PARTY_NOTICES</span></div>
+<div class="notices">{% for name, lic in third_party %}<div><b>{{ name }}</b><br><span class="faint">{{ lic }}</span></div>{% endfor %}</div></section>
+{% endblock %}

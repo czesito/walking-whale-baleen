@@ -1,0 +1,12 @@
+{# Results (UI-R3, UI-R6, UI-R7, W-08, W-10, W-11): notices for cancelled / stopped runs, the
+   headline, six tiles that filter, then the results table (problems first). #}
+{% from "partials/icon.html" import icon %}
+{% from "partials/notice.html" import notice %}
+<div id="run-results"{% if announce_finish %} data-announce="{{ announce_finish }}"{% endif %}>
+{% if run.state == 'cancelled' %}{% call notice('warn', 'Run cancelled after ' ~ num(run.processed) ~ ' of ' ~ num(run.total) ~ ' files', icon_name='st-skipped') %}Everything finished so far is saved and verified. Start the same run again to finish; completed files are skipped.{% endcall %}{% endif %}
+{% if run.state == 'stopped' %}{% call notice('alert', stopped.title) %}{{ num(run.processed) }} of {{ num(run.total) }} files were processed and the report was saved. {{ stopped.resume }} Details are in <span class="mono">{{ log_path }}</span>.{% endcall %}{% endif %}
+{% for w in run.warnings %}{% call notice('info') %}{{ w }}{% endcall %}{% endfor %}
+<div class="headline">{% if run.issues %}{{ icon('st-review') }}{{ num(run.issues) }} of {{ num(run.total) }} files need your attention{% else %}{{ icon('st-ok') }}All {{ num(run.total) }} files are OK{% endif %}</div>
+{% with tiles_interactive = True %}{% include "_tiles.html" %}{% endwith %}
+{% include "_rows.html" %}
+</div>

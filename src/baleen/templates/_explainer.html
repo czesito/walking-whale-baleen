@@ -1,0 +1,7 @@
+{# Explainer card (UI-K2): a static card from the registry, e.g. Check's "What Baleen checks". #}
+{% from "partials/icon.html" import icon %}
+{% set ex = wf.explainer %}
+<section class="card flat" aria-labelledby="exT"><div class="card-head"><span class="step">{{ steps.preview }}</span><span class="card-title" id="exT">{{ ex.title }}</span></div>
+<ul class="checks">{% for line in ex.lines %}{% set parts = line.split(' · ', 1) %}<li>{{ icon(ex.icons[loop.index0] if loop.index0 < ex.icons|length else 'tick', 'na') }}<span>{% if parts|length == 2 %}<b>{{ parts[0] }}</b> · {{ parts[1] }}{% else %}{{ line }}{% endif %}</span></li>{% endfor %}</ul>
+{% if ex.footer %}<p class="help ex-foot">{{ ex.footer }}</p>{% endif %}
+</section>

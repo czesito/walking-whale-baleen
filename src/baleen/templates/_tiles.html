@@ -1,0 +1,11 @@
+{# Status tiles (UI-R3, D-14): Failed, Needs review, Unsupported, OK, Ignored, Skipped. After the
+   run they toggle a status filter (aria-pressed); while running they only count. #}
+{% from "partials/icon.html" import icon %}
+<div class="tiles tiles-gap" id="tiles"{% if oob %} hx-swap-oob="true"{% endif %}>
+{%- for k in STATUS_KEYS %}{% set n = kc[k] %}
+{%- if tiles_interactive %}<button type="button" class="tile {{ k }}{% if not n %} zero{% endif %}" id="tile-{{ k }}" aria-pressed="{{ 'true' if filter == k else 'false' }}"
+ hx-get="/runs/{{ run.id }}/rows?{{ qs(status=(None if filter == k else k), q=q) }}" hx-target="#results-table" hx-swap="outerHTML">
+{%- else %}<div class="tile {{ k }}{% if not n %} zero{% endif %} static">{% endif -%}
+<div class="t-label">{{ icon('st-' ~ k) }}{{ KEY_LABEL[k] }}</div><div class="t-num">{{ num(n) }}</div>
+{%- if tiles_interactive %}</button>{% else %}</div>{% endif %}
+{%- endfor %}</div>

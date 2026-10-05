@@ -1,0 +1,6 @@
+{# Empty state (design §06): icon in a 52 px Mist circle, title, one sentence, one action. #}
+{% from "partials/icon.html" import icon %}
+{% macro empty_state(icon_name, title, text, href=None, action=None) -%}
+<div class="empty"><div class="empty-ic">{{ icon(icon_name) }}</div><h3>{{ title }}</h3><p>{{ text }}</p>
+{%- if href %}<a class="btn primary" href="{{ href }}">{{ action }}{{ icon('arrow-r') }}</a>{% endif %}</div>
+{%- endmacro %}
