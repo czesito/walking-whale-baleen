@@ -296,3 +296,36 @@ def test_cancel_queued() -> None:
     gate.set()
     s.close()
     assert len(removed) == 4 and all(t.future.cancelled() for t in queued)
+
+
+def test_multi_token_task_is_not_starved_by_file_tasks() -> None:
+    """A Media task needing all B tokens still starts while later 1-token tasks keep arriving."""
+    b = Budget(B=4, M=8, T=4, K=1, F=1, threads=4)
+    s = Scheduler(lambda: b, low_priority=lambda: False)
+    started: dict[str, float] = {}
+    t0 = time.monotonic()
+
+    def small_for(d: float):  # noqa: ANN202
+        def small(ctx) -> None:  # noqa: ANN001
+            time.sleep(d)
+        return small
+
+    def media(ctx) -> None:  # noqa: ANN001
+        started["media"] = time.monotonic() - t0
+        assert ctx.tokens == 4
+
+    for n in range(4):  # staggered, so the four tokens are never free at the same moment
+        s.submit(Task(lane=Lane.FILES, order=(n,), fn=small_for(0.1 + 0.07 * n)))
+    m = Task(lane=Lane.MEDIA, order=(5,), fn=media)
+    s.submit(m)
+    # A long stream of later file tasks (orders 6..) keeps arriving.
+    stop = time.monotonic() + 8
+    n = 6
+    while time.monotonic() < stop and not m.future.done():
+        s.submit(Task(lane=Lane.FILES, order=(n,), fn=small_for(0.1 + 0.07 * (n % 4))))
+        n += 1
+        time.sleep(0.01)
+    m.future.result(timeout=15)
+    s.cancel_queued()
+    s.close()
+    assert 1.5 < started["media"] < 5.0  # waited for the aging threshold, then got all four tokens

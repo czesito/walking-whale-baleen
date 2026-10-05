@@ -205,6 +205,10 @@ DEFAULT_BATCH: dict[Lane, BatchPolicy] = {
 
 _seq = itertools.count()
 
+# A head task that cannot fit its budget for this long holds back later-ordered tasks in
+# other lanes, so a multi-token encode is not starved by a stream of 1-token file tasks.
+STARVE_S = 2.0
+
 
 @dataclass(eq=False)
 class Task:
@@ -440,7 +444,10 @@ class Scheduler:
             ]
             heads.sort(key=lambda lt: lt[1].sort_key())
             started = False
+            barrier: tuple[Any, ...] | None = None
             for lane, _head in heads:
+                if barrier is not None and _head.sort_key() > barrier:
+                    break
                 group, deadline = self._pick(lane, now)
                 if not group:
                     if deadline is not None:
@@ -456,6 +463,10 @@ class Scheduler:
                     self._start(lane, group, tokens, mem)
                     started = True
                     break  # budgets changed; re-evaluate from the top in plan order
+                if now - head.enqueued >= STARVE_S:
+                    barrier = head.sort_key()
+                    wake = now + 0.25
+                    next_deadline = wake if next_deadline is None else min(next_deadline, wake)
             if not started:
                 return next_deadline
 

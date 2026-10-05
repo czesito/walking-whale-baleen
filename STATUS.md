@@ -95,6 +95,15 @@ approved documents was edited. Accept, amend or reject them in a new spec revisi
     `osutil.py` (priority, keep-awake), `home.py`, `paths.py`, `logs.py`, `cli_run.py`.
 - **New setting.** The `check_dir` workflow key stores the Check workflow's last folder.
 
+### DR-47 (proposed): aging so multi-token tasks are not starved
+
+- **Decision.** Plan order still decides within a lane (§5.5), and lanes still backfill. But a head task
+  that has waited more than 2 s without fitting its budget holds back later-ordered tasks in other lanes
+  until it fits.
+- **Why.** A Media task needs ⌊B/F⌋ tokens at once. Without aging, a steady stream of 1-token
+  Files tasks from later items keeps taking freed tokens, and the encode waits until the Files queue
+  drains. This was demonstrated by `test_multi_token_task_is_not_starved_by_file_tasks`.
+
 ## Risks R-01…R-14: findings on this machine
 
 *(pending)*
