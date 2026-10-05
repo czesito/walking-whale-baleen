@@ -1,0 +1,12 @@
+# Expected results of the bundle smoke run (spec §14.6) on tests/fixtures/make_fixtures.py --smoke.
+# Checked by scripts/build_bundle.py: source_path, status and reason must match exactly.
+source_path,status,reason
+audio/tone.wav,OK,
+mail/message.eml,OK,
+other/archive.zip,UNSUPPORTED,UNSUPPORTED_FORMAT
+other/Thumbs.db,IGNORED,SYSTEM_FILE
+photos/photo.jpg,OK,
+photos/scan.png,OK,
+texts/letter.rtf,OK,
+texts/notes.txt,OK,
+video/clip.avi,OK,
