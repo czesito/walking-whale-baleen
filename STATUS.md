@@ -1,19 +1,184 @@
 # Baleen: implementation status
 
-Status of the v1 implementation against Specification v1.2 and Design v1.1.
-This file is updated as work lands. Sections marked *(pending)* are filled in at the end of the session.
+Status of v0.1.0 against Specification v1.2 and Design v1.1, as of 2026-10-06.
+
+## Summary
+
+- **Everything is built.** The whole v1 pipeline works on real tools: images, documents, plain text,
+  HTML, e-mail with attachments, existing PDFs, audio and video. Every output is verified (V-IMG,
+  V-PDF-OPEN, V-PDFA with real veraPDF, V-TEXT, V-AV-*, V-HASH) and recorded in the CSV report, run JSON
+  and journal.
+- **The UI covers every design state.** All W-01…W-23 are implemented on the local server with the full
+  security model (SEC-1…SEC-11), and are verified with 37 Playwright tests in Chromium against the
+  prototype.
+- **Both portable bundles build and pass their smoke tests.** win-x64 builds locally and in CI; mac-arm64
+  builds in CI. Runtimes are pinned with vendor SHA-256: CPython 3.12.15, LibreOffice 26.8.0.3, Temurin
+  JRE 21.0.12.1 and veraPDF 1.30.2. FFmpeg 9.0.2 + x264 r3223 is built by Baleen from source,
+  GPL-2.0-or-later.
+- **CI is green.** `test.yml` runs on ubuntu, windows and macOS, including the integration suite again
+  with networking disabled and 0 outbound attempts (AC-10). `bundle.yml` is green for win-x64 and
+  mac-arm64.
+- **Locally the full suite passes**: unit tests, integration tests with every tool required, and
+  Playwright. Benchmarks meet AC-13, AC-15 and AC-16 on this machine. AC-11 passes locally.
+- **An independent review found 11 issues**, including one blocker (cancel while planning). Ten are
+  fixed and covered by regression tests. The remaining one, SMB access from UNC-linked pictures in
+  .doc files, is listed under Known gaps.
 
 ## What works and how to run it
 
-*(pending)*
+**Release bundle (Windows x64, macOS Apple silicon).**
+1. Unzip `baleen-0.1.0-<platform>.zip` and double-click *Start Baleen*. The launcher sets
+   `BALEEN_HOME`, `TEMP`/`TMPDIR` → `data/tmp` and the Java preferences → `data/java`, then runs
+   `runtime/python … -m baleen serve` and opens the browser at the token URL.
+2. Convert, Check, Runs, Tools, Settings and About work as the design describes. Quit is in the rail.
+3. To uninstall, delete the folder. AC-11 checks that nothing else remains.
+
+**From a source checkout.**
+```
+uv venv --python 3.12 .venv
+uv pip install --require-hashes -r requirements-dev.lock
+uv pip install --no-deps -e .
+set BALEEN_RUNTIME=<path to a bundle's runtime folder>   (optional; else tools from PATH)
+python -m baleen doctor
+python -m baleen serve
+python -m baleen convert <source> <output> [--set key=value] [--processor gentle|balanced|maximum|N]
+python -m baleen check <folder> [--report PATH]
+```
+
+**Tests.**
+```
+python -m pytest tests/unit -q                       # about 590 tests, about 40 s
+set BALEEN_REQUIRE_TOOLS=1
+python -m pytest tests/integration -q                # golden + acceptance, about 15 min, real tools
+python -m pytest tests/ui -q                         # Playwright (Chromium), about 75 s
+```
+For the media fixtures with the minimal release FFmpeg, set `BALEEN_FIXTURE_FFMPEG` to a full FFmpeg
+(the MP3 fixture needs LAME, which Baleen itself never uses).
+
+**Build and measure.**
+```
+python scripts/build_bundle.py --platform win-x64 --ffmpeg-from <ffmpeg.yml artifact> [--cache DIR]
+python scripts/make_benchmark.py <dir>               # 2,000 JPEGs, 200 documents, 40 videos
+python scripts/bench.py <dir> --out results.json --profiles balanced,gentle,maximum,8,1
+python scripts/ac11_local.py dist/baleen-0.1.0-win-x64.zip --work %TEMP%/baleen-test/ac11
+```
+
+## Verification
+
+| Suite | Where | Result |
+|---|---|---|
+| Unit (594) | local, CI ubuntu/windows/macOS | pass (`test.yml` green) |
+| Integration (47): golden `expected.csv` for every fixture group and profile, AC-07, AC-08 (kill mid-LibreOffice and mid-FFmpeg), UNC, R-05 listener, CJK/R-02 | local with all tools required (bundle runtime, self-built FFmpeg); CI ubuntu with pinned LibreOffice 26.8 + veraPDF 1.30.2 | pass |
+| Integration offline (AC-10) | CI ubuntu, network namespace, packets of the test user counted | pass, 0 outbound attempts |
+| UI, Playwright (37): every W-state, keyboard-only Convert/Check, serve to quit | local, Chromium | pass |
+| Bundle build + smoke (doctor, convert of the smoke set) | win-x64 local and CI; mac-arm64 CI | pass |
+| AC-11 clean uninstall | win-x64 local (`scripts/ac11_local.py`); win-x64 + mac-arm64 in `bundle.yml` | pass (only background apps' writes; see below) |
+| Benchmarks (AC-13, AC-15, AC-16) | local | pass (see Benchmarks) |
+| Independent review | fresh agent against AC-01…AC-16, SEC, design | 11 findings, 10 fixed (see below) |
 
 ## Spec ID coverage
 
-*(pending)*
+| Area | IDs | Implemented | Tested | Not verified |
+|---|---|---|---|---|
+| Principles | P1–P9 | all | source snapshots in every golden run (AC-01); P2/P4/P5 engine tests; junction and P1 regression; publish intents (AC-08); every item exactly once (AC-02) | P8 residual: UNC links in .doc (Known gaps) |
+| Goals / non-goals | G1–G6, NG1–NG8 | all | through the ACs | — |
+| Pipeline | §5.1–§5.6, DR-32…DR-35 | all | `test_runner`, `test_scheduler` (JS oracle for the §5.5 formulas, 3,000 cases), AC-08/AC-09, recovery, live-run lock, batching regression | — |
+| Formats | §6.1–§6.7 | all routes | golden groups images, text, html, pdf, documents, email, media, other, names | R-06 layout fidelity (manual) |
+| Naming | §7.1–§7.8, DR-05, DR-18 | all | `test_plan` (clash table, shuffles, attachments vs source folders), golden names, resume (AC-07) | reserved names (R-09) not tested |
+| Verification | V-IMG, V-PDF-OPEN, V-PDFA, V-TEXT, V-AV-PROBE, V-AV-DUR, V-AV-DECODE, V-HASH | all | golden `checks` column on real tools | — |
+| Statuses | §9 (all 36 codes) | all | code table = spec table; most codes exercised by golden rows | — |
+| Report | §10.1–§10.4 | all | CSV format (BOM, CRLF, RFC 4180, plan order), run JSON, run index, journal | — |
+| Settings | §11 | all | validation, overrides, live resource changes, load warnings shown on Settings | — |
+| UI | UI-G1–G4, UI-C1–C6, UI-K1–K2, UI-R1–R8, UI-H1–H3, UI-T1, UI-S1–S2, UI-A1, §12.8, §12.9 | all | Playwright per W-state; route and unit tests; dummy workflow without template changes | native dialogs, Safari/Firefox/Edge (manual) |
+| Security | SEC-1–SEC-11 | all | `test_d_security` (AC-12), LAN-address refusal, reviewer pass | SEC-9 residual (UNC); SEC-10 no sandbox by design |
+| Packaging | §14.1–§14.7 | all | bundles + smoke in CI and locally; AC-11 | launcher double-click on a real Mac (manual) |
+| Licensing | §15, DR-22 | all | notices generated per component; GPL sources attached by `bundle.yml` | — |
+
+## Acceptance criteria
+
+| AC | Status | Evidence |
+|---|---|---|
+| 01 Source untouched | automated | source snapshot (listing, size, mtime, SHA-256) before and after every golden run; engine tests; junction regression |
+| 02 Completeness | automated | golden: every row is expected and appears exactly once; engine tests |
+| 03 Integrity | automated | golden: every output file matches its row's SHA-256, and there is no output for FAILED/UNSUPPORTED/IGNORED/SKIPPED; also after a crash (AC-08) |
+| 04 Formats | automated | golden: archival extensions only; no VALIDATOR_MISSING when tools are required |
+| 05 Naming | automated | golden names group (§7.3 table, CJK, emoji, 255-unit names, PATH_TOO_LONG) |
+| 06 PDF/A 1b/2b/3b | automated | `pdfa_1b` / `pdfa_3b` profiles with real veraPDF (CJK caveat: proposed DR-52) |
+| 07 Idempotent | automated | `test_ac07_and_ac09_with_real_tools`; media and engine re-runs: RESUMED, no changes |
+| 08 Crash-safe | automated | kill mid-LibreOffice and mid-FFmpeg inside the run's own Job Object, then re-run: completes, no partial files, no staging left; publish intents |
+| 09 Cancel | automated | engine test (remaining rows SKIPPED CANCELLED, report + run JSON); cancel while planning (regression) |
+| 10 Offline | automated, CI | offline integration run, 0 outbound attempts (Linux only) |
+| 11 Clean uninstall | automated | local win-x64 (`scripts/ac11_local.py`): no new registry entries and no tool-related paths. Remaining changes are Edge, OneDrive, VS Code and Discord background writes, plus one transient GUID `.tmp` its owner deleted. Same check in `bundle.yml` for both platforms |
+| 12 Security | automated | `test_d_security`, `test_d_serve` |
+| 13 Performance | measured | 2,000 JPEGs (1.1 GB) check + copy in 10.0 s (limit 5 min); Preview of 2,000 files 0.21 s (limit 10 s). On a much faster machine than the spec's 2020 laptop |
+| 14 UI keyboard | partly automated | Convert and Check keyboard-only in Chromium (Playwright); Safari, Firefox and Edge are manual |
+| 15 Resource limits | measured | busiest 30 s ≤ B + 0.5 at Gentle, Balanced, Maximum, custom 8 and custom 1; reserved memory ≤ M; transfers ≤ T; live change at next dispatch (unit test) |
+| 16 Throughput | measured | Balanced 110.6 s vs custom 1 885.3 s: 8.0× (needs ≥ 2.5×). Measured on 28 threads; the spec's 8-core Mac and PC are not measured |
 
 ## Benchmarks
 
-*(pending)*
+**Machine.** Intel Core i7-14700 (8 P-cores + 12 E-cores, 28 logical processors), 80 GB RAM, Windows 11
+Pro 10.0.26200. Data on the internal SSD (`%TEMP%`). Microsoft Defender real-time protection was on for
+every measurement. Its effect on output writes can't be isolated without adding exclusions, which this
+session was not allowed to do.
+
+**Set.** `scripts/make_benchmark.py`: 2,000 JPEGs (1.1 GB), 100 DOCX + 100 RTF of about 3 pages, and 40
+ten-second 640×480 videos (20 MJPEG AVI, 10 MPEG-1, 10 H.264 MP4); 2,240 items in all. Runtime: the release
+bundle's (LibreOffice 26.8.0.3, self-built FFmpeg 9.0.2, veraPDF 1.30.2). CPU is the whole process tree's
+CPU time, measured through a Job Object, so exited children count.
+
+| Profile | B | Wall | Average cores | Busiest 30 s | Limit B+0.5 | Peak reserved memory |
+|---|---|---|---|---|---|---|
+| Balanced | 14 | 110.6 s | 4.77 | 7.78 | 14.5 | 5.6 GB (M = 20 GB) |
+| Gentle | 7 | 129.6 s | 3.26 | 4.43 | 7.5 | 4.0 GB |
+| Maximum | 27 | 106.1 s | 5.02 | 8.05 | 27.5 | 5.6 GB |
+| custom 8 | 8 | 104.6 s | 4.23 | 4.92 | 8.5 | 5.0 GB |
+| custom 1 | 1 | 885.3 s | 0.92 | 1.18 | 1.5 | 1.0 GB |
+
+- **AC-16:** Balanced / custom 1 = **8.0×**, against the required 2.5×. All 2,240 items were OK in every
+  run.
+- **Lower priority on vs off** (two repeats each, means):
+  - Balanced 103.9 / 99.6 s (+4 %);
+  - Maximum 99.9 / 99.1 s (+1 %);
+  - custom 8 104.1 / 101.9 s (+2 %).
+
+  Below-normal priority, and any E-core placement Windows applies to it, doesn't slow Baleen materially
+  on an otherwise idle machine. No DR is proposed.
+- **Bottleneck.** Documents take about 70 s first-to-last in every profile, limited by K ≤ 4 LibreOffice
+  instances at about 1.2–1.4 s per document. In Balanced and Maximum the two video encodes hold ⌊B/F⌋
+  tokens each, which is all of B, so documents only start once the encodes finish (videos 16–50 s,
+  documents 39–109 s). See proposed DR-57.
+- **Two bugs found by benchmarking, now fixed.**
+  - Batches never formed (DR-35). The first round took 420–485 s in every profile, with documents
+    finishing one at a time. The fix made Balanced 3.8× faster and cut total CPU from 2,821 s to 527 s.
+  - LibreOffice and the JVM ran internal threads beyond their single token. custom 1 measured 2.01 cores
+    against the 1.5 limit; with the caps (proposed DR-58) it measures 1.18.
+- **AC-13:** check + copy of 2,000 JPEGs took 10.0 s, check-only 4.9 s, and Preview 0.21 s (the whole
+  2,240-item set 0.46 s, including FFprobe on 40 videos).
+
+## Independent review
+
+A fresh agent that had not seen the build reviewed the code against AC-01…AC-16, SEC-1…SEC-11 and the
+design. It confirmed the security middleware, reveal containment, the subprocess runner, the
+`.part` + V-HASH + no-replace publish, the DR-08/DR-09 outcome logic, the CSV format and the §5.5
+formulas. Its findings and their outcome:
+
+| # | Severity | Finding | Outcome |
+|---|---|---|---|
+| 1 | blocker | Cancel while scanning or planning executed a half-probed plan (JPEGs re-encoded, published as OK) | fixed: nothing runs after a pre-execution cancel; regression test |
+| 2 | major | Crash recovery in a second Baleen process finalised a live run | fixed: per-run lock; regression test |
+| 3 | major | Publish followed a junction inside the output root into the source (P1) | fixed: real-path containment before creating folders or renaming; Windows junction regression test |
+| 4 | major | An attachments folder and a source folder of the same name escaped the clash rule | fixed: folders resolve depth by depth; regression test |
+| 5 | major | One unreadable subfolder aborted the run; drive roots always failed | fixed: one FAILED row; System Volume Information is a system folder (proposed DR-55) |
+| 6 | minor | Attachments of an e-mail that failed before releasing them became INTERRUPTED | fixed: reported with the parent's failure |
+| 7 | minor | A folder at the output path gave SOURCE_UNREADABLE | fixed: OUTPUT_OCCUPIED |
+| 8 | minor | A crash between rename and journal commit left an unreported output | fixed: publish intent + recovery reconciliation; journal `synchronous=FULL` |
+| 9 | minor | Invalid `settings.json` warnings only in the log | fixed: warning notice on the Settings page; test |
+| 10 | major | UNC-linked pictures in .doc open SMB connections (NTLM exposure on Windows) | open (Known gaps) |
+| 11 | minor | A journal rebuilt into the output folder on a GET | fixed: rebuilt into `data/cache` |
+
+It also pointed out two test weaknesses, both fixed: AC-02 is now checked for duplicates, and AC-08 had a
+no-op assertion.
 
 ## Proposed decision records
 
@@ -104,18 +269,25 @@ approved documents was edited. Accept, amend or reject them in a new spec revisi
   Files tasks from later items keeps taking freed tokens, and the encode waits until the Files queue
   drains. This was demonstrated by `test_multi_token_task_is_not_starved_by_file_tasks`.
 
-### DR-48 (proposed): the bundled FFmpeg builds are GPL-3.0-or-later and link more GPL libraries
+### DR-48 (proposed): Baleen builds its own minimal FFmpeg (resolves R-08)
 
 - **Finding.** No suitable pinned static build with only FFmpeg + x264 exists for both platforms. The
-  pinned builds (Gyan "essentials" 9.0.2 on Windows, martin-riedl.de on macOS) are configured with
-  `--enable-version3`, which makes them GPL-3.0-or-later, not the GPL-2.0-or-later of spec §4. They also
-  statically link other GPL/LGPL libraries (x265, xvid, …).
-- **Decision for v0.x.** Ship them unmodified. Attach the exact FFmpeg and x264 sources as §15 requires,
-  and list every other linked library with its version and source link in
-  `THIRD_PARTY_NOTICES/ffmpeg`.
-- **Before v1.0.0.** Either attach the corresponding source for every linked library, or switch to a
-  reproducible minimal build (FFmpeg + x264 + the decoders Baleen needs) made in CI. Needs licence
-  review (R-08).
+  usual builds (Gyan "essentials" on Windows, martin-riedl.de on macOS) are configured with
+  `--enable-version3`, making them GPL-3.0-or-later. They statically link further GPL libraries (x265,
+  xvid, …) whose exact sources cannot all be obtained (e.g. an x265 commit that is not in the upstream
+  repository). Shipping them would mean distributing GPL binaries without their corresponding source.
+- **Decision.**
+  - `.github/workflows/ffmpeg.yml` builds FFmpeg 9.0.2 + x264 r3223 (0480cb05) from pinned source
+    archives with `scripts/build_ffmpeg.sh`. win-x64 is cross-compiled with mingw-w64 (zlib 1.3.2
+    linked); mac-arm64 is built natively.
+  - Configuration: `--enable-gpl --enable-libx264`, no `version3`, no `nonfree`, no network, no capture
+    devices, and only the lavfi input. `ffmpeg -L` states GPL version 2 or later.
+  - `scripts/check_ffmpeg.py` verifies the licence, the §6.7 decoders, encoders and muxers, and a test
+    encode.
+  - Bundles take the binaries with `build_bundle.py --ffmpeg-from`. The source archives (FFmpeg, x264,
+    zlib) and the build script are attached to each release.
+  - The Gyan and martin-riedl pins remain for development only.
+- **Verified.** The media golden tests pass with the self-built binaries.
 
 ### DR-49 (proposed): Java paths and the Windows ANSI code page (R-02)
 
@@ -244,28 +416,68 @@ approved documents was edited. Accept, amend or reject them in a new spec revisi
   - Because the fallback is TrueType, the PDF/A-1b concern of DR-52 does not arise on macOS with system
     fonts.
 
+### DR-57 (proposed): keep the Media lane from holding the whole processor budget
+
+- **Finding.** §5.5 gives each encode ⌊B/F⌋ tokens with F ≤ 2, so two encodes hold all of B.
+  - On the benchmark set (Balanced, B = 14), LibreOffice could not start until both encodes had
+    finished (videos 16–50 s, documents 39–109 s).
+  - x264 at 480p used about 3.5 cores of its 7 tokens.
+  - Gentle, Balanced, Maximum and custom 8 all finished in 105–130 s.
+- **Proposal.** Cap the Media lane's total at about ⌊2B/3⌋ tokens, or give each encode
+  min(⌊B/F⌋, 8) tokens with F up to 3. Files and documents can then run alongside encodes. To be decided
+  by the spec owner; Baleen implements §5.5 as written.
+
+### DR-58 (proposed): tools stay within their tokens (AC-15)
+
+- **Decision.** In the sanitised tool environment:
+  - LibreOffice gets `MAX_CONCURRENCY=1` (one token per instance);
+  - the veraPDF JVM gets `-XX:ActiveProcessorCount=1 -XX:+UseSerialGC -XX:TieredStopAtLevel=1`.
+- **Why.** Without them, custom 1 measured 2.01 cores in its busiest 30 s, against a limit of 1.5. With
+  them it measures 1.18.
+- **Cost.** A 25-file veraPDF batch takes 7.3 s instead of 3.3 s.
+
 ## Risks R-01…R-14: findings on this machine
 
-*(more pending)*
-
-- **AC-11 (early, LibreOffice only).** Two LibreOffice conversions with Baleen's sanitised child
-  environment (`TMP`/`TEMP` → `data/tmp`, private `-env:UserInstallation` profile) created nothing
-  under `%APPDATA%`, `%LOCALAPPDATA%`, `%TEMP%` or `HKCU\Software`. The only changes matched a control
-  snapshot pair: Edge, OneDrive and Remote Desktop background writes (`scripts/snapshot_profile.py`).
-- **R-14 (Windows).** Child processes start in `BELOW_NORMAL_PRIORITY_CLASS`, and task threads run at
-  `THREAD_PRIORITY_BELOW_NORMAL` when `low_priority` is on. `SetThreadExecutionState` succeeds while a
-  job runs and is released afterwards. All three are covered by `tests/unit/test_os_integration.py`, which
-  found and fixed a ctypes prototype bug that had silently disabled thread priority.
+| Risk | Finding |
+|---|---|
+| R-01 LibreOffice headless from a portable folder on macOS | **Works on GitHub's macOS runner**: documents, e-mail, text and CJK text, once DR-56 gave headless LibreOffice the system fonts. A real, quarantined Mac is on the manual checklist |
+| R-02 veraPDF headless install; spaces/CJK on Windows | Headless IzPack install works (Windows locally, macOS and Linux in CI). Paths with spaces work once JAVA_TOOL_OPTIONS paths are quoted. CJK file names are staged under ASCII names. A Baleen folder whose path is outside the ANSI code page cannot start Java; this is reported honestly (DR-49) |
+| R-03 Native folder dialogs | Implemented (PowerShell `-STA` FolderBrowserDialog, `osascript`, zenity/kdialog); command and output parsing unit-tested. Dialog focus, UTF-8 and UNC are manual |
+| R-04 SMB specifics | UNC paths via `\\localhost\C$` work end to end (CJK folder, network detected, T = 4). A real NAS (NFD names, slow listings, mapped drives) is manual |
+| R-05 LibreOffice fetching remote content | A fresh profile does fetch remote images (DOCX, DOC, HTML) and stylesheets. The Baleen profile (BlockUntrustedRefererLinks, dead proxy) stops HTTP(S): 0 outbound attempts offline, plus a local listener test. **Residual:** UNC links (Known gaps) |
+| R-06 Old DOC layout fidelity | Not assessed (needs Word); manual |
+| R-07 Big5 e-mails with wrong or missing charset | CHARSET_ERRORS path tested, with a decode hint. **Residual:** Big5 declared as iso-8859-1 decodes silently into wrong characters |
+| R-08 GPL source obligations | Resolved by building FFmpeg + x264 from source (DR-48); sources attached to releases |
+| R-09 Windows long paths and reserved names | Extended-length paths throughout; 255-unit names and >300-character paths tested without LongPathsEnabled. Reserved names (CON, AUX, …) in source trees are not tested |
+| R-10 Very large files | Streaming hashes, raised Pillow pixel limit, >32 MP memory reservation, FFmpeg timeouts. Not tested with multi-GB files |
+| R-11 MP3-in-MP4 playback | Manual (QuickTime, WMP) |
+| R-12 LibreOffice batch edge cases | A corrupt document inside a batch fails alone and its neighbours convert. Damaged OLE files get their own import filter. Batching is now real (the scheduler bug is fixed) |
+| R-13 Parallel transfers on a small NAS | The transfer budget is enforced and tested (peak transfers ≤ T). Behaviour on a real NAS is manual |
+| R-14 Priority and keep-awake APIs | Windows verified by tests: BELOW_NORMAL children (NORMAL when off), below-normal task threads, SetThreadExecutionState held and released. macOS QoS, nice and caffeinate are implemented but not verified on a Mac |
 
 ## Known gaps
 
-*(more pending)*
-
-- **R-05 residual.** A picture in a `.doc` linked to a UNC path (`\host\share\…`) still makes
-  LibreOffice open an SMB connection. HTTP(S) links are blocked by the profile settings, but UNC links are
-  not.
-- **R-07 residual.** Big5 text declared as iso-8859-1 decodes without errors and comes out garbled. A
-  strict decode cannot detect this.
-- **DR-35 timing.** The bundled LibreOffice (admin install) starts about 1.2 s slower than the identical
-  system install on this machine; the cause is unknown. Batching still gives a 4–4.6× speed-up (0.97–1.25
-  s per document batched, against 4.5–5.0 s one process per document).
+- **UNC links in .doc (R-05, SEC-9).** A picture in a `.doc` linked to `\\host\share\…` still makes
+  LibreOffice open an SMB connection. On Windows that can expose NTLM credentials to a hostile file's
+  host. Mitigation ideas for v1.0: rewrite external links in a staged copy before conversion, or flag
+  such documents for review. The offline AC-10 run is Linux-only.
+- **Big5 declared as iso-8859-1 (R-07)** cannot be detected by a strict decode.
+- **macOS is verified only on GitHub runners.** It still needs the manual checklist on a real Mac:
+  quarantine, launcher, dialogs, QoS/nice/caffeinate, network-volume prompts.
+- **AC-14** covers Chromium only. Safari, Firefox and Edge are manual.
+- **AC-13 and AC-16** were measured on this 28-thread desktop, not the spec's 2020 laptop or 8-core
+  Mac and PC.
+- **Defender's effect** on output writes was not isolated, because exclusions are not allowed.
+- **UI-R7 with a real disconnect.** A real drive disconnect was not tested; the stopped state was
+  simulated. The journal lives in the output's `_baleen/`, so if the drive vanishes the report fallback
+  in `data/reports/` can only be built from what is still readable.
+- **Startup time.** The bundled LibreOffice (admin install) starts about 1.2 s slower than the identical
+  system install on this machine; the cause is unknown.
+- **Not tested:** reserved file names (R-09) and multi-GB files (R-10).
+- **Housekeeping.**
+  - The branches `ffmpeg-build` and `diag-mac` remain on GitHub; deleting branches needs your approval.
+  - One empty test folder could not be removed without admin rights:
+    `%TEMP%\baleen-test\walking-whale-baleen-168e0097\pytest-leftover-acl\test_unreadable_subfolder_is_o0\src\locked`.
+    An earlier version of a test set a deny-(RX) ACL on it; the test now denies listing only and always
+    removes its entry. To remove the folder, run as administrator:
+    `takeown /f <path> /r /d y`, then `icacls <path> /reset /t`, then delete it.

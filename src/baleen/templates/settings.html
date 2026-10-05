@@ -5,6 +5,7 @@
 {% block page %}
 <div class="page-head"><div class="ph-main"><div class="kicker">System</div><h1 class="page-title">Settings</h1><div class="rule"></div>
 <p class="page-desc">Preferences for this Baleen folder. Workflow options live on each workflow's page.</p></div></div>
+{% if settings_warnings %}<div class="notice warn" role="status">{{ icon('st-review') }}<div class="n-body"><div class="n-title">Some saved settings couldn't be used</div>{% for w in settings_warnings %}{{ w }}{% if not loop.last %}<br>{% endif %}{% endfor %}<br>Baleen is using the defaults for them. Change them below to save valid values.</div></div>{% endif %}
 {% include "_resource.html" %}
 {% include "_prefs.html" %}
 <section class="card"><div class="card-head"><span class="card-title">Data</span></div>

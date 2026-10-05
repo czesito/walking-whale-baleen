@@ -404,3 +404,11 @@ def test_status_vocabulary_matches_the_design() -> None:
                                       Status.IGNORED, Status.SKIPPED)] == [
         "OK", "Needs review", "Failed", "Unsupported", "Ignored", "Skipped"]
     assert views.finish_text("Convert", "completed", 1670, 8, 1670) == "Convert finished · 1,670 files · 8 to look at"
+
+
+def test_settings_page_shows_load_warnings(env) -> None:  # noqa: ANN001
+    """§11: an unreadable or invalid settings file gives defaults plus a visible warning."""
+    ctx, c, _ = env
+    ctx.store.warnings.append("Invalid setting pdfa_level: expected one of 1b, 2b, 3b; using the default.")
+    html = page(c, "/settings").text
+    assert "Some saved settings couldn" in html and "pdfa_level" in html

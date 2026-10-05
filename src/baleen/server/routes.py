@@ -562,7 +562,7 @@ async def settings_page(request: Request) -> Response:
                                               "BALEEN_JAVA_HOME", "BALEEN_VERAPDF") if os.environ.get(k)]
     base = shell(ctx, active="settings", page="Settings")
     base.update(res=res, home_path=str(ctx.home.root), address=ctx.origin, overrides=overrides,
-                adv=ctx.store.advanced(),
+                adv=ctx.store.advanced(), settings_warnings=list(ctx.store.warnings),
                 log_short=short_home(str(ctx.home.logs_dir / "baleen.log"), str(ctx.home.root)))
     return render(ctx, "settings.html", **base)
 
