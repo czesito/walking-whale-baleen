@@ -106,7 +106,16 @@ approved documents was edited. Accept, amend or reject them in a new spec revisi
 
 ## Risks R-01…R-14: findings on this machine
 
-*(pending)*
+*(more pending)*
+
+- **AC-11 (early, LibreOffice only).** Two LibreOffice conversions with Baleen's sanitised child
+  environment (`TMP`/`TEMP` → `data/tmp`, private `-env:UserInstallation` profile) created nothing
+  under `%APPDATA%`, `%LOCALAPPDATA%`, `%TEMP%` or `HKCU\Software`. The only changes matched a control
+  snapshot pair: Edge, OneDrive and Remote Desktop background writes (`scripts/snapshot_profile.py`).
+- **R-14 (Windows).** Child processes start in `BELOW_NORMAL_PRIORITY_CLASS`, and task threads run at
+  `THREAD_PRIORITY_BELOW_NORMAL` when `low_priority` is on. `SetThreadExecutionState` succeeds while a
+  job runs and is released afterwards. All three are covered by `tests/unit/test_os_integration.py`, which
+  found and fixed a ctypes prototype bug that had silently disabled thread priority.
 
 ## Known gaps
 
