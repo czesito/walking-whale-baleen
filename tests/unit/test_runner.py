@@ -120,7 +120,7 @@ def test_convert_end_to_end(env) -> None:  # noqa: ANN001
     # records
     rj = json.loads(Path(job.run_json_path()).read_text(encoding="utf-8"))
     assert rj["run_id"] == job.id and rj["cancelled"] is False
-    assert rj["resources"]["resolved"]["B"] == 4
+    assert rj["resources"]["resolved"]["B"] == min(4, os.cpu_count() or 1)
     assert rj["settings"]["pdfa_level"] == "2b"
     raw = Path(job.report_path()).read_bytes()
     assert raw.startswith(b"\xef\xbb\xbf") and b"\r\n" in raw
