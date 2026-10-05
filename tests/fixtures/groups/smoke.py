@@ -32,6 +32,7 @@ def build(dest: Path, tools) -> None:  # noqa: ANN001
     write_bytes(dest / "mail" / "message.eml", simple_eml())
     write_bytes(dest / "audio" / "tone.wav", _wav())
     if tools.ffmpeg:
+        (dest / "video").mkdir(parents=True, exist_ok=True)  # ffmpeg does not create folders
         tools.ffmpeg_run(["-f", "lavfi", "-i", "testsrc=size=160x120:rate=10:duration=1",
                           "-c:v", "mjpeg", "-q:v", "5", str(dest / "video" / "clip.avi")])
     write_bytes(dest / "other" / "archive.zip", b"PK\x05\x06" + b"\x00" * 18)
