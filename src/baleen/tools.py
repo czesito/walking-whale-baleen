@@ -288,9 +288,11 @@ def tool_env(home: Home, java_home: str | None = None) -> dict[str, str]:
         env["LANG"] = "C.UTF-8"
     javadir = str(home.java_dir)
     home.java_dir.mkdir(parents=True, exist_ok=True)
+    # The JVM splits JAVA_TOOL_OPTIONS on whitespace unless a value is quoted: quote the paths
+    # so a Baleen folder with spaces still starts Java.
     env["JAVA_TOOL_OPTIONS"] = (
-        f"-Djava.util.prefs.userRoot={javadir} -Djava.util.prefs.systemRoot={javadir} "
-        f"-Djava.io.tmpdir={tmp} -XX:-UsePerfData"
+        f'-Djava.util.prefs.userRoot="{javadir}" -Djava.util.prefs.systemRoot="{javadir}" '
+        f'-Djava.io.tmpdir="{tmp}" -XX:-UsePerfData'
     )
     if java_home:
         env["JAVA_HOME"] = java_home
@@ -361,6 +363,15 @@ class Toolset:
         if path is None:
             err = f"{spec.env} points to a missing file" if source == "override" else "Not found"
             return ToolInfo(key, spec.name, spec.role, None, "", "missing", err)
+        if key in ("java", "verapdf"):
+            bad = non_ansi_path(path)
+            if bad:
+                # R-02: the Java launcher uses the ANSI code page on Windows; it cannot start from
+                # a folder whose name has characters outside it. Report it honestly as missing.
+                return ToolInfo(key, spec.name, spec.role, None, "", "missing",
+                                f"Java can't start from a folder whose path contains characters outside this "
+                                f"computer's code page ({bad}). Move the Baleen folder to a path with only "
+                                "Latin letters and digits.")
         if env is None:
             env = tool_env(self.home)
         try:
@@ -379,6 +390,30 @@ class Toolset:
         except Exception as e:  # a broken tool is reported, never fatal
             return ToolInfo(key, spec.name, spec.role, str(path), "", source, f"{e.__class__.__name__}: {e}")
         return ToolInfo(key, spec.name, spec.role, str(path), ver, source, "", home)
+
+
+def non_ansi_path(path: str | os.PathLike[str]) -> str:
+    """Windows: the characters of `path` that the ANSI code page cannot represent ('' if none).
+
+    Java (and therefore veraPDF) receives paths through the ANSI code page on Windows unless
+    the system-wide UTF-8 option is on (R-02).
+    """
+    if not IS_WINDOWS:
+        return ""
+    s = os.fspath(path)
+    try:
+        s.encode("mbcs", "strict")
+        return ""
+    except UnicodeEncodeError:
+        return "".join(dict.fromkeys(ch for ch in s if not _ansi_ok(ch)))
+
+
+def _ansi_ok(ch: str) -> bool:
+    try:
+        ch.encode("mbcs", "strict")
+        return True
+    except UnicodeEncodeError:
+        return False
 
 
 def library_versions() -> dict[str, dict[str, str]]:

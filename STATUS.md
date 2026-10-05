@@ -104,6 +104,73 @@ approved documents was edited. Accept, amend or reject them in a new spec revisi
   Files tasks from later items keeps taking freed tokens, and the encode waits until the Files queue
   drains. This was demonstrated by `test_multi_token_task_is_not_starved_by_file_tasks`.
 
+### DR-48 (proposed): the bundled FFmpeg builds are GPL-3.0-or-later and link more GPL libraries
+
+- **Finding.** No suitable pinned static build with only FFmpeg + x264 exists for both platforms. The
+  pinned builds (Gyan "essentials" 9.0.2 on Windows, martin-riedl.de on macOS) are configured with
+  `--enable-version3`, which makes them GPL-3.0-or-later, not the GPL-2.0-or-later of spec §4. They also
+  statically link other GPL/LGPL libraries (x265, xvid, …).
+- **Decision for v0.x.** Ship them unmodified. Attach the exact FFmpeg and x264 sources as §15 requires,
+  and list every other linked library with its version and source link in
+  `THIRD_PARTY_NOTICES/ffmpeg`.
+- **Before v1.0.0.** Either attach the corresponding source for every linked library, or switch to a
+  reproducible minimal build (FFmpeg + x264 + the decoders Baleen needs) made in CI. Needs licence
+  review (R-08).
+
+### DR-49 (proposed): Java paths and the Windows ANSI code page (R-02)
+
+- **Finding.** On Windows without the system-wide "UTF-8 for worldwide language support" option, the
+  Java launcher goes through the ANSI code page:
+  - Java cannot start from a Baleen folder whose path has characters outside it (e.g. CJK on cp1252);
+  - CJK file names passed to veraPDF arrive as `??`.
+- **Decision.**
+  - When the Baleen folder's path is not ANSI-representable, Tools reports Java and veraPDF as missing,
+    with a "move the folder" fix, so PDFs are honestly VALIDATOR_MISSING. The launcher warns about it.
+  - veraPDF inputs whose path is not ANSI-representable are first staged under an ASCII name in the run's
+    work folder (Check mode and attachments included).
+  - README.txt tells users to keep the Baleen folder on a Latin-letter path.
+- **Why.** No system settings may be changed (the UTF-8 option is a system setting). Source names are
+  never changed (§7.2), so staging a copy is the only safe route.
+
+### DR-50 (proposed, media): from workstream (c)
+
+1. **Timeout.** max(600 s, 10 × duration) is too short for grainy 720p sources at 1 thread (measured: 30 s
+   of grainy 720p took 390 s at `-threads 1`, so clips over about 46 s would TIMEOUT). Proposal: scale the
+   limit with pixel rate and thread count, e.g. max(600 s, 10 × duration × max(1, pixels/921,600) ×
+   max(1, 4/threads)).
+2. **Per-stream copy.** Copy decisions are made per stream. An AVCHD clip keeps its H.264 video and only
+   its AC-3 audio is re-encoded to AAC (action `convert`). This follows DR-12 ("avoid generation loss").
+3. **Interlacing and range.** Interlaced sources stay interlaced (§6.7). Transcodes are tagged TV range,
+   because FFmpeg 9 otherwise keeps MJPEG's full range.
+4. **V-AV-DUR.** When FFprobe only estimates the duration (e.g. a VBR MP3 without a Xing header, probed as
+   20.05 s for 6.03 s), the duration is taken from an exact packet count.
+5. **Check mode.** `.m4a` and audio-only `.mp4` are accepted whatever `audio_container` says.
+6. **No streams.** Playlist and still-image containers are UNSUPPORTED `NO_MEDIA_STREAMS`. MPEG-TS `.ts`
+   files that are really TypeScript sources fail probing (FAILED `SOURCE_UNREADABLE`). The spec lists
+   `.ts` as video, so this is expected but worth a note in the docs.
+
+### DR-51 (proposed, images/text/HTML/PDF): from workstream (a)
+
+1. **HTML images.** Headless LibreOffice fetches linked images but never renders them. Baleen therefore
+   inlines relative images as `data:` URIs, read-only and only from inside the source root. Any other
+   reference becomes placeholder text (§6.4, R-05).
+2. **V-TEXT.** Characters are compared as an NFKC multiset, not a plain count. A count alone passes
+   mojibake, which was verified.
+3. **Encodings.** big5 → cp950 and shift_jis → cp932 (the Windows supersets); a UTF-32 BOM counts as
+   certain. HTML charset labels follow WHATWG. A declared charset that fails to decode falls back to the
+   §6.3 rules.
+4. **Check mode.** Text files are NOT_ARCHIVAL_FORMAT without applying the encoding rules.
+   MULTI_FRAME_IMAGE is reported in both modes.
+5. **Grey ICC.** Greyscale images with a GRAY ICC profile become greyscale JPEGs, so the kept ICC stays
+   valid.
+6. **veraPDF.** Every file is staged under an ASCII name in a batch folder (R-02). A veraPDF PARSE error
+   means fail. A job without a result means unavailable (VALIDATOR_ERROR). The batch timeout is
+   `verapdf_timeout_s` + 30 s per extra file.
+7. **Incomplete claims.** An incomplete PDF/A claim (part without conformance) is PDFA_INVALID at plan
+   time.
+8. **Known limit.** Pillow reads 16-bit colour PNGs as 8 bits per channel. Such files go to TIFF with a
+   message.
+
 ## Risks R-01…R-14: findings on this machine
 
 *(more pending)*

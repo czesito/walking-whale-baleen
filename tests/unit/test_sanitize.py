@@ -43,3 +43,22 @@ def test_fragment_gets_a_document() -> None:
 def test_entities_and_cjk_preserved() -> None:
     out = sanitize_html("<p>訪談 &amp; notes &#169;</p>")
     assert "訪談 &amp; notes &#169;" in out
+
+
+def test_network_and_local_references() -> None:
+    from baleen.convert.sanitize import is_remote
+
+    for url in (r"\\nas\share\a.png", "file://nas/share/a.png", r"file:\\nas\share\a.png", "//cdn/x.png",
+                "HTTPS://x/y"):
+        assert is_remote(url), url
+    for url in ("file:///C:/x.png", "file://localhost/C:/x.png", "img/a.png", r"C:\x.png", "/x.png", "#top"):
+        assert not is_remote(url), url
+    page = r'<img src="file:///C:/Users/me/secret.png"><img src="C:\Users\me\b.png"><img src="ok.png">'
+    out = sanitize_html(page, allow_local=False)
+    assert "<img" in out and 'src="ok.png"' in out
+    assert 'src="file:' not in out and r'src="C:\Users' not in out
+    assert "not archived: file:///C:/Users/me/secret.png" in out
+    out2 = sanitize_html(r'<img src="\\nas\share\x.png">')
+    assert "<img" not in out2 and "not archived" in out2
+    # local references stay for HTML pages (resolved by the HTML route inside the source root)
+    assert 'src="file:///C:/x.png"' in sanitize_html('<img src="file:///C:/x.png">')
