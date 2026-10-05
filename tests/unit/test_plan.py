@@ -193,3 +193,26 @@ def test_written_reasons_do_not_decide_at_plan_time(tmp_path, monkeypatch) -> No
     by = {it.source_path: it for it in plan.items}
     assert not by["a.txt"].final and by["a.txt"].reasons == ["CHARSET_ERRORS"]
     assert by["b.zip"].final
+
+
+def test_tool_missing_nested_emails_still_release_attachments(tmp_path, monkeypatch) -> None:  # noqa: ANN001
+    """Without LibreOffice, e-mails are TOOL_MISSING, but their attachments (at any depth) still run."""
+    from baleen.tools import Toolset as TS
+
+    class NestedEmail(FakeEmail):
+        converter_tools = ("libreoffice",)
+
+        def expand(self, ctx, item, src):  # noqa: ANN001, ANN202
+            if item.depth == 0:
+                return [ChildSpec(name="fwd.eml", data=b"ATTACH:photo.jpg\n", depth=1)]
+            return [ChildSpec(name="photo.jpg", data=b"x", depth=item.depth + 1)]
+
+    reg = dict(base._registry)
+    reg["email"] = NestedEmail("email")
+    monkeypatch.setattr(base, "_registry", reg)
+    monkeypatch.setattr(TS, "missing", lambda self: ["libreoffice"])
+    plan = plan_for(tmp_path, {"m.eml": b"top"})
+    by = {it.source_path: it for it in plan.items}
+    assert by["m.eml"].reasons == ["TOOL_MISSING"] and by["m.eml#fwd.eml"].reasons == ["TOOL_MISSING"]
+    photo = by["m.eml#fwd.eml#photo.jpg"]
+    assert photo.materialise and not photo.final and photo.output_path == "m_attachments/fwd_attachments/photo.jpg"

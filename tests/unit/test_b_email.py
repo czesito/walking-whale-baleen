@@ -153,6 +153,9 @@ def routes(monkeypatch) -> None:  # noqa: ANN001
     reg["email"] = em.EmailRoute()
     monkeypatch.setattr(base, "_registry", reg)
     monkeypatch.setattr(base, "_loaded", True)
+    # Unit tests must not depend on the host's tools: plan as if every converter were present
+    # (without it, e-mails are TOOL_MISSING on CI runners that have no LibreOffice).
+    monkeypatch.setattr(Toolset, "missing", lambda self: [])
 
 
 def make_plan(tmp_path: Path, files: dict[str, bytes], **opts):  # noqa: ANN201

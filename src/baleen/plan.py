@@ -213,10 +213,14 @@ class Planner:
                 nd.children.append(ch)
             if nd.children:
                 self._probe_all([c for c in nd.children if c.src is not None])
-                nested = [c for c in nd.children if c.item.route == "email" and not c.item.final]
+                # Same rule as for top-level e-mails: decided-at-plan-time messages (e.g. TOOL_MISSING)
+                # still release their attachments; only unreadable ones are not expanded.
+                nested = [c for c in nd.children if c.item.route == "email" and not (
+                    set(c.item.reasons) & {"CONVERSION_ERROR", "EML_NESTING_TOO_DEEP", "SOURCE_UNREADABLE"})]
                 if nested:
                     if depth + 1 > MAX_EMAIL_DEPTH:
                         for c in nested:
+                            # Too deep wins over any plan-time reason: the message is not converted.
                             c.item.reasons = ["EML_NESTING_TOO_DEEP"]
                             c.item.message = (f"Forwarded e-mails are nested more than {MAX_EMAIL_DEPTH} deep; "
                                               "this message was not converted.")
