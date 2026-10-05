@@ -104,6 +104,34 @@ approved documents was edited. Accept, amend or reject them in a new spec revisi
   Files tasks from later items keeps taking freed tokens, and the encode waits until the Files queue
   drains. This was demonstrated by `test_multi_token_task_is_not_starved_by_file_tasks`.
 
+### DR-48 (proposed): the bundled FFmpeg builds are GPL-3.0-or-later and link more GPL libraries
+
+- **Finding.** No suitable pinned static build with only FFmpeg + x264 exists for both platforms. The
+  pinned builds (Gyan "essentials" 9.0.2 on Windows, martin-riedl.de on macOS) are configured with
+  `--enable-version3`, which makes them GPL-3.0-or-later, not the GPL-2.0-or-later of spec §4. They also
+  statically link other GPL/LGPL libraries (x265, xvid, …).
+- **Decision for v0.x.** Ship them unmodified. Attach the exact FFmpeg and x264 sources as §15 requires,
+  and list every other linked library with its version and source link in
+  `THIRD_PARTY_NOTICES/ffmpeg`.
+- **Before v1.0.0.** Either attach the corresponding source for every linked library, or switch to a
+  reproducible minimal build (FFmpeg + x264 + the decoders Baleen needs) made in CI. Needs licence
+  review (R-08).
+
+### DR-49 (proposed): Java paths and the Windows ANSI code page (R-02)
+
+- **Finding.** On Windows without the system-wide "UTF-8 for worldwide language support" option, the
+  Java launcher goes through the ANSI code page:
+  - Java cannot start from a Baleen folder whose path has characters outside it (e.g. CJK on cp1252);
+  - CJK file names passed to veraPDF arrive as `??`.
+- **Decision.**
+  - When the Baleen folder's path is not ANSI-representable, Tools reports Java and veraPDF as missing,
+    with a "move the folder" fix, so PDFs are honestly VALIDATOR_MISSING. The launcher warns about it.
+  - veraPDF inputs whose path is not ANSI-representable are first staged under an ASCII name in the run's
+    work folder (Check mode and attachments included).
+  - README.txt tells users to keep the Baleen folder on a Latin-letter path.
+- **Why.** No system settings may be changed (the UTF-8 option is a system setting). Source names are
+  never changed (§7.2), so staging a copy is the only safe route.
+
 ## Risks R-01…R-14: findings on this machine
 
 *(more pending)*
