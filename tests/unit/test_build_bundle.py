@@ -122,6 +122,90 @@ def test_ansi_path_guard_rejects_unencodable(tmp_path):
     bb.check_ansi_path("--dest", tmp_path / "plain folder")
 
 
+FFLIBS = json.loads((REPO / "scripts" / "ffmpeg-libraries.json").read_text(encoding="utf-8"))
+
+
+@pytest.mark.parametrize("plat", ["win-x64", "mac-arm64", "mac-x64"])
+def test_ffmpeg_library_list_covers_copyleft(plat):
+    libs = bb.ffmpeg_libraries(plat)
+    assert libs["libraries"][0]["name"] == "x264" or any(lib["name"] == "x264" for lib in libs["libraries"])
+    for lib in libs["libraries"]:
+        assert lib["license"] and lib["upstream"].startswith("https://"), lib["name"]
+        # copyleft unless one of the OR alternatives is permissive (FreeType: FTL OR GPL-2.0-or-later)
+        if all(re.search(r"\b(L?GPL|MPL)-", alt) for alt in lib["license"].split(" OR ")):
+            assert "fetch" in lib or "not_covered" in lib, f"{plat}: copyleft {lib['name']} needs fetch or not_covered"
+        if "fetch" in lib:
+            rule = lib["fetch"]
+            assert ("url" in rule) != ("git" in rule) and rule["file"]
+            assert "/" not in rule["file"]
+
+
+def test_launchers_and_readme():
+    bat = (REPO / "launchers" / "Start Baleen.bat").read_bytes()
+    bat.decode("ascii")  # cmd.exe reads the file in the console code page
+    for needle in (b"chcp 65001", b"BALEEN_HOME", b"PYTHONNOUSERSITE=1", b"PYTHONDONTWRITEBYTECODE=1",
+                   b"JAVA_TOOL_OPTIONS", b"-m baleen serve", b"pause"):
+        assert needle in bat
+    command = (REPO / "launchers" / "Start Baleen.command").read_bytes()
+    assert command.startswith(b"#!/bin/sh\n") and b"\r" not in command
+    assert b"TMPDIR=" in command and b"-m baleen serve" in command
+    readme = (REPO / "launchers" / "README.txt").read_text(encoding="utf-8")
+    for topic in ("Unblock", "SmartScreen", "xattr -dr com.apple.quarantine", "Uninstall", "Privacy"):
+        assert topic in readme
+
+
+def test_text_bytes_line_endings():
+    assert bb.text_bytes("a\r\nb\nc", True) == b"a\r\nb\r\nc"
+    assert bb.text_bytes("a\r\nb\nc", False) == b"a\nb\nc"
+
+
+def test_resolve_x264_placeholder():
+    assert bb.resolve_x264("x264-@x264.tar.gz", {"commit": "0480cb05fa18"}) == "x264-0480cb05.tar.gz"
+    assert bb.resolve_x264("x264-@x264.tar.gz", {"commit_short": "abc1234"}) == "x264-abc1234.tar.gz"
+
+
+def test_dist_notice_includes_licence_files(tmp_path):
+    site = tmp_path / "runtime" / "python" / "Lib" / "site-packages"
+    dist = site / "demo_pkg-1.2.dist-info"
+    (dist / "licenses").mkdir(parents=True)
+    (dist / "METADATA").write_text("Metadata-Version: 2.4\nName: Demo_Pkg\nVersion: 1.2\n"
+                                   "License-Expression: MIT\nProject-URL: Source, https://example.org/demo\n\nBody\n",
+                                   encoding="utf-8")
+    (dist / "licenses" / "LICENSE").write_text("MIT licence text\n", encoding="utf-8")
+    ctx = bb.Ctx(platform="win-x64", version="0", cache=tmp_path, runtime=tmp_path / "runtime", work=tmp_path, pins={})
+    name, text = bb._dist_notice(ctx, dist)
+    assert name == "demo-pkg"
+    assert "Licence:       MIT" in text and "MIT licence text" in text and "https://example.org/demo" in text
+    baleen = site / "walking_whale_baleen-0.1.0.dist-info"
+    baleen.mkdir()
+    (baleen / "METADATA").write_text("Name: walking-whale-baleen\nVersion: 0.1.0\n", encoding="utf-8")
+    assert bb._dist_notice(ctx, baleen) is None
+
+
+def test_make_zip_layout_and_sums(tmp_path):
+    bundle = tmp_path / "Baleen-9.9.9-win-x64"
+    (bundle / "runtime" / "empty").mkdir(parents=True)
+    (bundle / "README.txt").write_text("hello\n", encoding="utf-8")
+    zip_path = tmp_path / "baleen-9.9.9-win-x64.zip"
+    if sys.platform == "darwin":
+        pytest.skip("macOS zips are made by ditto")
+    digest = bb.make_zip(bundle, zip_path)
+    import zipfile
+
+    names = zipfile.ZipFile(zip_path).namelist()
+    assert "Baleen-9.9.9-win-x64/README.txt" in names
+    assert "Baleen-9.9.9-win-x64/runtime/empty/" in names
+    assert (tmp_path / "SHA256SUMS").read_text(encoding="utf-8") == f"{digest}  {zip_path.name}\n"
+
+
+def test_tree_state_ignores_data(tmp_path):
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "x").write_text("1", encoding="utf-8")
+    (tmp_path / "runtime").mkdir()
+    (tmp_path / "runtime" / "y").write_text("2", encoding="utf-8")
+    assert list(bb.tree_state(tmp_path)) == ["runtime/y"]
+
+
 def _encodable(text: str, cp: str) -> bool:
     try:
         text.encode(cp)

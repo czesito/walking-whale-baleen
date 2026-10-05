@@ -72,9 +72,10 @@
       "name": "FFmpeg + FFprobe (static GPL build with libx264)",
       "dest": "ffmpeg",
       "license": "GPL-3.0-or-later",
-      "license_note": "Both pinned builds are configured with --enable-gpl --enable-version3, so the binaries are GPL-3.0-or-later (not GPL-2.0-or-later as §4 assumed). `ffmpeg -L` confirms; build_bundle.py records it in VERSIONS.json.",
+      "license_note": "These builds are configured with --enable-gpl --enable-version3, so the ffmpeg and ffprobe programs are licensed under the GNU GPL version 3 or later (`ffmpeg -L` prints the same).",
       "homepage": "https://ffmpeg.org/",
       "selection": [
+        "Licence: both builds are GPL-3.0-or-later (--enable-version3), not GPL-2.0-or-later as spec §4 assumed. A GPL-2.0-or-later binary would need another builder or Baleen's own minimal build.",
         "win-x64: Gyan.dev 'essentials' release build 9.0.2. Built from the exact FFmpeg tag n9.0.2 (commit 946fcce07b), permanent version-tagged URL on GitHub (GyanD/codexffmpeg tag 9.0.2), vendor SHA-256 on gyan.dev, and the x264 revision is stated in the bundled README.txt (x264 v0.165.3223) and in the encoder SEI (core 165 r3223 0480cb0).",
         "BtbN FFmpeg-Builds was rejected: its win64-gpl zips are rolling autobuilds of release branches plus extra commits (e.g. n9.0.2-22-g46d8f462ee), their autobuild releases are pruned, and the URL names change daily.",
         "The essentials build was chosen over the full build: about half the size and fewer statically linked libraries, which shrinks the GPL source set (§15, R-08) while keeping libx264 and AAC.",
