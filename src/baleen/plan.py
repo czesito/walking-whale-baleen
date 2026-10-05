@@ -156,7 +156,9 @@ class Planner:
         it.reasons = list(pr.reasons)
         it.notes = list(pr.notes)
         it.message = pr.message
-        it.data = dict(pr.data)
+        # Merge, never replace: attachments carry planner data (sha256, child hints) that the
+        # report needs even when the probe decides the item at plan time.
+        it.data = {**it.data, **pr.data}
         if pr.route:
             it.route = pr.route
         # Only reasons that mean "nothing will be written" decide an item at plan time; a

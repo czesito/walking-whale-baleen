@@ -85,19 +85,52 @@ def _latest_report(out: Path) -> Path:
     return sorted((out / "_baleen").glob("report-*.csv"))[-1]
 
 
-def _tool_running(names: tuple[str, ...]) -> bool:
+def _job_process_names(child: proc._Child) -> list[str]:  # type: ignore[name-defined]
+    """Image names of every process in the child's Job Object (nested jobs included)."""
+    import ctypes
+    from ctypes import wintypes
+
+    k32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    k32.QueryInformationJobObject.argtypes = [wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD,
+                                              ctypes.c_void_p]
+    k32.OpenProcess.restype = wintypes.HANDLE
+    k32.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+    k32.QueryFullProcessImageNameW.argtypes = [wintypes.HANDLE, wintypes.DWORD, wintypes.LPWSTR,
+                                               ctypes.POINTER(wintypes.DWORD)]
+    k32.CloseHandle.argtypes = [wintypes.HANDLE]
+
+    class PIDLIST(ctypes.Structure):
+        _fields_ = [("NumberOfAssignedProcesses", wintypes.DWORD), ("NumberOfProcessIdsInList", wintypes.DWORD),
+                    ("ProcessIdList", ctypes.c_size_t * 512)]
+
+    lst = PIDLIST()
+    if not child.job or not k32.QueryInformationJobObject(child.job, 3, ctypes.byref(lst), ctypes.sizeof(lst),
+                                                           None):
+        return []
+    names = []
+    for i in range(lst.NumberOfProcessIdsInList):
+        h = k32.OpenProcess(0x1000, False, int(lst.ProcessIdList[i]))
+        if not h:
+            continue
+        buf = ctypes.create_unicode_buffer(1024)
+        size = wintypes.DWORD(1024)
+        if k32.QueryFullProcessImageNameW(h, 0, buf, ctypes.byref(size)):
+            names.append(os.path.basename(buf.value).lower())
+        k32.CloseHandle(h)
+    return names
+
+
+def _tool_running(child: proc._Child, names: tuple[str, ...]) -> bool:  # type: ignore[name-defined]
     if sys.platform == "win32":
-        r = subprocess.run(["tasklist", "/fo", "csv", "/nh"], capture_output=True, text=True)
-        low = r.stdout.lower()
-        return any(n in low for n in names)
-    r = subprocess.run(["ps", "-A", "-o", "comm="], capture_output=True, text=True)
+        return any(n in p for p in _job_process_names(child) for n in names)
+    r = subprocess.run(["pgrep", "-g", str(child.popen.pid), "-l"], capture_output=True, text=True)
     return any(n in r.stdout.lower() for n in names)
 
 
 def _kill_when(child: proc._Child, names: tuple[str, ...], deadline_s: float) -> bool:  # type: ignore[name-defined]
     t0 = time.monotonic()
     while time.monotonic() - t0 < deadline_s and child.popen.poll() is None:
-        if _tool_running(names):
+        if _tool_running(child, names):
             time.sleep(0.4)
             child.kill_tree()
             child.popen.wait(timeout=30)
@@ -123,6 +156,7 @@ def test_ac08_crash_safe(kind: str, tmp_path: Path) -> None:
             "-q"]
     child = proc.spawn(args, env=_env(home), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     killed = _kill_when(child, names, 120)
+    print(f"killed mid-{kind}: {killed}")
     proc._forget(child)  # type: ignore[attr-defined]
     if not killed:
         pytest.skip(f"the run finished before {kind} could be caught running")
