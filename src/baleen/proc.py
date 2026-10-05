@@ -84,6 +84,7 @@ if IS_WINDOWS:
         CREATE_SUSPENDED = 0x00000004
         CREATE_NO_WINDOW = 0x08000000
         BELOW_NORMAL_PRIORITY_CLASS = 0x00004000
+        NORMAL_PRIORITY_CLASS = 0x00000020
         JobObjectExtendedLimitInformation = 9
         JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE = 0x00002000
 
@@ -178,8 +179,9 @@ def spawn(
     argv = [str(a) for a in args]
     if IS_WINDOWS:
         flags = _Win.CREATE_SUSPENDED | _Win.CREATE_NO_WINDOW
-        if low_priority:
-            flags |= _Win.BELOW_NORMAL_PRIORITY_CLASS
+        # Explicit either way: without a class flag a child inherits a below-normal parent's class,
+        # so "Run at lower priority: off" must ask for normal priority (§5.5).
+        flags |= _Win.BELOW_NORMAL_PRIORITY_CLASS if low_priority else _Win.NORMAL_PRIORITY_CLASS
         p = subprocess.Popen(  # noqa: S603
             argv, env=env, cwd=cwd, stdin=stdin, stdout=stdout, stderr=stderr,
             creationflags=flags, shell=False,
