@@ -51,7 +51,7 @@ from ..model import Action, Category, Mode, Probe
 from ..paths import long_path
 from ..scheduler import Lane, TaskContext
 from .base import ChildSpec, LoJob, LoResult, ProbeContext, Route, SourceRef, WorkItem, register
-from .document import pdf_finish
+from .document import check_existing_pdf, pdf_finish
 from .names import sanitise_attachment_name
 from .sanitize import is_remote, placeholder, sanitize_html
 
@@ -812,15 +812,7 @@ class EmailRoute(Route):
             work.fail(result.reason or "CONVERSION_ERROR", result.message)
 
     def check_existing(self, ctx: TaskContext, work: WorkItem) -> None:
-        from ..model import CheckState
-        from ..verify.pdf import v_pdf_open
-
-        path = work.existing_output
-        assert path
-        chk = v_pdf_open(path)
-        work.checks.append(chk)
-        if chk.state == CheckState.PASS:
-            work.pdfa = (path, str(work.settings.get("pdfa_level", "2b")))
+        check_existing_pdf(work)  # plan-time CHARSET_ERRORS stays on the item (§7.5 re-run keeps the flag)
 
 
 ROUTE = register(EmailRoute())

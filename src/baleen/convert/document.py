@@ -421,6 +421,18 @@ def pdf_finish(work: WorkItem, result: LoResult) -> bool:
     return True
 
 
+def check_existing_pdf(work: WorkItem) -> None:
+    """§7.5 resume for LibreOffice outputs: V-PDF-OPEN on the existing file, then V-PDFA at pdfa_level."""
+    from ..verify.pdf import v_pdf_open
+
+    path = work.existing_output
+    assert path
+    chk = v_pdf_open(path)
+    work.checks.append(chk)
+    if chk.state == CheckState.PASS:
+        work.pdfa = (path, str(work.settings.get("pdfa_level", "2b")))
+
+
 class DocumentRoute(Route):
     key: ClassVar[str] = "document"
     lane: ClassVar[Lane] = Lane.DOCUMENTS
@@ -485,15 +497,7 @@ class DocumentRoute(Route):
         work.fail(reason, message)
 
     def check_existing(self, ctx: TaskContext, work: WorkItem) -> None:
-        """§7.5 resume: V-PDF-OPEN on the existing output, then V-PDFA at pdfa_level."""
-        from ..verify.pdf import v_pdf_open
-
-        path = work.existing_output
-        assert path
-        chk = v_pdf_open(path)
-        work.checks.append(chk)
-        if chk.state == CheckState.PASS:
-            work.pdfa = (path, str(work.settings.get("pdfa_level", "2b")))
+        check_existing_pdf(work)
 
 
 ROUTE = register(DocumentRoute())
