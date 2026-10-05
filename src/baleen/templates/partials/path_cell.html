@@ -1,0 +1,10 @@
+{# Path cell (D-15): the folder part truncates, the file name stays visible, the full path is
+   in the tooltip. #}
+{% macro path_cell(p) -%}
+{% if not p -%}
+<span class="pathcell"><span class="none">—</span></span>
+{%- else -%}
+{% set parts = split_path(p) -%}
+<span class="pathcell" title="{{ p }}"><span class="dir">{{ parts[0] }}</span><span class="name">{{ parts[1] }}</span></span>
+{%- endif %}
+{%- endmacro %}

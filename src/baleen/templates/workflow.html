@@ -1,0 +1,16 @@
+{# Workflow setup page (spec §12.2-§12.4, design §02 page anatomy, D-12): header, notices,
+   numbered cards generated from the registry (folders, options from the schema, preview or
+   explainer) and the persistent action bar. Adding a workflow needs no change here (§12.8). #}
+{% extends "base.html" %}
+{% from "partials/folder_field.html" import folder_field %}
+{% block page %}
+<div class="page-head"><div class="ph-main"><div class="kicker">{{ wf.kicker }}</div><h1 class="page-title">{{ wf.name }}</h1><div class="rule"></div>
+<p class="page-desc">{{ wf.description }}{% if wf.reassurance %} <b>{{ wf.reassurance }}</b>{% endif %}</p></div></div>
+{% include "_setup_notices.html" %}
+<section class="card" aria-labelledby="fT" id="folders-card"><div class="card-head"><span class="step">1</span><span class="card-title" id="fT">{{ 'Folders' if wf.folders|length > 1 else 'Folder' }}</span></div>
+{% for f in wf.folders %}{{ folder_field(wf.id, f, folders[f.key], statuses[f.key], picker) }}
+{% endfor %}</section>
+{% if wf.options %}{% include "_options.html" %}{% endif %}
+{% if wf.preview %}{% include "_preview.html" %}{% elif wf.explainer %}{% include "_explainer.html" %}{% endif %}
+{% endblock %}
+{% block actionbar %}{% include "_actionbar.html" %}{% endblock %}

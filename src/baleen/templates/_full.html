@@ -1,0 +1,15 @@
+{# Full-screen pages (design §02): no rail; one message, one next step. #}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ title }}</title>
+<link rel="icon" type="image/svg+xml" href="{{ static('favicon.svg') }}">
+<link rel="stylesheet" href="{{ static('baleen.css') }}">
+<link rel="stylesheet" href="{{ static('app.css') }}">
+</head>
+<body>
+<div class="full"><div class="box"><span class="wordmark">Baleen</span>{% block box %}{% endblock %}</div></div>
+</body>
+</html>

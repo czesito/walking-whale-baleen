@@ -782,9 +782,9 @@ class _Execution:
             self._report(wi)
             return
         if it.final or wi.check_only:
-            self._submit(wi, Lane.FILES, "hash", self._hash_step, step=0, action="Checking")
+            self._submit(wi, Lane.FILES, "hash", self._hash_step, step=0, action="hashing")
         else:
-            self._submit(wi, Lane.FILES, "stage", self._stage_step, step=0, action="Copying")
+            self._submit(wi, Lane.FILES, "stage", self._stage_step, step=0, action="copying")
 
     # ------------------------------------------------------------------ steps
 
@@ -914,7 +914,7 @@ class _Execution:
                     self.job.started_items.add(c.n)
                     self._report(c)
                 else:
-                    self._submit(c, Lane.FILES, "child", self._child_step, step=0, action="Checking")
+                    self._submit(c, Lane.FILES, "child", self._child_step, step=0, action="extracting")
         then(ctx)
 
     def _wait_for_space(self, wi: WorkItem, size: int) -> bool:
@@ -935,22 +935,21 @@ class _Execution:
         route = get_route(wi.plan.route or "")
         if wi.resume:
             self._submit(wi, route.lane if not route.batched else Lane.FILES, "process",
-                         lambda ctx, w: self._run_route(ctx, w, resume=True), step=1, action="Checking")
+                         lambda ctx, w: self._run_route(ctx, w, resume=True), step=1, action=_verb(wi, resume=True))
             return
         if route.batched and not wi.check_only:
             assert self.sched is not None
             name = wi.plan.source_path.rsplit("#", 1)[-1].rsplit("/", 1)[-1]
             self.sched.submit(Task(
                 lane=Lane.DOCUMENTS, order=(wi.n, 1), batch_fn=self._documents_batch, payload=wi,
-                batch_key=route.batch_key(wi), label=name, action="Converting", category=wi.category.value,
+                batch_key=route.batch_key(wi), label=name, action="PDF/A export", category=wi.category.value,
                 item=wi.n, kind="process",
             ))
             return
         lane = route.lane if not (route.batched and wi.check_only) else Lane.FILES
         mem = route.memory_mb(wi) if lane == Lane.FILES else None
-        verb = "Checking" if wi.check_only or wi.action == Action.COPY else "Converting"
         self._submit(wi, lane, "process", lambda ctx, w: self._run_route(ctx, w, resume=False), step=1,
-                     memory_mb=mem, action=verb)
+                     memory_mb=mem, action=_verb(wi))
 
     def _run_route(self, ctx: TaskContext, wi: WorkItem, *, resume: bool) -> None:
         route = get_route(wi.plan.route or "")
@@ -1003,7 +1002,7 @@ class _Execution:
             name = wi.plan.source_path.rsplit("#", 1)[-1].rsplit("/", 1)[-1]
             self.sched.submit(Task(
                 lane=Lane.PDFA, order=(wi.n, 2), batch_fn=self._pdfa_batch, payload=wi,
-                batch_key=flavour, label=name, action="Validating PDF/A", category=wi.category.value,
+                batch_key=flavour, label=name, action="validating PDF/A", category=wi.category.value,
                 item=wi.n, kind="pdfa",
             ))
             return
@@ -1048,7 +1047,7 @@ class _Execution:
             wi.done = True
             self._report(wi)
             return
-        self._submit(wi, Lane.FILES, "publish", self._publish_step, step=3, action="Saving")
+        self._submit(wi, Lane.FILES, "publish", self._publish_step, step=3, action="saving")
 
     def _publish_step(self, ctx: TaskContext, wi: WorkItem) -> None:
         """P5: .part on the output volume, V-HASH read-back, exclusive atomic rename, mtime."""
@@ -1153,6 +1152,20 @@ class _Execution:
         r.checks = format_checks(wi.checks)
         r.message = clip_message(" · ".join(m for m in wi.messages if m))
         return r
+
+
+def _verb(wi: WorkItem, *, resume: bool = False) -> str:
+    """The run page's "In progress" activity (design W-07): verifying JPEG, transcoding, …"""
+    fmt = (wi.source_format or wi.plan.ext.lstrip(".").upper() or "file").split(" ")[0]
+    if resume or wi.check_only or wi.action in (Action.COPY, Action.CHECK):
+        return f"verifying {fmt}"
+    if wi.action == Action.REMUX:
+        return "remuxing"
+    if wi.category in (Category.VIDEO, Category.AUDIO):
+        return "transcoding"
+    if wi.category == Category.IMAGE:
+        return "converting image"
+    return "converting"
 
 
 def _unlink(p: str) -> None:

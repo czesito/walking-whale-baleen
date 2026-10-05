@@ -28,12 +28,22 @@ jobs:
           uv pip install --python .venv --require-hashes -r requirements-dev.lock
           uv pip install --python .venv --no-deps -e .
 
-      - name: External tools (LibreOffice, FFmpeg, Java from apt; pinned veraPDF)
+      - name: Cache pinned tool downloads
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/baleen-ci
+          key: baleen-ci-tools-${{ hashFiles('scripts/ci_install_libreoffice.py', 'scripts/runtimes.json') }}
+
+      - name: External tools (pinned LibreOffice and veraPDF; FFmpeg and Java from apt)
         run: |
           sudo apt-get update
+          # The pinned LibreOffice 26.8 is unpacked below: Ubuntu's 24.2 writes PDF/A-1b files that
+          # veraPDF rejects, and CI must test what the bundles ship. Apt provides its libraries.
           sudo apt-get install -y --no-install-recommends \
-            libreoffice-writer libreoffice-calc libreoffice-impress \
-            ffmpeg default-jre-headless fonts-liberation fonts-dejavu-core fonts-noto-cjk
+            ffmpeg default-jre-headless fonts-liberation fonts-dejavu-core fonts-wqy-microhei \
+            libxinerama1 libxrandr2 libdbus-1-3 libsm6 libice6 libxslt1.1 libnss3 libx11-xcb1 libgl1 libegl1
+          .venv/bin/python scripts/ci_install_libreoffice.py --dest "$RUNNER_TEMP/libreoffice" --cache "$HOME/.cache/baleen-ci" > "$RUNNER_TEMP/soffice.txt"
+          echo "BALEEN_SOFFICE=$(tail -1 "$RUNNER_TEMP/soffice.txt")" >> "$GITHUB_ENV"
           .venv/bin/python scripts/ci_install_verapdf.py --dest "$RUNNER_TEMP/verapdf" --cache "$RUNNER_TEMP/cache"
           echo "BALEEN_VERAPDF=$RUNNER_TEMP/verapdf/verapdf" >> "$GITHUB_ENV"
 
@@ -72,7 +82,7 @@ jobs:
             $ipt -A OUTPUT -o lo -p tcp --dport 53 -j REJECT
             $ipt -A OUTPUT ! -o lo -j REJECT
           done
-          sudo -u "$RUN_AS" --preserve-env=PATH,HOME,BALEEN_REQUIRE_TOOLS,BALEEN_VERAPDF,PYTHONIOENCODING \
+          sudo -u "$RUN_AS" --preserve-env=PATH,HOME,BALEEN_REQUIRE_TOOLS,BALEEN_VERAPDF,BALEEN_SOFFICE,PYTHONIOENCODING \
             .venv/bin/python -m pytest tests/integration -q -p no:cacheprovider
           rc=$?
           attempts=0
@@ -89,7 +99,7 @@ jobs:
           exit $rc
           EOF
           sudo RUN_AS="$(id -un)" PATH="$PATH" HOME="$HOME" BALEEN_REQUIRE_TOOLS=1 \
-            BALEEN_VERAPDF="$BALEEN_VERAPDF" PYTHONIOENCODING=utf-8 \
+            BALEEN_VERAPDF="$BALEEN_VERAPDF" BALEEN_SOFFICE="$BALEEN_SOFFICE" PYTHONIOENCODING=utf-8 \
             unshare --net bash "$RUNNER_TEMP/offline.sh"
 
   unit:

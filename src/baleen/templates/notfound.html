@@ -1,0 +1,6 @@
+{# Unknown page or run, inside the shell. #}
+{% extends "base.html" %}
+{% from "partials/empty_state.html" import empty_state %}
+{% block page %}
+<section class="card">{{ empty_state('about', message, detail, workflows[0].route, 'Start with ' ~ workflows[0].name) }}</section>
+{% endblock %}

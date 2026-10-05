@@ -1,0 +1,13 @@
+{# Page notices (§12.2): a run in progress (one job at a time), missing tools (UI-C3, W-05),
+   and a start error that is not about one folder. #}
+{% from "partials/notice.html" import notice %}
+{% from "partials/icon.html" import icon %}
+<div id="page-notices"{% if oob %} hx-swap-oob="true"{% endif %}>
+{% if running_job %}{% set act %}<a class="btn secondary sm" href="/runs/{{ running_job.id }}">View run</a>{% endset %}
+{% call notice('info', 'A run is in progress', icon_name='spinner', actions=act, extra_class='spin-ic') %}Baleen runs one job at a time. You can set up the next one meanwhile.{% endcall %}
+{% endif %}
+{% for t in missing_tools %}{% set act %}<a class="btn secondary sm" href="/tools">Open Tools</a>{% endset %}
+{% call notice('warn', t.title, actions=act) %}{{ t.body }}{% endcall %}
+{% endfor %}
+{% if start_error %}{% call notice('alert', start_error) %}{% endcall %}{% endif %}
+</div>

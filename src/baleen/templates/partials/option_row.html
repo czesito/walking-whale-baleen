@@ -1,0 +1,27 @@
+{# Option row (design §06, D-05, UI-C2): label + help on the left, control on the right, generated
+   from the workflow's settings schema. seg = segmented (2-4 short values, roving tabindex with
+   ← →), switch = boolean, select = 5+ values or long labels. Every change saves at once through
+   /api/settings and re-renders the options card; ids keep the keyboard focus across the swap. #}
+
+{% macro control(wf_id, f, value, target='#options-card', ui=None) -%}
+{% set ui = ui or ('options:' ~ wf_id) %}
+{%- if f.type == 'seg' -%}
+{% set ns = namespace(found=False) %}{% for v, _l in f.values %}{% if v == value %}{% set ns.found = True %}{% endif %}{% endfor %}
+<div class="seg" role="group" aria-labelledby="opt-{{ f.key }}-label">
+{%- for v, l in f.values %}<button type="button" id="opt-{{ f.key }}-{{ v }}" aria-pressed="{{ 'true' if v == value else 'false' }}" tabindex="{{ 0 if (v == value or (not ns.found and loop.first)) else -1 }}"
+ hx-post="/api/settings" hx-vals='{{ {"ui": ui, f.key: v}|tojson }}' hx-target="{{ target }}" hx-swap="outerHTML">{{ l }}</button>{% endfor -%}
+</div>
+{%- elif f.type == 'switch' -%}
+<button type="button" class="switch" role="switch" id="opt-{{ f.key }}" aria-checked="{{ 'true' if value else 'false' }}" aria-labelledby="opt-{{ f.key }}-label"
+ hx-post="/api/settings" hx-vals='{{ {"ui": ui, f.key: ("false" if value else "true")}|tojson }}' hx-target="{{ target }}" hx-swap="outerHTML"></button>
+{%- elif f.type == 'select' -%}
+<select class="select" id="opt-{{ f.key }}" name="{{ f.key }}" aria-labelledby="opt-{{ f.key }}-label"
+ hx-post="/api/settings" hx-trigger="change" hx-vals='{{ {"ui": ui}|tojson }}' hx-target="{{ target }}" hx-swap="outerHTML">
+{%- for v, l in f.values %}<option value="{{ v }}"{% if v == value %} selected{% endif %}>{{ l }}</option>{% endfor -%}
+</select>
+{%- endif %}
+{%- endmacro %}
+
+{% macro option_row(wf_id, f, value) -%}
+<div class="opt"><div><div class="label" id="opt-{{ f.key }}-label">{{ f.label }}</div><div class="help">{{ f.help }}</div></div><div>{{ control(wf_id, f, value) }}</div></div>
+{%- endmacro %}

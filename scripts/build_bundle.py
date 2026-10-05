@@ -170,7 +170,7 @@ def sha256_file(path: Path) -> str:
 def _download(url: str, part: Path) -> str:
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     h = hashlib.sha256()
-    with urllib.request.urlopen(req, timeout=60) as resp, open(part, "wb") as out:
+    with urllib.request.urlopen(req, timeout=180) as resp, open(part, "wb") as out:
         total = int(resp.headers.get("Content-Length") or 0)
         done, next_mark = 0, 0.1
         while True:

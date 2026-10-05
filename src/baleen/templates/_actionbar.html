@@ -1,0 +1,9 @@
+{# Action bar (§12.2, design §06): a status sentence on the left that always says why Start is
+   disabled, buttons on the right. Setup pages only. #}
+{% from "partials/icon.html" import icon %}
+<div class="actionbar" id="actionbar"{% if oob %} hx-swap-oob="true"{% endif %}><div class="status">
+{%- if bar.kind == 'busy' %}{{ icon('spinner', 'spin') }}{% elif bar.kind == 'ok' %}{{ icon('st-ok') }}{% else %}{{ icon('info') }}{% endif %}<span>{{ bar.text }}</span></div>
+<div class="btns">
+{%- if wf.preview %}<button type="button" class="btn secondary" id="ab-preview"{% if not bar.can_start %} disabled{% endif %} hx-post="/api/preview" hx-vals='{{ {"wf": wf.id}|tojson }}' hx-include="#folders-card" hx-target="#preview-card" hx-swap="outerHTML">{{ icon('scan') }}Preview</button>{% endif -%}
+<button type="button" class="btn primary" id="ab-start"{% if not bar.can_start %} disabled{% endif %} hx-post="/api/{{ wf.id }}" hx-include="#folders-card" hx-target="#modal" hx-swap="innerHTML">{{ wf.start_label }}{{ icon('arrow-r') }}</button>
+</div></div>

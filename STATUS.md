@@ -171,6 +171,21 @@ approved documents was edited. Accept, amend or reject them in a new spec revisi
 8. **Known limit.** Pillow reads 16-bit colour PNGs as 8 bits per channel. Such files go to TIFF with a
    message.
 
+### DR-52 (proposed): PDF/A-1b and CFF (OpenType) CJK fonts
+
+- **Finding (CI, Linux).** For CJK text, LibreOffice 26.8 embeds a CFF-flavoured OpenType font (e.g. Noto
+  CJK) as a Type 1 subset without the CharSet string that PDF/A-1 requires. veraPDF rejects it (rule
+  6.3.5), so Baleen correctly reports FAILED `VERIFY_FAILED` and places nothing.
+- **Unaffected.** TrueType fonts, which are the Windows CJK fallbacks, pass. PDF/A-2b and 3b, where the
+  CharSet rule is optional, pass.
+- **Decision.**
+  - Keep the default 2b (DR-07).
+  - Document that 1b with CJK text can fail on systems whose CJK fonts are CFF (Linux; possibly macOS,
+    e.g. Hiragino). This is on the manual checklist for a real Mac.
+  - CI uses a TrueType CJK font so its 1b golden rows test Baleen rather than the font stack.
+- **Also found.** Ubuntu's own LibreOffice 24.2 writes PDF/A-1b with a CreationDate/xmp:CreateDate
+  mismatch (rule 6.7.3). CI now tests the pinned 26.8.0.3 that the bundles ship.
+
 ## Risks R-01…R-14: findings on this machine
 
 *(more pending)*

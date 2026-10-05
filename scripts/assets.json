@@ -1,0 +1,75 @@
+{
+  "comment": "Front-end asset pins for scripts/vendor_assets.py. npm tarballs are verified against the sha512 integrity recorded here AND the registry metadata. No Node.js is used (DR-03).",
+  "npm": {
+    "htmx.org": {
+      "version": "2.0.11",
+      "integrity": "sha512-Thx/WtpeOQqSrqBCw/A1cwGJGg4UrVa3+sW0GmrM3p4gJgO89ecH4qtbnyzDDWFvBTqjnIMCgELTNt636dtamA==",
+      "license": "0BSD"
+    },
+    "@fontsource/inter": {
+      "version": "5.3.0",
+      "integrity": "sha512-RofMylZmjlJEfELXeNHFWBRcSs75rGU/6bV2S2jfnvv/3rPXPGe0LgUJTklcHZ9lM4OZmAVFhcJPnACfb91A3g==",
+      "license": "OFL-1.1"
+    },
+    "@fontsource/ibm-plex-mono": {
+      "version": "5.3.0",
+      "integrity": "sha512-eTgnZjZEGk1QtD3ZstF+Vclo2HLAni8YMy34/DxllwZvyz1lR/1RF/xTiAquOBO7MvqBx8D2Ig2WCPMVfdZu7Q==",
+      "license": "OFL-1.1"
+    },
+    "@fontsource/cormorant-garamond": {
+      "version": "5.3.0",
+      "integrity": "sha512-weuGsCirGVWBWqpt6YUp0yLThTe4G8YO45noq8wxeJCRvEpq5lFrxNMFSTxcyOyV5k5otzJ8guDzYegdYlcLMQ==",
+      "license": "OFL-1.1"
+    },
+    "lucide-static": {
+      "version": "1.52.0",
+      "integrity": "sha512-0zZYihAze4ZmUCcyNa9OkWYqn/Y5f9AdTh02AZIxMtP5ravcTTfoSIAnUPBH6ZvKxt+ZW28JB0ldzLRyD82fcw==",
+      "license": "ISC"
+    }
+  },
+  "pyftsubset": {
+    "fonttools": "4.66.1",
+    "brotli": "1.2.0"
+  },
+  "fonts": [
+    {
+      "package": "@fontsource/inter",
+      "family": "inter",
+      "weight": 400,
+      "out": "Inter-400.woff2"
+    },
+    {
+      "package": "@fontsource/inter",
+      "family": "inter",
+      "weight": 500,
+      "out": "Inter-500.woff2"
+    },
+    {
+      "package": "@fontsource/inter",
+      "family": "inter",
+      "weight": 600,
+      "out": "Inter-600.woff2"
+    },
+    {
+      "package": "@fontsource/ibm-plex-mono",
+      "family": "ibm-plex-mono",
+      "weight": 400,
+      "out": "IBMPlexMono-400.woff2"
+    },
+    {
+      "package": "@fontsource/ibm-plex-mono",
+      "family": "ibm-plex-mono",
+      "weight": 500,
+      "out": "IBMPlexMono-500.woff2"
+    },
+    {
+      "package": "@fontsource/cormorant-garamond",
+      "family": "cormorant-garamond",
+      "weight": 600,
+      "out": "CormorantGaramond-600.woff2"
+    }
+  ],
+  "font_subset": "latin",
+  "unicodes": "U+0020-007E,U+00A0-00FF,U+0131,U+0152-0153,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2190-2193,U+2212,U+2215,U+FEFF,U+FFFD",
+  "layout_features": "kern,liga,calt,ccmp,locl,mark,mkmk,tnum,case"
+}

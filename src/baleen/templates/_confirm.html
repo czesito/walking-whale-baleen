@@ -1,0 +1,13 @@
+{# Start confirmation (UI-C5, W-06): source → output, counts, settings chips and the reassurance
+   sentence. Generated from the registry: the title is the start label, the folders give the
+   route, the options give the chips. Focus starts on the primary button. #}
+{% from "partials/icon.html" import icon %}
+{% from "partials/notice.html" import notice %}
+<h2 id="mTitle">{{ wf.start_label }}?</h2>
+{% if wf.extra.confirm_text %}<p>{{ wf.extra.confirm_text }}</p>{% endif %}
+<dl class="route">{% for r in route %}<dt>{{ r.label }}</dt><dd>{{ r.value }}</dd>{% endfor %}
+{%- if counts_line %}<dt>Files</dt><dd class="ui-font">{{ counts_line }}</dd>{% endif %}</dl>
+{% if chips %}<div class="chips">{% for c in chips %}<span class="chip">{{ c }}</span>{% endfor %}</div>{% endif %}
+{% if error %}{% call notice('alert', error, extra_class='in-modal') %}{% endcall %}{% endif %}
+{% if wf.reassurance %}<div class="safe">{{ icon('shield') }}Your source folder will not be changed.</div>{% endif %}
+<div class="m-foot"><button type="button" class="btn secondary" id="confirm-cancel" data-act="closemodal">Cancel</button><button type="button" class="btn primary" id="confirm-start" data-autofocus hx-post="/api/{{ wf.id }}" hx-vals='{"confirmed": "1"}' hx-include="#folders-card" hx-target="#modal" hx-swap="innerHTML" hx-disabled-elt="this">{{ wf.start_label }}{{ icon('arrow-r') }}</button></div>

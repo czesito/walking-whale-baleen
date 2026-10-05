@@ -10,12 +10,13 @@ CHECK = register(Workflow(
     name="Check",
     icon="check",
     order=20,
-    kicker="Workflows",
-    description="Verify a folder without changing it: every file is decoded or validated and fingerprinted.",
+    kicker="Workflow",
+    description="Verify a folder without changing it. Find files that aren't archival yet, and archival files "
+                "that are damaged.",
     mode=Mode.CHECK,
     folders=(
         FolderField("check_dir", "Folder to check", "read",
-                    "Baleen only reads from it. Nothing is written to this folder.", "/path/to/folder"),
+                    "Any folder, including a Baleen output folder. Nothing in it is changed."),
     ),
     options=(),
     preview=False,
@@ -25,13 +26,18 @@ CHECK = register(Workflow(
     explainer=Explainer(
         "What Baleen checks",
         (
-            "JPEG and TIFF images are fully decoded.",
-            "PDFs are validated as PDF/A with veraPDF.",
-            "MP4 and M4A files are fully decoded.",
-            "Every file gets a SHA-256 fingerprint.",
-            "Files that could be converted are listed as Not archival yet, with their target format.",
+            "JPEG and TIFF · decode every frame fully",
+            "PDF · PDF/A validation with veraPDF",
+            "MP4 and M4A · probe, then decode the whole file",
+            "Every file · SHA-256 recorded in the report",
+            "Everything else · listed with the archival format it would convert to",
         ),
-        "The report is saved in Baleen's data folder and can be downloaded from the run page.",
+        icons=("cat-image", "cat-pdf", "cat-video", "shield", "cat-other"),
     ),
     ready_text="Ready to check. Nothing will be written to this folder.",
+    extra={
+        "running_label": "Checking",
+        "idle_text": "Choose a folder to check.",
+        "busy_text": "Wait for the current run to finish.",
+    },
 ))

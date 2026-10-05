@@ -1,0 +1,12 @@
+{% from "partials/icon.html" import icon %}
+{% from "partials/notice.html" import notice %}
+<div id="tools-list">
+{% if missing %}{% call notice('warn', num(missing) ~ (' tool is missing' if missing == 1 else ' tools are missing')) %}Runs still work. Files that need the missing tool are marked <b>Needs review</b> instead of OK.{% endcall %}
+{% else %}{% call notice('ok', 'All ' ~ num(tools|length) ~ ' tools found') %}Versions are recorded in every run report.{% endcall %}{% endif %}
+<section class="card">{% for t in tools %}<div class="tool" id="tool-{{ t.key }}"><span class="st {{ 'st-bad' if not t.found else 'st-good' }}">{{ icon('st-ok' if t.found else 'st-failed') }}</span><div><div class="t-name">{{ t.name }}</div><div class="t-role">{{ t.role }}</div></div>
+<div class="t-ver">{% if t.found %}{{ t.version or '—' }} <span class="chip chip-src">{{ t.source }}</span>{% else %}<span class="badge failed">{{ icon('st-failed') }}Missing</span>{% endif %}</div>
+{%- if t.found %}<div class="t-path">{{ t.path }}{% if t.error %} · {{ t.error }}{% endif %}</div>
+{%- else %}<div class="t-help help-box"><b>Affects:</b> {{ t.affects }} <b>Fix:</b> {{ t.fix }}{% if t.override %} <span class="code">{{ t.env }}</span> points to a missing file.{% endif %}</div>{% endif %}</div>
+{% endfor %}</section>
+</div>
+{% if oob_dot %}{% with oob = True %}{% include "_tools_dot.html" %}{% endwith %}{% endif %}

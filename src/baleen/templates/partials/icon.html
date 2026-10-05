@@ -1,0 +1,4 @@
+{# Lucide sprite reference (design §05): never without a text label or an aria-label. #}
+{% macro icon(name, cls='') -%}
+<svg class="ic{% if cls %} {{ cls }}{% endif %}" aria-hidden="true"><use href="#i-{{ name }}"/></svg>
+{%- endmacro %}

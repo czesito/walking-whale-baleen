@@ -1,0 +1,35 @@
+{# Folder field (design §06, UI-C1, UI-C6): label · help · monospace input with folder icon ·
+   Browse… · status line. Validation runs on change (blur) through /api/validate-path, which
+   returns the status line; an error replaces the status line and baleen.js marks the field.
+   Browse shows "Waiting for the folder dialog…" while the OS dialog is open (htmx-request on
+   the field). Browse is hidden when this machine has no folder dialog (§12.9). #}
+{% from "partials/icon.html" import icon %}
+
+{% macro msg_line(key, status, oob=False) -%}
+{% set fid = 'f-' ~ key %}
+{%- if status and status.error -%}
+<div class="msg err" id="{{ fid }}-msg" data-state="error"{% if oob %} hx-swap-oob="true"{% endif %}>{{ icon('st-failed') }}<span>{{ status.error }}</span></div>
+{%- elif status and status.ok -%}
+<div class="msg ok" id="{{ fid }}-msg" data-state="ok"{% if oob %} hx-swap-oob="true"{% endif %}>{{ icon('st-ok') }}<span>{{ status.ok }}</span></div>
+{%- else -%}
+<div class="msg" id="{{ fid }}-msg" data-state="empty" hidden{% if oob %} hx-swap-oob="true"{% endif %}></div>
+{%- endif %}
+{%- endmacro %}
+
+{% macro folder_field(wf_id, f, value, status, picker, include='#folders-card', ui='') -%}
+{% set fid = 'f-' ~ f.key %}
+{% set vals = {'wf': wf_id, 'field': f.key, 'ui': ui} %}
+<div class="field{% if status and status.error %} error{% endif %}" id="{{ fid }}-field">
+<label class="label" for="{{ fid }}">{{ f.label }}</label>
+<div class="help" id="{{ fid }}-help">{{ f.help }}</div>
+<div class="path"><div class="input-wrap">{{ icon('folder') }}<input class="input" id="{{ fid }}" name="{{ f.key }}" value="{{ value }}"
+ placeholder="{{ f.placeholder or ('Paste a folder path, or choose Browse…' if picker else 'Paste a folder path') }}" spellcheck="false" autocomplete="off"
+ aria-describedby="{{ fid }}-help {{ fid }}-msg"{% if status and status.error %} aria-invalid="true"{% endif %}
+ hx-post="/api/validate-path" hx-trigger="change" hx-vals='{{ vals|tojson }}' hx-include="{{ include }}" hx-target="#{{ fid }}-msg" hx-swap="outerHTML"></div>
+{%- if picker %}<button type="button" class="btn secondary browse" id="{{ fid }}-browse" hx-post="/api/pick-folder" hx-vals='{{ vals|tojson }}' hx-include="{{ include }}"
+ hx-target="#{{ fid }}-msg" hx-swap="outerHTML" hx-sync="this:drop" hx-indicator="#{{ fid }}-field"><span class="when-idle">{{ icon('folder-open') }}Browse…</span><span class="when-busy">{{ icon('spinner', 'spin') }}Waiting for the folder dialog…</span></button>{% endif %}
+</div>
+{{ msg_line(f.key, status) }}
+{%- if picker %}<div class="help browse-hint">Don't see it? It may be behind this window.</div>{% endif %}
+</div>
+{%- endmacro %}

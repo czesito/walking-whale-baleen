@@ -1,0 +1,11 @@
+{# "With these settings" (UI-S2, D-22): a live, plain-language summary of what Baleen will run,
+   computed on the server with the spec §5.5 rules. No "tokens", "threads" or "workers". #}
+{% from "partials/icon.html" import icon %}
+<div class="plan" id="plan" aria-live="polite" hx-get="/settings/plan" hx-trigger="input from:#res-memory delay:100ms" hx-include="#res-memory" hx-swap="outerHTML"><div class="plan-title">{{ icon('info') }}With these settings, Baleen runs at most</div><ul>
+<li>{{ icon('cat-image') }}<span><b>{{ plan.B }}</b> file tasks at once: copying, checking, images</span></li>
+<li>{{ icon('cat-document') }}<span><b>{{ plan.K }}</b> document converter{{ 's' if plan.K != 1 }} (LibreOffice)</span></li>
+<li>{{ icon('cat-video') }}<span><b>{{ plan.F }}</b> video encoder{{ 's' if plan.F != 1 }}, {{ 'each ' if plan.F > 1 }}using <b>{{ plan.threads }}</b> core{{ 's' if plan.threads != 1 }}</span></li>
+<li>{{ icon('cat-pdf') }}<span>PDF/A checks in batches, one batch at a time</span></li>
+<li>{{ icon('drive') }}<span><b>{{ plan.T }}</b> file transfers to and from {{ 'network folders' if plan.network else 'disks' }}</span></li>
+<li>{{ icon('layers') }}<span>Up to <b>{{ plan.M }} GB</b> of memory reserved for converters</span></li>
+</ul><div class="foot">Together these never use more than {{ plan.B }} of {{ plan.cores }} cores. Changes apply right away, also to a run in progress (new tasks only).</div></div>
