@@ -166,7 +166,13 @@ def test_ac08_crash_safe(kind: str, tmp_path: Path) -> None:
 
     r = _cli(["convert", str(src), str(out), "--processor", "4", "--no-keep-awake", "-q"], home)
     assert r.returncode in (0, 1), r.stderr
-    reports = sorted((out / "_baleen").glob("report-*.csv"))
+    def run_order(p: Path) -> tuple[str, int]:
+        # report-YYYYMMDD-HHMMSS.csv, then report-YYYYMMDD-HHMMSS-2.csv for a run started in the same
+        # second; a plain name sort would put "-2.csv" first.
+        parts = p.stem.split("-")  # ["report", date, time, (n)]
+        return f"{parts[1]}-{parts[2]}", int(parts[3]) if len(parts) > 3 else 1
+
+    reports = sorted((out / "_baleen").glob("report-*.csv"), key=run_order)
     assert len(reports) == 2, "the interrupted run is finalised from its journal (§5.6)"
     interrupted = read_csv(str(reports[0]))
     assert any(row.reason == "INTERRUPTED" for row in interrupted)
