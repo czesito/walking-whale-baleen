@@ -99,6 +99,7 @@ def main(argv: list[str] | None = None) -> int:
     enc = names(run([ffmpeg, "-hide_banner", "-encoders"]))
     mux = names(run([ffmpeg, "-hide_banner", "-muxers"]))
     dmx = names(run([ffmpeg, "-hide_banner", "-demuxers"]))
+    devices = names(run([ffmpeg, "-hide_banner", "-devices"]))  # lavfi is an input device, not a demuxer
     print(f"\n{len(dec)} decoders, {len(enc)} encoders, {len(mux)} muxers, {len(dmx)} demuxers")
     print("\nRequired decoders (spec 6.7 matrix):")
     for label, wanted in DECODERS.items():
@@ -115,7 +116,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"  legacy extras present: {len(EXTRA_DECODERS) - len(extra_missing)}/{len(EXTRA_DECODERS)}"
           + (f" (absent: {' '.join(extra_missing)})" if extra_missing else ""))
 
-    if "lavfi" not in dmx:
+    if "lavfi" not in devices and "lavfi" not in dmx:
         problems.append("the lavfi input is missing (test patterns for fixtures and this check)")
     with tempfile.TemporaryDirectory(dir=argv[1] if len(argv) > 1 else None) as tmp:
         mp4 = str(Path(tmp) / "check.mp4")
