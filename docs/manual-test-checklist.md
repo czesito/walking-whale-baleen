@@ -44,6 +44,7 @@ bug reports (spec §15).
 | 3.7 | First access to a network volume on macOS | macOS asks whether Terminal may access it; choose Allow (§14.4) | |
 | 3.8 | Closing the launcher window mid-run stops Baleen; a re-run resumes (P5, §5.6) | Close the console during a LibreOffice batch and during an FFmpeg encode, start again, re-run the same Convert | |
 | 3.9 | macOS **Gatekeeper / quarantine** message wording when step 1.1 is skipped | Record the exact dialog for the README | |
+| 3.11 | **PDF/A-1b with CJK text on macOS** (proposed DR-52) | Convert the CJK text and e-mail fixtures with PDF/A level 1b. If macOS falls back to a CFF font (e.g. Hiragino), expect `VERIFY_FAILED` with nothing placed. Record which font LibreOffice used | |
 | 3.10 | **R-13** Small NAS under parallel transfers | Run with File transfers at once = Auto (4), then Custom 8; note NAS responsiveness for colleagues | |
 
 ## 4. Release checks
