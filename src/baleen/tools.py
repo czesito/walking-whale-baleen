@@ -294,6 +294,9 @@ def tool_env(home: Home, java_home: str | None = None) -> dict[str, str]:
     )
     if java_home:
         env["JAVA_HOME"] = java_home
+        # The veraPDF launchers pick the JVM from JAVACMD (verapdf.bat ignores JAVA_HOME and
+        # would otherwise fall back to "java" on PATH).
+        env["JAVACMD"] = os.path.join(java_home, "bin", f"java{EXE}")
     return env
 
 
