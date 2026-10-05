@@ -1,0 +1,30 @@
+name: test
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  unit:
+    name: unit (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Python 3.12 venv with locked dev dependencies
+        run: |
+          uv venv --python 3.12 .venv
+          uv pip install --python .venv --require-hashes -r requirements-dev.lock
+          uv pip install --python .venv --no-deps -e .
+      - name: Lint
+        run: uv run --no-sync --python .venv ruff check src tests
+      - name: Unit tests
+        run: uv run --no-sync --python .venv python -m pytest tests/unit -q
