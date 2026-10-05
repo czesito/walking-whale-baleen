@@ -115,9 +115,9 @@ class FakePicker:
         return pickers.PickResult(cls.path, cls.path is None)
 
 
-def start(tmp: Path, port: int, mp: Any, *, missing: set[str] | None = None, cores: int = 8, ram: int = 16,
-          network: bool = True, picker: str | None = "test") -> Harness:
-    """Start a server; `mp` is a pytest MonkeyPatch (fakes are undone with it)."""
+def build_ctx(tmp: Path, port: int, mp: Any, *, missing: set[str] | None = None, cores: int = 8, ram: int = 16,
+              network: bool = True, picker: str | None = "test") -> ServerContext:
+    """A server context with fake converters, tools, machine and folder dialog (no uvicorn)."""
     fake_routes.install(mp)
     FakePicker.path, FakePicker.delay, FakePicker.calls = None, 0.0, 0
     mp.setattr(pickers, "pick_folder", FakePicker.pick_folder)
@@ -129,7 +129,14 @@ def start(tmp: Path, port: int, mp: Any, *, missing: set[str] | None = None, cor
     tools = FakeToolset(home, missing)
     engine = Engine(home, store, tools)
     engine.recover_all()
-    ctx = ServerContext(home=home, store=store, tools=tools, engine=engine, port=port, picker=picker)
+    return ServerContext(home=home, store=store, tools=tools, engine=engine, port=port, picker=picker)
+
+
+def start(tmp: Path, port: int, mp: Any, **kw: Any) -> Harness:
+    """Start a real server on 127.0.0.1:<port>; `mp` is a pytest MonkeyPatch (fakes undone with it)."""
+    ctx = build_ctx(tmp, port, mp, **kw)
+    tools = ctx.tools
+    assert isinstance(tools, FakeToolset)
     sock = bind_loopback(port)
     server = BaleenServer(create_app(ctx), ctx)
     t = threading.Thread(target=server.run, args=(sock,), daemon=True, name=f"baleen-ui-{port}")
@@ -140,6 +147,22 @@ def start(tmp: Path, port: int, mp: Any, *, missing: set[str] | None = None, cor
             raise RuntimeError("server did not start")
         time.sleep(0.05)
     return Harness(ctx, server, t, port, tools)
+
+
+def client(ctx: ServerContext, *, cookie: bool = True, origin: bool = True, hx: bool = True) -> Any:
+    """Starlette TestClient as the browser tab Baleen opened: right Host, loopback client, session
+    cookie and same-origin Origin header (each can be dropped to test SEC-3 / SEC-5); hx sends
+    HX-Request like htmx does."""
+    from starlette.testclient import TestClient
+
+    headers = {"origin": ctx.origin} if origin else {}
+    if hx:
+        headers["hx-request"] = "true"
+    c = TestClient(create_app(ctx), base_url=ctx.origin, client=("127.0.0.1", 50123), headers=headers,
+                   follow_redirects=False)
+    if cookie:
+        c.cookies.set("baleen_session", ctx.secrets.session)
+    return c
 
 
 # --------------------------------------------------------------------------- source trees
