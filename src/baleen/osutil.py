@@ -19,14 +19,34 @@ from collections.abc import Iterator
 IS_WINDOWS = sys.platform == "win32"
 IS_MAC = sys.platform == "darwin"
 
+_k32 = None
+
+
+def _kernel32():  # noqa: ANN202
+    """kernel32 with explicit prototypes (handles are 64-bit; flags are unsigned 32-bit)."""
+    global _k32
+    if _k32 is None:
+        import ctypes
+        from ctypes import wintypes
+
+        k = ctypes.WinDLL("kernel32", use_last_error=True)
+        k.GetCurrentThread.restype = wintypes.HANDLE
+        k.GetCurrentThread.argtypes = []
+        k.SetThreadPriority.restype = wintypes.BOOL
+        k.SetThreadPriority.argtypes = [wintypes.HANDLE, ctypes.c_int]
+        k.GetThreadPriority.restype = ctypes.c_int
+        k.GetThreadPriority.argtypes = [wintypes.HANDLE]
+        k.SetThreadExecutionState.restype = wintypes.DWORD
+        k.SetThreadExecutionState.argtypes = [wintypes.DWORD]
+        _k32 = k
+    return _k32
+
 
 def set_thread_low_priority(low: bool) -> None:
     """Set the calling thread's priority. Never raises."""
     try:
         if IS_WINDOWS:
-            import ctypes
-
-            k32 = ctypes.windll.kernel32  # type: ignore[attr-defined]
+            k32 = _kernel32()
             THREAD_PRIORITY_BELOW_NORMAL, THREAD_PRIORITY_NORMAL = -1, 0
             k32.SetThreadPriority(
                 k32.GetCurrentThread(), THREAD_PRIORITY_BELOW_NORMAL if low else THREAD_PRIORITY_NORMAL
@@ -52,9 +72,7 @@ def thread_priority_is_low() -> bool | None:
     """Introspection for tests (Windows only)."""
     if not IS_WINDOWS:
         return None
-    import ctypes
-
-    k32 = ctypes.windll.kernel32  # type: ignore[attr-defined]
+    k32 = _kernel32()
     return int(k32.GetThreadPriority(k32.GetCurrentThread())) < 0
 
 
@@ -66,6 +84,8 @@ class KeepAwake:
         self._proc: subprocess.Popen[bytes] | None = None
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
+        self.held = threading.Event()
+        self.state = 0  # previous execution state returned by Windows (non-zero = call succeeded)
 
     def __enter__(self) -> KeepAwake:
         if not self.enabled:
@@ -85,11 +105,10 @@ class KeepAwake:
         return self
 
     def _win_hold(self) -> None:
-        import ctypes
-
         ES_CONTINUOUS, ES_SYSTEM_REQUIRED = 0x80000000, 0x00000001
-        k32 = ctypes.windll.kernel32  # type: ignore[attr-defined]
-        k32.SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED)
+        k32 = _kernel32()
+        self.state = k32.SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED)
+        self.held.set()
         try:
             self._stop.wait()
         finally:
