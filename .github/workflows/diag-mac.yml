@@ -1,0 +1,59 @@
+# Diagnosis only (diag-mac branch): why does CJK text converted on macOS fail V-TEXT? Not for main.
+name: diag-mac
+
+on:
+  push:
+    branches: [diag-mac]
+
+permissions:
+  contents: read
+
+env:
+  PYTHONIOENCODING: utf-8
+
+jobs:
+  diag:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.2.0
+
+      - name: Host Python
+        run: |
+          uv python install 3.12
+          echo "HOST_PY=$(uv python find 3.12)" >> "$GITHUB_ENV"
+
+      - name: Fonts on this runner
+        run: |
+          sw_vers
+          system_profiler SPFontsDataType | grep -iE "pingfang|hiragino|heiti|songti|arial unicode" | sort | uniq -c | head -60
+          system_profiler -json SPFontsDataType > "$RUNNER_TEMP/fonts.json"
+          "$HOST_PY" .github/diag/mac_text.py fonts "$RUNNER_TEMP/fonts.json"
+          ls -la /System/Library/Fonts | grep -iE "pingfang|hiragino|heiti|songti|stheiti" || true
+          ls /System/Library/AssetsV2 2>/dev/null | head -20 || true
+          find /System/Library/AssetsV2 -iname "*pingfang*" 2>/dev/null | head -10 || true
+
+      - name: Build the mac-arm64 runtime
+        run: |
+          "$HOST_PY" scripts/build_bundle.py --platform mac-arm64 --runtime-only --dest "$RUNNER_TEMP/rt" \
+            --cache "$RUNNER_TEMP/cache" --work "$RUNNER_TEMP/work"
+
+      - name: poppler for a second opinion (pdffonts, pdftotext)
+        run: brew install poppler || true
+
+      - name: Convert and analyse
+        run: |
+          "$RUNNER_TEMP/rt/python/bin/python3" .github/diag/mac_text.py run "$RUNNER_TEMP/rt" "$RUNNER_TEMP/diag"
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: diag-mac-pdfs
+          path: |
+            ${{ runner.temp }}/diag/**/*.pdf
+            ${{ runner.temp }}/diag/**/_baleen/*.csv
+          if-no-files-found: ignore
