@@ -44,4 +44,20 @@ other,check,link-to-zip.zip,IGNORED,SYMLINK,,,posix
 other,check,link-to-folder,IGNORED,SYMLINK,,,posix
 # ---- end: other
 # ---- section: names (lead)
+names,default,訪談記錄/照片 01.jpg,OK,,訪談記錄/照片 01.jpg,*,
+names,default,with spaces/a photo.jpg,OK,,with spaces/a photo.jpg,*,
+names,default,🐋 whale.jpg,OK,,🐋 whale.jpg,*,
+names,default,clash/report.doc,OK,,clash/report.pdf,*,libreoffice;java;verapdf
+names,default,clash/IMG_0001.JPG,OK,,clash/IMG_0001.jpg,*,
+names,default,clash/訪談.doc,OK,,clash/訪談_doc.pdf,*,libreoffice;java;verapdf
+names,default,clash/訪談.eml,OK,,clash/訪談_eml.pdf,*,libreoffice;java;verapdf
+names,default,clash/photo.bmp,OK,,clash/photo_bmp.jpg,*,
+names,default,clash/photo.jpg,OK,,clash/photo_jpg.jpg,*,
+names,default,clash/notes.txt,OK,,clash/notes_txt.pdf,*,libreoffice;java;verapdf
+names,default,clash/notes.pdf,NEEDS_REVIEW,NOT_PDFA,,*,
+names,default,long/nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn.jpg,OK,,long/nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn.jpg,*,
+names,default,long/cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc.bmp,NEEDS_REVIEW,PATH_TOO_LONG,,*,
+names,default,long/cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc.jpg,NEEDS_REVIEW,PATH_TOO_LONG,,*,
+names,default,case/a.JPG,NEEDS_REVIEW,NAME_CLASH_UNRESOLVED,,*,casesensitive
+names,default,case/a.jpg,NEEDS_REVIEW,NAME_CLASH_UNRESOLVED,,*,casesensitive
 # ---- end: names
