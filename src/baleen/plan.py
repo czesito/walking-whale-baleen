@@ -156,7 +156,7 @@ class Planner:
         it.reasons = list(pr.reasons)
         it.notes = list(pr.notes)
         it.message = pr.message
-        it.data = dict(pr.data)
+        it.data = {**it.data, **pr.data}  # keep planner facts (attachment sha256, child hint)
         if pr.route:
             it.route = pr.route
         # Only reasons that mean "nothing will be written" decide an item at plan time; a
