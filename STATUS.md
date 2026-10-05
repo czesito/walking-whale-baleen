@@ -186,6 +186,22 @@ approved documents was edited. Accept, amend or reject them in a new spec revisi
 - **Also found.** Ubuntu's own LibreOffice 24.2 writes PDF/A-1b with a CreationDate/xmp:CreateDate
   mismatch (rule 6.7.3). CI now tests the pinned 26.8.0.3 that the bundles ship.
 
+### DR-53 (proposed, UI): from workstream (d)
+
+1. **`app.css`.** `static/app.css` sits beside the generated `baleen.css`. The CSP (SEC-6) blocks the
+   prototype's inline styles, so a few width/utility classes replace them. `baleen.css` stays the
+   prototype's `<style>` block, untouched.
+2. **SEC-7 and the Baleen folder.** Settings › Data "Baleen folder · Open" opens `data/` today, because
+   SEC-7 allows reveal only inside the run roots and `BALEEN_HOME/data`. Proposal: allow `BALEEN_HOME`
+   itself.
+3. **The "→" glyph.** It falls back to a system font; none of the bundled fontsource subsets contains it.
+4. **Endpoints beyond Appendix B.** Preview progress polling, `GET /settings/plan` with unsaved values
+   (the summary updates while a stepper is moved), and relative stepper steps.
+5. **Extra headers.** X-Frame-Options, CORP and COOP headers beyond SEC-6, and a check that the client
+   address is loopback in addition to SEC-4.
+6. **Activity labels.** The run page shows the design's per-file activities: verifying JPEG, hashing,
+   PDF/A export, transcoding, saving, and so on.
+
 ## Risks R-01…R-14: findings on this machine
 
 *(more pending)*
