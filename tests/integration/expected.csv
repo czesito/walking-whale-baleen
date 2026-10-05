@@ -1,0 +1,47 @@
+# Golden results (spec §16.3): one row per fixture item and settings profile.
+# Columns: group, profile, source_path (relative to the group folder), status, reason
+# (codes, ';'-separated, order-insensitive), output_path ('' = nothing written), checks
+# (exact report form; '*' = not compared), requires (tools/conditions, ';'-separated:
+# libreoffice, ffmpeg, ffprobe, verapdf, java, posix, casesensitive).
+# Each workstream edits only its own section below; keep the marker lines.
+group,profile,source_path,status,reason,output_path,checks,requires
+# ---- section: images (workstream a)
+# ---- end: images
+# ---- section: text (workstream a)
+# ---- end: text
+# ---- section: html (workstream a)
+# ---- end: html
+# ---- section: pdf (workstream a)
+# ---- end: pdf
+# ---- section: documents (workstream b)
+# ---- end: documents
+# ---- section: email (workstream b)
+# ---- end: email
+# ---- section: media (workstream c)
+# ---- end: media
+# ---- section: other (lead)
+other,default,message.msg,UNSUPPORTED,UNSUPPORTED_FORMAT,,,
+other,default,bundle.zip,UNSUPPORTED,UNSUPPORTED_FORMAT,,,
+other,default,song.mid,UNSUPPORTED,UNSUPPORTED_FORMAT,,,
+other,default,README,UNSUPPORTED,UNSUPPORTED_FORMAT,,,
+other,default,Thumbs.db,IGNORED,SYSTEM_FILE,,,
+other,default,.DS_Store,IGNORED,SYSTEM_FILE,,,
+other,default,desktop.ini,IGNORED,SYSTEM_FILE,,,
+other,default,folder/._resource.jpg,IGNORED,SYSTEM_FILE,,,
+other,default,@eaDir,IGNORED,SYSTEM_FILE,,,
+other,default,link-to-zip.zip,IGNORED,SYMLINK,,,posix
+other,default,link-to-folder,IGNORED,SYMLINK,,,posix
+other,check,message.msg,UNSUPPORTED,UNSUPPORTED_FORMAT,,,
+other,check,bundle.zip,UNSUPPORTED,UNSUPPORTED_FORMAT,,,
+other,check,song.mid,UNSUPPORTED,UNSUPPORTED_FORMAT,,,
+other,check,README,UNSUPPORTED,UNSUPPORTED_FORMAT,,,
+other,check,Thumbs.db,IGNORED,SYSTEM_FILE,,,
+other,check,.DS_Store,IGNORED,SYSTEM_FILE,,,
+other,check,desktop.ini,IGNORED,SYSTEM_FILE,,,
+other,check,folder/._resource.jpg,IGNORED,SYSTEM_FILE,,,
+other,check,@eaDir,IGNORED,SYSTEM_FILE,,,
+other,check,link-to-zip.zip,IGNORED,SYMLINK,,,posix
+other,check,link-to-folder,IGNORED,SYMLINK,,,posix
+# ---- end: other
+# ---- section: names (lead)
+# ---- end: names
