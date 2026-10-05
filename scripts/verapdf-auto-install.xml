@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!--
+  Headless IzPack install of the veraPDF Greenfield CLI for the Baleen bundle (spec §14.6).
+
+  build_bundle.py replaces @INSTALL_PATH@ with the absolute path of runtime/verapdf (XML-escaped)
+  and runs: java -jar verapdf-izpack-installer-<ver>.jar <this file, resolved>
+
+  Panel ids and pack names match the 1.30.x installer (resources/panelsOrder, resources/packs.info).
+  Only the CLI pack is installed: no GUI, documentation or sample plugins.
+-->
+<AutomatedInstallation langpack="eng">
+  <com.izforge.izpack.panels.htmlhello.HTMLHelloPanel id="welcome"/>
+  <com.izforge.izpack.panels.target.TargetPanel id="install_dir">
+    <installpath>@INSTALL_PATH@</installpath>
+  </com.izforge.izpack.panels.target.TargetPanel>
+  <com.izforge.izpack.panels.packs.PacksPanel id="sdk_pack_select">
+    <pack index="0" name="veraPDF GUI" selected="false"/>
+    <pack index="1" name="veraPDF CLI" selected="true"/>
+    <pack index="2" name="veraPDF Documentation" selected="false"/>
+    <pack index="3" name="veraPDF Sample Plugins" selected="false"/>
+  </com.izforge.izpack.panels.packs.PacksPanel>
+  <com.izforge.izpack.panels.install.InstallPanel id="install"/>
+  <com.izforge.izpack.panels.finish.FinishPanel id="finish"/>
+</AutomatedInstallation>
