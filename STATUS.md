@@ -202,6 +202,25 @@ approved documents was edited. Accept, amend or reject them in a new spec revisi
 6. **Activity labels.** The run page shows the design's per-file activities: verifying JPEG, hashing,
    PDF/A export, transcoding, saving, and so on.
 
+### DR-54 (proposed, documents/e-mail): from workstream (b)
+
+1. **Content routing.** Documents whose content is HTML (an HTML page saved as `.doc` or `.xls`) take the
+   HTML route (§6.4 sanitising), with note CONTENT_MISMATCH.
+2. **Charset supersets.** Declared big5, gb2312 and iso-8859-1 are decoded as their Windows supersets
+   (cp950, gbk, cp1252).
+3. **LibreOffice profile hardening (R-05, P8).** A fresh LibreOffice profile does fetch remote images
+   linked from DOCX, Word 97 `.doc` and HTML, and remote HTML stylesheets. Each Baleen profile therefore
+   sets `BlockUntrustedRefererLinks`, a dead HTTP(S) proxy (127.0.0.1:9) and OpenCL/OpenGL off (DR-37).
+   This stops all of them, and OpenCL off also saves about 0.8 s per start. Proposal: make these
+   settings part of the spec.
+4. **Attachments without a name.** Inline non-text parts without a filename count as attachments
+   (`attachment-<n><ext>`), so nothing in an e-mail is silently lost.
+5. **Password detection.** DOC, PPT, ODF and WPD encryption is detected at plan time (FAILED
+   PASSWORD_PROTECTED). Encrypted XLS/OOXML get one LibreOffice attempt first, because Excel's default
+   password ("VelvetSweatshop") opens without a prompt.
+6. **Damaged OLE files.** These are forced to their own import filter. Otherwise LibreOffice converts them
+   as plain text into garbage PDFs (R-12).
+
 ## Risks R-01…R-14: findings on this machine
 
 *(more pending)*
@@ -217,4 +236,13 @@ approved documents was edited. Accept, amend or reject them in a new spec revisi
 
 ## Known gaps
 
-*(pending)*
+*(more pending)*
+
+- **R-05 residual.** A picture in a `.doc` linked to a UNC path (`\host\share\…`) still makes
+  LibreOffice open an SMB connection. HTTP(S) links are blocked by the profile settings, but UNC links are
+  not.
+- **R-07 residual.** Big5 text declared as iso-8859-1 decodes without errors and comes out garbled. A
+  strict decode cannot detect this.
+- **DR-35 timing.** The bundled LibreOffice (admin install) starts about 1.2 s slower than the identical
+  system install on this machine; the cause is unknown. Batching still gives a 4–4.6× speed-up (0.97–1.25
+  s per document batched, against 4.5–5.0 s one process per document).
