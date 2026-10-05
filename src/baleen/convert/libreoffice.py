@@ -20,6 +20,13 @@ relationships) and from HTML <img>. `BlockUntrustedRefererLinks` stops that: lin
 from a document outside the trusted locations (there are none) are not loaded. The profile
 also disables macros, active content (OLE/DDE), link updates, lock files, backups, the crash
 reporter and the update check, so a conversion never prompts, blocks or phones home.
+
+LibreOffice discards a registrymodifications.xcu written before it creates a profile, so the
+settings are written again after `--terminate_after_init`, and checked before every call. It also
+resets the update-check flag on start; that is harmless headless (the update job needs a visible
+window; watching the process tree's sockets during fresh-profile conversions showed none), and
+the flag is written again before the next call. Password-protected files fail fast (about 0.5 s)
+instead of prompting.
 """
 
 from __future__ import annotations
