@@ -1,0 +1,8 @@
+{# The final progress response: swaps in the results (no further polling) and the finished header. #}
+<div id="run-body" hx-swap-oob="true">{% include "_results.html" %}</div>
+{% with oob = True %}
+{% include "_run_pill.html" %}
+{% include "_run_actions.html" %}
+{% include "_run_meta.html" %}
+{% include "_railjob.html" %}
+{% endwith %}

@@ -1,0 +1,23 @@
+{# Results table (UI-R4, D-14, D-15): Status · Source · Output · Action · Reason (Check runs omit
+   Output); severity then source order; a text filter on paths; 100 rows per page, paged on the
+   server. A reason code always carries its human label in the tooltip. Clicking a row, or Enter
+   on it, opens the inspector; ↑↓ move between rows (baleen.js). #}
+{% from "partials/icon.html" import icon %}
+{% from "partials/badge.html" import badge %}
+{% from "partials/path_cell.html" import path_cell %}
+<section class="card tbl-card" id="results-table"{% if oob %} hx-swap-oob="true"{% endif %} data-run="{{ run.id }}">
+<div class="toolbar"><label class="search">{{ icon('search', 'sm') }}<input class="input" type="search" id="rows-q" name="q" value="{{ q }}" placeholder="Filter by path" aria-label="Filter by path" autocomplete="off" spellcheck="false"
+ hx-get="/runs/{{ run.id }}/rows" hx-trigger="input changed delay:300ms, search" hx-vals='{{ {"status": filter or ""}|tojson }}' hx-target="#results-table" hx-swap="outerHTML"></label>
+{%- if filter %}<span class="chip">{{ icon('filter', 'xs') }}{{ KEY_LABEL[filter] }} <button type="button" class="btn ghost icon sm chip-x" id="rows-clear" aria-label="Clear filter" hx-get="/runs/{{ run.id }}/rows?{{ qs(q=q) }}" hx-target="#results-table" hx-swap="outerHTML">{{ icon('close', 'xs') }}</button></span>{% endif -%}
+<span class="faint fs-125">Problems first</span>
+<div class="pager"><span class="num">{% if total %}{{ num(first) }}–{{ num(last) }} of {{ num(total) }}{% else %}0 of 0{% endif %}</span>
+<button type="button" class="btn ghost icon sm" id="rows-prev" aria-label="Previous page"{% if page <= 1 %} disabled{% endif %} hx-get="/runs/{{ run.id }}/rows?{{ qs(status=filter, q=q, page=page - 1) }}" hx-target="#results-table" hx-swap="outerHTML">{{ icon('chev-l', 'sm') }}</button>
+<button type="button" class="btn ghost icon sm" id="rows-next" aria-label="Next page"{% if last >= total %} disabled{% endif %} hx-get="/runs/{{ run.id }}/rows?{{ qs(status=filter, q=q, page=page + 1) }}" hx-target="#results-table" hx-swap="outerHTML">{{ icon('chev-r', 'sm') }}</button></div></div>
+<div class="tbl-scroll"><table class="data" aria-label="Results"><colgroup><col class="c-status"><col>{% if show_output %}<col class="c-output col-output">{% endif %}<col class="c-action col-action"><col class="c-reason"></colgroup>
+<thead><tr><th scope="col">Status</th><th scope="col">Source</th>{% if show_output %}<th scope="col" class="col-output">Output</th>{% endif %}<th scope="col" class="col-action">Action</th><th scope="col">Reason</th></tr></thead>
+<tbody>
+{%- for r in rows %}<tr tabindex="0" id="row-{{ r.n }}" data-n="{{ r.n }}" aria-selected="false" hx-get="/runs/{{ run.id }}/rows/{{ r.n }}?{{ qs(status=filter, q=q) }}" hx-target="#inspector" hx-swap="innerHTML">
+<td>{{ badge(status_key(r.status)) }}</td><td>{{ path_cell(r.source_path) }}</td>{% if show_output %}<td class="col-output">{{ path_cell(r.output_path) }}</td>{% endif %}<td class="muted col-action">{{ r.action }}</td>
+<td>{% for c in ordered_codes(r.reason) %}<span class="code" title="{{ reason_label(c) }}">{{ c }}</span>{% if not loop.last %} {% endif %}{% endfor %}</td></tr>
+{%- else %}<tr class="norows"><td colspan="{{ 4 + (1 if show_output else 0) }}"><div class="empty empty-rows">No files match this filter.</div></td></tr>{% endfor -%}
+</tbody></table></div></section>

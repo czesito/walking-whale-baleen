@@ -43,8 +43,9 @@ class OptionGroup:
 @dataclass(frozen=True)
 class Explainer:
     title: str
-    lines: tuple[str, ...]
+    lines: tuple[str, ...]  # "Lead · rest": the UI shows the lead in bold
     footer: str = ""
+    icons: tuple[str, ...] = ()  # sprite ids (i-<icon>), one per line
 
 
 @dataclass(frozen=True)

@@ -1,0 +1,12 @@
+{# Live state (UI-R2, W-07). Polled every 1 s (3 s while the tab is hidden) by baleen.js; each
+   response updates the progress card, tiles, Latest and the rail card out of band, and leaves
+   the Processor use row alone so an open select is never re-rendered under the pointer. #}
+<div id="run-live" hx-get="/runs/{{ run.id }}/progress" hx-trigger="baleen:poll" hx-swap="none" hx-request='{"timeout":8000}' data-poll="1000" data-poll-hidden="3000" data-run="{{ run.id }}"{% if announce_start %} data-announce="Run started"{% endif %}>
+<section class="card"><div class="live">
+{% include "_progress.html" %}
+{% include "_resrow.html" %}
+</div></section>
+{% with tiles_interactive = False %}{% include "_tiles.html" %}{% endwith %}
+<section class="card"><div class="card-head"><span class="card-title">Latest</span><span class="card-sub">The full table appears when the run finishes.</span></div>
+{% include "_latest.html" %}</section>
+</div>

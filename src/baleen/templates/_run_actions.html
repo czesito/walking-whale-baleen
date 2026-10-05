@@ -1,0 +1,14 @@
+{# Page actions (UI-R2, UI-R3): Cancel run while running; afterwards Open output folder (Convert),
+   Download report, and more (copy run ID, reveal report). #}
+{% from "partials/icon.html" import icon %}
+<div class="actions" id="run-actions"{% if oob %} hx-swap-oob="true"{% endif %}>
+{%- if run.live %}
+{%- if not run.cancel_requested and run.state != 'finishing' %}<button type="button" class="btn secondary" id="run-cancel" data-act="cancel">{{ icon('stop') }}Cancel run</button>{% endif %}
+{%- else %}
+{%- if run.output_root %}<button type="button" class="btn secondary" id="run-open-output" hx-post="/api/open" hx-vals='{{ {"run": run.id, "what": "output_root"}|tojson }}' hx-swap="none">{{ icon('external') }}Open output folder</button>{% endif %}
+{%- if report_exists %}<a class="btn secondary" id="run-download" href="/runs/{{ run.id }}/report.csv" download data-toast="Report downloaded">{{ icon('download') }}Download report</a>{% endif %}
+<div class="menu-wrap"><button type="button" class="btn ghost icon" id="run-more" data-act="menu" aria-label="More actions" aria-haspopup="menu" aria-expanded="false" aria-controls="run-menu">{{ icon('more') }}</button>
+<div class="menu" id="run-menu" role="menu" hidden><button type="button" role="menuitem" class="menu-item" id="menu-copy-id" data-copy="{{ run.id }}" data-toast="Run ID copied">{{ icon('copy') }}Copy run ID</button>
+{%- if report_exists %}<button type="button" role="menuitem" class="menu-item" id="menu-reveal-report" hx-post="/api/open" hx-vals='{{ {"run": run.id, "what": "report"}|tojson }}' hx-swap="none">{{ icon('external') }}Reveal report</button>{% endif %}</div></div>
+{%- endif -%}
+</div>

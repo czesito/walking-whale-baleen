@@ -1,0 +1,17 @@
+{# History table (UI-H1): Started · Workflow · Folder · Files · Result · Duration. Filters:
+   workflow (All / one per registered workflow) and a folder text filter. A row opens its run. #}
+{% from "partials/icon.html" import icon %}
+{% from "partials/badge.html" import badge %}
+{% from "partials/path_cell.html" import path_cell %}
+<section class="card tbl-card" id="runs-table"><div class="toolbar"><div class="seg" role="group" aria-label="Workflow">
+{%- for v, l in wf_filters %}<button type="button" id="runs-wf-{{ v or 'all' }}" aria-pressed="{{ 'true' if v == wf_filter else 'false' }}" tabindex="{{ 0 if v == wf_filter else -1 }}" hx-get="/runs?{{ qs(wf=v, q=q) }}" hx-target="#runs-table" hx-swap="outerHTML" hx-push-url="/runs?{{ qs(wf=v, q=q) }}">{{ l }}</button>{% endfor -%}
+</div><label class="search">{{ icon('search', 'sm') }}<input class="input" type="search" id="runs-q" name="q" value="{{ q }}" placeholder="Filter by folder" aria-label="Filter runs by folder" autocomplete="off" spellcheck="false"
+ hx-get="/runs" hx-trigger="input changed delay:300ms, search" hx-vals='{{ {"wf": wf_filter}|tojson }}' hx-target="#runs-table" hx-swap="outerHTML"></label>
+<span class="pager">{{ num(runs|length) }} run{{ '' if runs|length == 1 else 's' }} · the 100 most recent are kept</span></div>
+<div class="tbl-scroll"><table class="data" aria-label="Runs"><colgroup><col class="c-started"><col class="c-wf"><col><col class="c-files"><col class="c-result"><col class="c-dur"></colgroup>
+<thead><tr><th scope="col">Started</th><th scope="col">Workflow</th><th scope="col">Folder</th><th scope="col">Files</th><th scope="col">Result</th><th scope="col">Duration</th></tr></thead><tbody>
+{%- for r in runs %}<tr tabindex="0" id="run-row-{{ r.id }}" data-href="/runs/{{ r.id }}"><td>{{ when(r.started_at) }}</td><td><span class="wf-cell">{{ icon(r.icon) }}{{ r.name }}</span></td><td>{{ path_cell(r.source_root) }}</td><td class="num">{{ num(r.total) }}</td>
+<td>{% if r.state == 'running' %}{{ badge('running') }}{% elif r.state == 'cancelled' %}{{ badge('skipped', label='Cancelled') }}{% elif r.state == 'stopped' %}{{ badge('failed', label='Stopped') }}{% elif r.issues %}<span class="res-cell"><span class="stack">{% for seg in r.stack %}<i class="s-{{ seg.key }} {{ pct_class(seg.pct) }}{% if seg.n %} minw{% endif %}"></i>{% endfor %}</span><span>{{ num(r.issues) }} to look at</span></span>{% else %}{{ badge('ok', label='All OK') }}{% endif %}</td>
+<td class="num muted">{{ r.duration }}</td></tr>
+{%- else %}<tr class="norows"><td colspan="6"><div class="empty empty-rows">No runs match this filter.</div></td></tr>{% endfor -%}
+</tbody></table></div></section>

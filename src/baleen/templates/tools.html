@@ -1,0 +1,10 @@
+{# Tools (UI-T1, W-15): a summary notice, then each external tool with role, status, version,
+   source and path; a missing tool shows Affects and Fix. Check again re-runs detection. #}
+{% extends "base.html" %}
+{% from "partials/icon.html" import icon %}
+{% block page %}
+<div class="page-head"><div class="ph-main"><div class="kicker">System</div><h1 class="page-title">Tools</h1><div class="rule"></div>
+<p class="page-desc">The programs Baleen uses to convert and check files. They ship inside the Baleen folder; nothing is installed on this computer.</p></div>
+<div class="actions"><button type="button" class="btn secondary" id="tools-recheck" hx-post="/api/tools/recheck" hx-target="#tools-list" hx-swap="outerHTML">{{ icon('reset') }}Check again</button></div></div>
+{% include "_tools_list.html" %}
+{% endblock %}

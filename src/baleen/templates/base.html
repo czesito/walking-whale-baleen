@@ -1,0 +1,42 @@
+{# Shell (design handoff §12): rail generated from the workflow registry, main, inspector slot,
+   dialog slot, toast, live region. No inline scripts or styles (SEC-6); htmx's indicator styles
+   are off through the meta config. #}
+{% from "partials/icon.html" import icon %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="htmx-config" content='{"includeIndicatorStyles":false,"allowEval":false,"allowScriptTags":false,"historyCacheSize":0,"refreshOnHistoryMiss":true,"selfRequestsOnly":true,"getCacheBusterParam":false}'>
+<title>{{ title }}</title>
+<link rel="icon" type="image/svg+xml" href="{{ static('favicon.svg') }}">
+<link rel="stylesheet" href="{{ static('baleen.css') }}">
+<link rel="stylesheet" href="{{ static('app.css') }}">
+<script src="{{ static('htmx.min.js') }}" defer></script>
+<script src="{{ static('baleen.js') }}" defer></script>
+</head>
+<body data-page-title="{{ page_title }}" data-progress-title="{{ 'true' if prefs.progress_in_title else 'false' }}" data-notify="{{ 'true' if prefs.notify_on_finish else 'false' }}">
+{% include "partials/icons.svg" %}
+<div class="app" id="app">
+<script src="{{ static('rail.js') }}"></script>
+<div class="scrim" data-act="drawer-close"></div>
+<nav class="rail" id="rail" aria-label="Baleen">{% include "_rail.html" %}</nav>
+<div class="main" id="main">
+<div class="topbar-m"><button type="button" class="btn ghost icon" id="drawer-open" data-act="drawer-open" aria-label="Open navigation" aria-controls="rail" aria-expanded="false">{{ icon('menu') }}</button><span class="wordmark wm-top">Baleen</span></div>
+<div id="bannerSlot"><div class="banner" id="lost-banner" role="alert" hidden>{{ icon('st-failed') }}<span><b>Lost connection to Baleen.</b> Check that the Start Baleen window is still open.</span><button type="button" class="btn secondary sm" id="reconnect" data-act="reconnect">Try again</button></div></div>
+<div class="scroll" id="scroll"><div id="view"><div class="page{% if wide %} wide{% endif %}">{% block page %}{% endblock %}</div></div></div>
+<div id="actionSlot">{% block actionbar %}{% endblock %}</div>
+<aside class="inspector" id="inspector" aria-label="File details" tabindex="-1"></aside>
+</div>
+</div>
+<div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-labelledby="mTitle"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="sr" aria-live="polite" id="live"></div>
+<template id="tpl-quit"><h2 id="mTitle">Quit Baleen?</h2>
+<div data-when="running">{% from "partials/notice.html" import notice %}{% call notice('warn', extra_class='in-modal') %}A run is in progress. Baleen finishes the files in progress, saves the report, then quits.{% endcall %}</div>
+<p data-when="idle">Baleen stops and this tab can be closed. Your settings and reports are kept.</p>
+<div class="m-foot"><button type="button" class="btn secondary" id="quit-stay" data-act="closemodal" data-autofocus>Stay</button><button type="button" class="btn primary" id="quit-confirm" hx-post="/api/quit" hx-swap="none" hx-disabled-elt="this">{{ icon('quit') }}Quit</button></div>
+</template>
+{% block templates %}{% endblock %}
+</body>
+</html>

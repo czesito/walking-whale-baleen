@@ -1,0 +1,9 @@
+{# GET /runs/<id>/progress while running: everything out of band, the Processor use row untouched. #}
+{% with oob = True %}
+{% include "_progress.html" %}
+{% with tiles_interactive = False %}{% include "_tiles.html" %}{% endwith %}
+{% include "_latest.html" %}
+{% include "_railjob.html" %}
+{% include "_run_pill.html" %}
+{% include "_run_actions.html" %}
+{% endwith %}

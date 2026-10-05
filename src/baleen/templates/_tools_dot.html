@@ -1,0 +1,1 @@
+<span class="dot{% if not tools_ok %} bad{% endif %}" id="rail-tools-dot" title="{{ 'All tools found' if tools_ok else 'A tool is missing' }}"{% if oob %} hx-swap-oob="true"{% endif %}><span class="sr">{{ 'All tools found' if tools_ok else 'A tool is missing' }}</span></span>

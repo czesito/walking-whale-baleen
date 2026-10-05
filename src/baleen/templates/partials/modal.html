@@ -1,0 +1,6 @@
+{# Dialog content (design §06): Cormorant title, body, actions right. Used for Start, Cancel run,
+   Quit and the Settings reset confirmation. The overlay and the focus trap live in base.html and
+   baleen.js; initial focus goes to [data-autofocus] (D-17), otherwise to the primary button. #}
+{% macro modal(title) -%}
+<h2 id="mTitle">{{ title }}</h2>{{ caller() }}
+{%- endmacro %}
