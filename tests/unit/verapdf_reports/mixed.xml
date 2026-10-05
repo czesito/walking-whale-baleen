@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Synthetic sample in the format of veraPDF 1.30 (format xml): pass, fail, encrypted, not a PDF.
+     The batch folder sits under a path with spaces and CJK characters. -->
+<report>
+  <buildInformation>
+    <releaseDetails id="core" version="1.30.2" buildDate="2026-06-03T10:43:00+08:00"></releaseDetails>
+  </buildInformation>
+  <jobs>
+    <job>
+      <item size="29656">
+        <name>C:\Archive Work\訪談 資料\data\work\20261005-101010\verapdf-1\0001.pdf</name>
+      </item>
+      <validationReport jobEndStatus="normal" profileName="PDF/A-2b validation profile" statement="PDF file is compliant with Validation Profile requirements." isCompliant="true">
+        <details passedRules="144" failedRules="0" passedChecks="746" failedChecks="0"></details>
+      </validationReport>
+      <duration start="1791209540968" finish="1791209541310">00:00:00.342</duration>
+    </job>
+    <job>
+      <item size="987">
+        <name>C:\Archive Work\訪談 資料\data\work\20261005-101010\verapdf-1\0002.pdf</name>
+      </item>
+      <validationReport jobEndStatus="normal" profileName="PDF/A-2b validation profile" statement="PDF file is not compliant with Validation Profile requirements." isCompliant="false">
+        <details passedRules="142" failedRules="2" passedChecks="63" failedChecks="2">
+          <rule specification="ISO 19005-2:2011" clause="6.6.2.1" testNumber="1" status="failed" failedChecks="1">
+            <description>The Catalog dictionary of a conforming file shall contain the Metadata key</description>
+            <object>PDDocument</object>
+            <test>containsMetadata == true</test>
+            <check status="failed"><context>root/document[0]</context><errorMessage>No metadata</errorMessage></check>
+          </rule>
+          <rule specification="ISO 19005-2:2011" clause="6.1.3" testNumber="1" status="failed" failedChecks="1">
+            <description>The file trailer dictionary shall contain the ID keyword</description>
+            <object>CosDocument</object>
+            <test>lastID != null &amp;&amp; lastID.length() &gt; 0</test>
+            <check status="failed"><context>root</context><errorMessage>Missing or empty ID</errorMessage></check>
+          </rule>
+        </details>
+      </validationReport>
+      <duration start="1791209541349" finish="1791209541360">00:00:00.011</duration>
+    </job>
+    <job>
+      <item size="922">
+        <name>C:\Archive Work\訪談 資料\data\work\20261005-101010\verapdf-1\0003.pdf</name>
+      </item>
+      <taskException type="PARSE" isExecuted="true" isSuccess="false">
+        <duration start="1791209541380" finish="1791209541409">00:00:00.029</duration>
+        <exceptionMessage>Exception: The PDF stream appears to be encrypted. caused by exception: encrypted PDF with unknown or wrong password</exceptionMessage>
+      </taskException>
+      <duration start="1791209541380" finish="1791209541409">00:00:00.029</duration>
+    </job>
+    <job>
+      <item size="16">
+        <name>C:\Archive Work\訪談 資料\data\work\20261005-101010\verapdf-1\0004.pdf</name>
+      </item>
+      <taskException type="VALIDATE" isExecuted="true" isSuccess="false">
+        <exceptionMessage>Exception: internal validator error</exceptionMessage>
+      </taskException>
+    </job>
+    <job>
+      <item size="2048">
+        <name>C:\Archive Work\訪談 資料\data\work\20261005-101010\verapdf-1\0005.pdf</name>
+      </item>
+      <validationReport jobEndStatus="timeout" profileName="PDF/A-2b validation profile" isCompliant="false">
+        <details passedRules="10" failedRules="0" passedChecks="10" failedChecks="0"></details>
+      </validationReport>
+    </job>
+  </jobs>
+  <batchSummary totalJobs="5" failedToParse="1" encrypted="1" outOfMemory="0" veraExceptions="1">
+    <validationReports compliant="1" nonCompliant="2" failedJobs="2">5</validationReports>
+  </batchSummary>
+</report>

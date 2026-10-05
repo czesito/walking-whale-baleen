@@ -6,12 +6,108 @@
 # Each workstream edits only its own section below; keep the marker lines.
 group,profile,source_path,status,reason,output_path,checks,requires
 # ---- section: images (workstream a)
+images,default,photo_exif.jpg,OK,,photo_exif.jpg,V-IMG=pass;V-HASH=pass,
+images,default,UPPER.JPG,OK,,UPPER.jpg,V-IMG=pass;V-HASH=pass,
+images,default,pages.tif,OK,,pages.tif,V-IMG=pass;V-HASH=pass,
+images,default,alpha.png,OK,,alpha.tif,V-IMG=pass;V-HASH=pass,
+images,default,deep16.png,OK,,deep16.tif,V-IMG=pass;V-HASH=pass,
+images,default,scan.bmp,OK,,scan.jpg,V-IMG=pass;V-HASH=pass,
+images,default,anim.gif,NEEDS_REVIEW,MULTI_FRAME_IMAGE,,,
+images,default,picture.webp,OK,,picture.jpg,V-IMG=pass;V-HASH=pass,
+images,default,png_named.jpg,OK,CONTENT_MISMATCH,png_named.jpg,V-IMG=pass;V-HASH=pass,
+images,default,truncated.jpg,NEEDS_REVIEW,SOURCE_INVALID,,V-IMG=fail,
+images,copy_off,photo_exif.jpg,OK,,,V-IMG=pass,
+images,copy_off,UPPER.JPG,OK,,,V-IMG=pass,
+images,copy_off,pages.tif,OK,,,V-IMG=pass,
+images,copy_off,alpha.png,OK,,alpha.tif,V-IMG=pass;V-HASH=pass,
+images,copy_off,deep16.png,OK,,deep16.tif,V-IMG=pass;V-HASH=pass,
+images,copy_off,scan.bmp,OK,,scan.jpg,V-IMG=pass;V-HASH=pass,
+images,copy_off,anim.gif,NEEDS_REVIEW,MULTI_FRAME_IMAGE,,,
+images,copy_off,picture.webp,OK,,picture.jpg,V-IMG=pass;V-HASH=pass,
+images,copy_off,png_named.jpg,OK,CONTENT_MISMATCH,png_named.jpg,V-IMG=pass;V-HASH=pass,
+images,copy_off,truncated.jpg,NEEDS_REVIEW,SOURCE_INVALID,,V-IMG=fail,
+images,check,photo_exif.jpg,OK,,,V-IMG=pass,
+images,check,UPPER.JPG,OK,,,V-IMG=pass,
+images,check,pages.tif,OK,,,V-IMG=pass,
+images,check,alpha.png,NEEDS_REVIEW,NOT_ARCHIVAL_FORMAT,,,
+images,check,deep16.png,NEEDS_REVIEW,NOT_ARCHIVAL_FORMAT,,,
+images,check,scan.bmp,NEEDS_REVIEW,NOT_ARCHIVAL_FORMAT,,,
+images,check,anim.gif,NEEDS_REVIEW,MULTI_FRAME_IMAGE,,,
+images,check,picture.webp,NEEDS_REVIEW,NOT_ARCHIVAL_FORMAT,,,
+images,check,png_named.jpg,NEEDS_REVIEW,NOT_ARCHIVAL_FORMAT;CONTENT_MISMATCH,,,
+images,check,truncated.jpg,NEEDS_REVIEW,SOURCE_INVALID,,V-IMG=fail,
 # ---- end: images
 # ---- section: text (workstream a)
+text,default,utf8_cjk.txt,OK,,utf8_cjk.pdf,V-PDF-OPEN=pass;V-TEXT=pass;V-PDFA=pass(2b);V-HASH=pass,libreoffice;verapdf;java
+text,default,utf8_bom.txt,OK,,utf8_bom.pdf,V-PDF-OPEN=pass;V-TEXT=pass;V-PDFA=pass(2b);V-HASH=pass,libreoffice;verapdf;java
+text,default,utf16_bom.txt,OK,,utf16_bom.pdf,V-PDF-OPEN=pass;V-TEXT=pass;V-PDFA=pass(2b);V-HASH=pass,libreoffice;verapdf;java
+text,default,big5.txt,NEEDS_REVIEW,ENCODING_UNCERTAIN,,,
+text,default,latin1.txt,NEEDS_REVIEW,ENCODING_UNCERTAIN,,,
+text,big5,utf8_cjk.txt,OK,,utf8_cjk.pdf,V-PDF-OPEN=pass;V-TEXT=pass;V-PDFA=pass(2b);V-HASH=pass,libreoffice;verapdf;java
+text,big5,utf8_bom.txt,OK,,utf8_bom.pdf,V-PDF-OPEN=pass;V-TEXT=pass;V-PDFA=pass(2b);V-HASH=pass,libreoffice;verapdf;java
+text,big5,utf16_bom.txt,OK,,utf16_bom.pdf,V-PDF-OPEN=pass;V-TEXT=pass;V-PDFA=pass(2b);V-HASH=pass,libreoffice;verapdf;java
+text,big5,big5.txt,OK,,big5.pdf,V-PDF-OPEN=pass;V-TEXT=pass;V-PDFA=pass(2b);V-HASH=pass,libreoffice;verapdf;java
+text,big5,latin1.txt,FAILED,ENCODING_MISMATCH,,,
+text,pdfa_1b,utf8_cjk.txt,OK,,utf8_cjk.pdf,V-PDF-OPEN=pass;V-TEXT=pass;V-PDFA=pass(1b);V-HASH=pass,libreoffice;verapdf;java
+text,pdfa_1b,utf8_bom.txt,OK,,utf8_bom.pdf,V-PDF-OPEN=pass;V-TEXT=pass;V-PDFA=pass(1b);V-HASH=pass,libreoffice;verapdf;java
+text,pdfa_1b,utf16_bom.txt,OK,,utf16_bom.pdf,V-PDF-OPEN=pass;V-TEXT=pass;V-PDFA=pass(1b);V-HASH=pass,libreoffice;verapdf;java
+text,pdfa_1b,big5.txt,NEEDS_REVIEW,ENCODING_UNCERTAIN,,,
+text,pdfa_1b,latin1.txt,NEEDS_REVIEW,ENCODING_UNCERTAIN,,,
+text,pdfa_3b,utf8_cjk.txt,OK,,utf8_cjk.pdf,V-PDF-OPEN=pass;V-TEXT=pass;V-PDFA=pass(3b);V-HASH=pass,libreoffice;verapdf;java
+text,pdfa_3b,utf8_bom.txt,OK,,utf8_bom.pdf,V-PDF-OPEN=pass;V-TEXT=pass;V-PDFA=pass(3b);V-HASH=pass,libreoffice;verapdf;java
+text,pdfa_3b,utf16_bom.txt,OK,,utf16_bom.pdf,V-PDF-OPEN=pass;V-TEXT=pass;V-PDFA=pass(3b);V-HASH=pass,libreoffice;verapdf;java
+text,pdfa_3b,big5.txt,NEEDS_REVIEW,ENCODING_UNCERTAIN,,,
+text,pdfa_3b,latin1.txt,NEEDS_REVIEW,ENCODING_UNCERTAIN,,,
+text,check,utf8_cjk.txt,NEEDS_REVIEW,NOT_ARCHIVAL_FORMAT,,,
+text,check,utf8_bom.txt,NEEDS_REVIEW,NOT_ARCHIVAL_FORMAT,,,
+text,check,utf16_bom.txt,NEEDS_REVIEW,NOT_ARCHIVAL_FORMAT,,,
+text,check,big5.txt,NEEDS_REVIEW,NOT_ARCHIVAL_FORMAT,,,
+text,check,latin1.txt,NEEDS_REVIEW,NOT_ARCHIVAL_FORMAT,,,
 # ---- end: text
 # ---- section: html (workstream a)
+html,default,remote.html,OK,,remote.pdf,V-PDF-OPEN=pass;V-PDFA=pass(2b);V-HASH=pass,libreoffice;verapdf;java
+html,default,local_image.html,OK,,local_image.pdf,V-PDF-OPEN=pass;V-PDFA=pass(2b);V-HASH=pass,libreoffice;verapdf;java
+html,default,img/photo.jpg,OK,,img/photo.jpg,V-IMG=pass;V-HASH=pass,
+html,default,big5_meta.html,OK,,big5_meta.pdf,V-PDF-OPEN=pass;V-PDFA=pass(2b);V-HASH=pass,libreoffice;verapdf;java
+html,default,nometa_big5.htm,NEEDS_REVIEW,ENCODING_UNCERTAIN,,,
+html,big5,remote.html,OK,,remote.pdf,V-PDF-OPEN=pass;V-PDFA=pass(2b);V-HASH=pass,libreoffice;verapdf;java
+html,big5,local_image.html,OK,,local_image.pdf,V-PDF-OPEN=pass;V-PDFA=pass(2b);V-HASH=pass,libreoffice;verapdf;java
+html,big5,img/photo.jpg,OK,,img/photo.jpg,V-IMG=pass;V-HASH=pass,
+html,big5,big5_meta.html,OK,,big5_meta.pdf,V-PDF-OPEN=pass;V-PDFA=pass(2b);V-HASH=pass,libreoffice;verapdf;java
+html,big5,nometa_big5.htm,OK,,nometa_big5.pdf,V-PDF-OPEN=pass;V-PDFA=pass(2b);V-HASH=pass,libreoffice;verapdf;java
+html,pdfa_1b,remote.html,OK,,remote.pdf,V-PDF-OPEN=pass;V-PDFA=pass(1b);V-HASH=pass,libreoffice;verapdf;java
+html,pdfa_1b,local_image.html,OK,,local_image.pdf,V-PDF-OPEN=pass;V-PDFA=pass(1b);V-HASH=pass,libreoffice;verapdf;java
+html,pdfa_1b,img/photo.jpg,OK,,img/photo.jpg,V-IMG=pass;V-HASH=pass,
+html,pdfa_1b,big5_meta.html,OK,,big5_meta.pdf,V-PDF-OPEN=pass;V-PDFA=pass(1b);V-HASH=pass,libreoffice;verapdf;java
+html,pdfa_1b,nometa_big5.htm,NEEDS_REVIEW,ENCODING_UNCERTAIN,,,
+html,pdfa_3b,remote.html,OK,,remote.pdf,V-PDF-OPEN=pass;V-PDFA=pass(3b);V-HASH=pass,libreoffice;verapdf;java
+html,pdfa_3b,local_image.html,OK,,local_image.pdf,V-PDF-OPEN=pass;V-PDFA=pass(3b);V-HASH=pass,libreoffice;verapdf;java
+html,pdfa_3b,img/photo.jpg,OK,,img/photo.jpg,V-IMG=pass;V-HASH=pass,
+html,pdfa_3b,big5_meta.html,OK,,big5_meta.pdf,V-PDF-OPEN=pass;V-PDFA=pass(3b);V-HASH=pass,libreoffice;verapdf;java
+html,pdfa_3b,nometa_big5.htm,NEEDS_REVIEW,ENCODING_UNCERTAIN,,,
+html,check,remote.html,NEEDS_REVIEW,NOT_ARCHIVAL_FORMAT,,,
+html,check,local_image.html,NEEDS_REVIEW,NOT_ARCHIVAL_FORMAT,,,
+html,check,img/photo.jpg,OK,,,V-IMG=pass,
+html,check,big5_meta.html,NEEDS_REVIEW,NOT_ARCHIVAL_FORMAT,,,
+html,check,nometa_big5.htm,NEEDS_REVIEW,NOT_ARCHIVAL_FORMAT,,,
 # ---- end: html
 # ---- section: pdf (workstream a)
+pdf,default,plain.pdf,NEEDS_REVIEW,NOT_PDFA,,,
+pdf,default,encrypted.pdf,NEEDS_REVIEW,PDF_ENCRYPTED,,,
+pdf,default,fake_claim.pdf,NEEDS_REVIEW,PDFA_INVALID,,V-PDF-OPEN=pass;V-PDFA=fail(2b),verapdf;java
+pdf,default,pdfa2b.pdf,OK,,pdfa2b.pdf,V-PDF-OPEN=pass;V-PDFA=pass(2b);V-HASH=pass,libreoffice;verapdf;java
+pdf,copy_off,plain.pdf,NEEDS_REVIEW,NOT_PDFA,,,
+pdf,copy_off,encrypted.pdf,NEEDS_REVIEW,PDF_ENCRYPTED,,,
+pdf,copy_off,fake_claim.pdf,NEEDS_REVIEW,PDFA_INVALID,,V-PDF-OPEN=pass;V-PDFA=fail(2b),verapdf;java
+pdf,copy_off,pdfa2b.pdf,OK,,,V-PDF-OPEN=pass;V-PDFA=pass(2b),libreoffice;verapdf;java
+pdf,pdfa_1b,plain.pdf,NEEDS_REVIEW,NOT_PDFA,,,
+pdf,pdfa_1b,encrypted.pdf,NEEDS_REVIEW,PDF_ENCRYPTED,,,
+pdf,pdfa_1b,fake_claim.pdf,NEEDS_REVIEW,PDFA_INVALID,,V-PDF-OPEN=pass;V-PDFA=fail(2b),verapdf;java
+pdf,pdfa_1b,pdfa2b.pdf,OK,,pdfa2b.pdf,V-PDF-OPEN=pass;V-PDFA=pass(2b);V-HASH=pass,libreoffice;verapdf;java
+pdf,check,plain.pdf,NEEDS_REVIEW,NOT_PDFA,,,
+pdf,check,encrypted.pdf,NEEDS_REVIEW,PDF_ENCRYPTED,,,
+pdf,check,fake_claim.pdf,NEEDS_REVIEW,PDFA_INVALID,,V-PDF-OPEN=pass;V-PDFA=fail(2b),verapdf;java
+pdf,check,pdfa2b.pdf,OK,,,V-PDF-OPEN=pass;V-PDFA=pass(2b),libreoffice;verapdf;java
 # ---- end: pdf
 # ---- section: documents (workstream b)
 # ---- end: documents
