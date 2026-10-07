@@ -1,0 +1,12 @@
+ENVIRONMENT REPORT — NOT YET RUN
+
+這個檔案是占位。環境檢查必須在你的 Windows 電腦上執行 environment_check.ps1 才有意義
+（沙箱不是你的電腦，也連不到 NAS，所以我沒有也不能替你產生內容）。
+
+執行方式：
+  powershell -ExecutionPolicy Bypass -File .\environment_check.ps1
+
+腳本會覆寫同資料夾的 environment_report.txt，每個工具標示 FOUND / NOT_FOUND 與版本號：
+  Python, FFmpeg, FFprobe, LibreOffice, Ghostscript, veraPDF, Chrome/Chromium, PowerShell,
+  NAS UNC path 是否可讀取（另列 Pillow、Java、pdftotext 作為相依項目）。
+腳本只讀，不修改 NAS。
